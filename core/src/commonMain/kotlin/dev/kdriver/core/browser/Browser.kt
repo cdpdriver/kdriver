@@ -125,13 +125,13 @@ class Browser private constructor(
                 enableBeginFrameControl = true
             )
             targets.filterIsInstance<Tab>().first { it.type == "page" && it.targetId == targetId.targetId }.also {
-                //it.browser = this
+                it.browser = this
             }
         } else {
             logger.info(targets.toString())
             targets.filterIsInstance<Tab>().first { it.type == "page" }.also {
                 it.cdp().page.navigate(url)
-                //it.browser = this
+                it.browser = this
             }
         }
 
@@ -268,7 +268,7 @@ class Browser private constructor(
                 val newTarget = Tab(
                     wsUrl,
                     target = targetInfo,
-                    //browser = this
+                    browser = this
                 )
                 targets.add(newTarget)
                 logger.fine("target #${targets.size - 1} created => $newTarget")

@@ -36,6 +36,11 @@ open class Connection(
         target = targetInfo.targetInfo
     }
 
+    suspend fun wait(t: Double? = null) {
+        updateTarget()
+
+        // TODO
+    }
 
     override fun toString(): String {
         return "Connection: ${target?.toString() ?: "no target"}"
