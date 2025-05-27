@@ -10,7 +10,7 @@ class BrowserTest {
 
     @Test
     fun testGetContentGetsHtmlContent() = runBlocking {
-        val browser = Browser.create(headless = true)
+        val browser = Browser.create(headless = true, sandbox = false)
         val tab = browser.get("https://example.com")
         val content = tab.getContent()
         assertTrue(content.lowercase().startsWith("<!doctype html>"))
@@ -18,7 +18,7 @@ class BrowserTest {
 
     @Test
     fun testUpdateTargetSetsTargetTitle() = runBlocking {
-        val browser = Browser.create(headless = true)
+        val browser = Browser.create(headless = true, sandbox = false)
         val tab = browser.get("https://example.com")
         tab.updateTarget()
         assertNotNull(tab.targetInfo)

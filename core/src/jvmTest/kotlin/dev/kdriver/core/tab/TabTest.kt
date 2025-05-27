@@ -11,7 +11,7 @@ class TabTest {
 
     @Test
     fun testSetUserAgentSetsNavigatorValues() = runBlocking {
-        val browser = Browser.create(headless = true)
+        val browser = Browser.create(headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
         tab.setUserAgent(
@@ -31,7 +31,7 @@ class TabTest {
 
     @Test
     fun testSetUserAgentDefaultsExistingUserAgent() = runBlocking {
-        val browser = Browser.create(headless = true)
+        val browser = Browser.create(headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
         val existingUserAgent = (tab.evaluate("navigator.userAgent") as JsonPrimitive).content
@@ -49,7 +49,7 @@ class TabTest {
 
     @Test
     fun testWaitForReadyState() = runBlocking {
-        val browser = Browser.create(headless = true)
+        val browser = Browser.create(headless = true, sandbox = false)
         val tab = browser.get(sampleFile("groceries.html"))
 
         tab.waitForReadyState("complete")
