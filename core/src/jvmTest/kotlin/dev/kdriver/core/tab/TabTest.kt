@@ -1,6 +1,7 @@
 package dev.kdriver.core.tab
 
 import dev.kdriver.core.browser.Browser
+import dev.kdriver.core.sampleFile
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
@@ -44,6 +45,17 @@ class TabTest {
 
         assertEquals(existingUserAgent, navigatorUserAgent)
         assertEquals("testLang", navigatorLanguage)
+    }
+
+    @Test
+    fun testWaitForReadyState() = runBlocking {
+        val browser = Browser.create(headless = true)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        tab.waitForReadyState("complete")
+
+        val readyState = tab.evaluate("document.readyState") as? JsonPrimitive
+        assertEquals("complete", readyState?.content)
     }
 
 }
