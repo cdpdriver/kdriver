@@ -198,8 +198,10 @@ class Browser private constructor(
 
         val info = info ?: run {
             logger.info("Browser info not initialized, reading error")
-            _process?.errorStream?.bufferedReader()?.use {
-                logger.info("Browser stderr: ${it.readText()}")
+            withTimeoutOrNull(1000) {
+                _process?.errorStream?.bufferedReader()?.use {
+                    logger.info("Browser stderr: ${it.readText()}")
+                }
             }
             stop()
             throw Exception(
