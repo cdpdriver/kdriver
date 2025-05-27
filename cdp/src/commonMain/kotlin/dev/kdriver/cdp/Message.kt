@@ -8,7 +8,7 @@ import kotlinx.serialization.json.JsonElement
  * It should be [Response] or [Event].
  */
 @Serializable(with = MessageSerializer::class)
-internal sealed class Message {
+sealed class Message {
 
     /**
      * The response of a command.

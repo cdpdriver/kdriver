@@ -3,6 +3,8 @@ package dev.kdriver.cdp.domain
 import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.CDP
 import dev.kdriver.cdp.Domain
+import dev.kdriver.cdp.cacheGeneratedDomain
+import dev.kdriver.cdp.getGeneratedDomain
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement

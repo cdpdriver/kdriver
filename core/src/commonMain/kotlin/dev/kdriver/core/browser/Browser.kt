@@ -110,7 +110,7 @@ class Browser private constructor(
         val future = CompletableDeferred<Target.TargetInfoChangedParameter>()
 
         val job = messageListeningScope.launch {
-            connection.cdp().target.targetInfoChanged.collect {
+            connection.target.targetInfoChanged.collect {
                 if (future.isCompleted) return@collect
                 if (it.targetInfo.url != "about:blank" || (url == "about:blank" && it.targetInfo.url == "about:blank")) {
                     future.complete(it)
@@ -119,19 +119,19 @@ class Browser private constructor(
         }
 
         val connectionTab = if (newTab || newWindow) {
-            val targetId = connection.cdp().target.createTarget(
+            val targetId = connection.target.createTarget(
                 url = url,
                 newWindow = newWindow,
                 enableBeginFrameControl = true
             )
             targets.filterIsInstance<Tab>().first { it.type == "page" && it.targetId == targetId.targetId }.also {
-                it.browser = this
+                it.owner = this
             }
         } else {
             logger.info(targets.toString())
             targets.filterIsInstance<Tab>().first { it.type == "page" }.also {
-                it.cdp().page.navigate(url)
-                it.browser = this
+                it.page.navigate(url)
+                it.owner = this
             }
         }
 
@@ -217,19 +217,19 @@ class Browser private constructor(
         if (config.autoDiscoverTargets) {
             logger.info("Enabling autodiscover targets")
             messageListeningScope.launch {
-                connection.cdp().target.targetInfoChanged.collect(::handleTargetUpdate)
+                connection.target.targetInfoChanged.collect(::handleTargetUpdate)
             }
             messageListeningScope.launch {
-                connection.cdp().target.targetCreated.collect(::handleTargetUpdate)
+                connection.target.targetCreated.collect(::handleTargetUpdate)
             }
             messageListeningScope.launch {
-                connection.cdp().target.targetDestroyed.collect(::handleTargetUpdate)
+                connection.target.targetDestroyed.collect(::handleTargetUpdate)
             }
             messageListeningScope.launch {
-                connection.cdp().target.targetCrashed.collect(::handleTargetUpdate)
+                connection.target.targetCrashed.collect(::handleTargetUpdate)
             }
 
-            connection.cdp().target.setDiscoverTargets(discover = true)
+            connection.target.setDiscoverTargets(discover = true)
         }
 
         updateTargets()
@@ -241,7 +241,7 @@ class Browser private constructor(
             is Target.TargetInfoChangedParameter -> {
                 val targetInfo = event.targetInfo
                 val currentTab = targets.first { it.targetId == targetInfo.targetId }
-                val currentTarget = currentTab.target
+                val currentTarget = currentTab.targetInfo
 
                 logger.fine("target #${targets.indexOf(currentTab)} has changed")
                 /*
@@ -254,7 +254,7 @@ class Browser private constructor(
                 }
                 */
 
-                currentTab.target = targetInfo
+                currentTab.targetInfo = targetInfo
             }
 
             is Target.TargetCreatedParameter -> {
@@ -267,8 +267,8 @@ class Browser private constructor(
 
                 val newTarget = Tab(
                     wsUrl,
-                    target = targetInfo,
-                    browser = this
+                    targetInfo = targetInfo,
+                    owner = this
                 )
                 targets.add(newTarget)
                 logger.fine("target #${targets.size - 1} created => $newTarget")
@@ -319,15 +319,15 @@ class Browser private constructor(
 
     suspend fun updateTargets() {
         getTargets().forEach { t ->
-            val existingTab = this.targets.firstOrNull { it.target?.targetId == t.targetId }
+            val existingTab = this.targets.firstOrNull { it.targetInfo?.targetId == t.targetId }
 
             if (existingTab != null) {
-                existingTab.target = t.copy() // ou update manuellement les champs si nécessaire
+                existingTab.targetInfo = t.copy() // ou update manuellement les champs si nécessaire
             } else {
                 val wsUrl = "ws://${config.host}:${config.port}/devtools/page/${t.targetId}"
                 val newConnection = Connection(
                     websocketUrl = wsUrl,
-                    target = t,
+                    targetInfo = t,
                     //owner = this
                 )
                 this.targets.add(newConnection)

@@ -4,11 +4,11 @@ import dev.kdriver.cdp.domain.Target
 
 interface BrowserTarget {
 
-    var target: Target.TargetInfo?
+    var targetInfo: Target.TargetInfo?
 
     val targetId: String?
-        get() = target?.targetId
+        get() = targetInfo?.targetId
     val type: String?
-        get() = target?.type
+        get() = targetInfo?.type
 
 }

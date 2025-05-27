@@ -45,6 +45,7 @@ fun Domain.generateClassFile(domains: List<Domain>): FileSpec {
     }
         .build()
     return FileSpec.builder(PACKAGE_NAME, domain)
+        .addImport(BASE_PACKAGE_NAME, "getGeneratedDomain", "cacheGeneratedDomain")
         .addImport("kotlinx.serialization.json", "decodeFromJsonElement", "encodeToJsonElement")
         .addImport("kotlinx.coroutines.flow", "filter", "filterNotNull", "map")
         .addProperty(

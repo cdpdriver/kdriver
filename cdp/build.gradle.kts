@@ -86,8 +86,6 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(libs.kaccelero.core)
-                api(libs.ktor.client.websockets)
-                api(libs.ktor.client.cio)
             }
         }
         val jvmTest by getting {

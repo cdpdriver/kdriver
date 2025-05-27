@@ -10,16 +10,16 @@ import kotlinx.serialization.json.JsonPrimitive
 
 class Tab(
     websocketUrl: String,
-    target: Target.TargetInfo,
-    var browser: Browser? = null,
-) : Connection(websocketUrl, target), BrowserTarget {
+    targetInfo: Target.TargetInfo,
+    var owner: Browser? = null,
+) : Connection(websocketUrl, targetInfo), BrowserTarget {
 
     suspend fun get(
         url: String = "about:blank",
         newTab: Boolean = false,
         newWindow: Boolean = false,
     ): Tab {
-        val browser = browser ?: throw IllegalStateException(
+        val browser = owner ?: throw IllegalStateException(
             "This tab has no browser reference, so you can't use get()"
         )
 
@@ -28,25 +28,25 @@ class Tab(
         return if (openNewTab) {
             browser.get(url, newTab = true, newWindow = newWindow)
         } else {
-            cdp().page.navigate(url)
+            page.navigate(url)
             wait()
             this
         }
     }
 
     suspend fun back() {
-        cdp().runtime.evaluate("window.history.back()")
+        runtime.evaluate("window.history.back()")
     }
 
     suspend fun forward() {
-        cdp().runtime.evaluate("window.history.forward()")
+        runtime.evaluate("window.history.forward()")
     }
 
     suspend fun reload(
         ignoreCache: Boolean = true,
         scriptToEvaluateOnLoad: String? = null,
     ) {
-        cdp().page.reload(
+        page.reload(
             ignoreCache = ignoreCache,
             scriptToEvaluateOnLoad = scriptToEvaluateOnLoad
         )
@@ -56,7 +56,7 @@ class Tab(
         expression: String,
         awaitPromise: Boolean = false,
     ): JsonElement? {
-        val result = cdp().runtime.evaluate(
+        val result = runtime.evaluate(
             expression = expression,
             returnByValue = true,
             userGesture = true,
@@ -76,7 +76,7 @@ class Tab(
             ?: (evaluate("navigator.userAgent") as? JsonPrimitive)?.content
             ?: throw IllegalStateException("Could not read existing user agent from navigator object")
 
-        cdp().network.setUserAgentOverride(
+        network.setUserAgentOverride(
             userAgent = ua,
             acceptLanguage = acceptLanguage,
             platform = platform
@@ -84,12 +84,12 @@ class Tab(
     }
 
     suspend fun getContent(): String {
-        val doc = cdp().dom.getDocument(depth = -1, pierce = true)
-        return cdp().dom.getOuterHTML(backendNodeId = doc.root.backendNodeId).outerHTML
+        val doc = dom.getDocument(depth = -1, pierce = true)
+        return dom.getOuterHTML(backendNodeId = doc.root.backendNodeId).outerHTML
     }
 
     override fun toString(): String {
-        return "Tab: ${target?.toString() ?: "no target"}"
+        return "Tab: ${this@Tab.targetInfo?.toString() ?: "no target"}"
     }
 
 }

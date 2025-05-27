@@ -21,8 +21,8 @@ class BrowserTest {
         val browser = Browser.create(headless = true)
         val tab = browser.get("https://example.com")
         tab.updateTarget()
-        assertNotNull(tab.target)
-        assertEquals("Example Domain", tab.target?.title)
+        assertNotNull(tab.targetInfo)
+        assertEquals("Example Domain", tab.targetInfo?.title)
     }
 
 }
