@@ -99,6 +99,16 @@ class Tab(
         return dom.getOuterHTML(backendNodeId = doc.root.backendNodeId).outerHTML
     }
 
+    suspend fun activate() {
+        val targetId = targetInfo?.targetId
+            ?: throw IllegalArgumentException("target is null")
+        target.activateTarget(targetId)
+    }
+
+    suspend fun bringToFront() {
+        activate()
+    }
+
     suspend fun maximize() {
         setWindowState(state = "maximize")
     }
