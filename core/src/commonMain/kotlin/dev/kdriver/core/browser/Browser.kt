@@ -294,7 +294,6 @@ class Browser private constructor(
             info = http.get<ContraDict>("version")
             true
         } catch (e: Exception) {
-            e.printStackTrace()
             logger.fine("Could not start: ${e.message}")
             false
         }
@@ -302,11 +301,13 @@ class Browser private constructor(
 
     suspend fun stop() {
         // implement stopping the browser process and cleaning up resources
+        logger.info("Stopping browser process with PID: $_processPid")
         _process?.destroy()
         _process = null
         _processPid = null
         connection?.close()
         connection = null
+        logger.info("Browser process stopped")
     }
 
     suspend fun cleanupTemporaryProfile() {

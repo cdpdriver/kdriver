@@ -14,6 +14,7 @@ class BrowserTest {
         val tab = browser.get("https://example.com")
         val content = tab.getContent()
         assertTrue(content.lowercase().startsWith("<!doctype html>"))
+        browser.stop()
     }
 
     @Test
@@ -23,6 +24,7 @@ class BrowserTest {
         tab.updateTarget()
         assertNotNull(tab.targetInfo)
         assertEquals("Example Domain", tab.targetInfo?.title)
+        browser.stop()
     }
 
 }

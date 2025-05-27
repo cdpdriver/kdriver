@@ -6,6 +6,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class TabTest {
 
@@ -27,6 +28,7 @@ class TabTest {
         assertEquals("Test user agent", navigatorUserAgent)
         assertEquals("testLang", navigatorLanguage)
         assertEquals("TestPlatform", navigatorPlatform)
+        browser.stop()
     }
 
     @Test
@@ -45,6 +47,20 @@ class TabTest {
 
         assertEquals(existingUserAgent, navigatorUserAgent)
         assertEquals("testLang", navigatorLanguage)
+        browser.stop()
+    }
+
+    @Test
+    fun testSelect() = runBlocking {
+        val browser = Browser.create(headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val result = tab.select("li[aria-label^='Apples']")
+
+        assertNotNull(result)
+        assertEquals("li", result.tag)
+        assertEquals("Apples", result.text)
+        browser.stop()
     }
 
     @Test
@@ -56,6 +72,7 @@ class TabTest {
 
         val readyState = tab.evaluate("document.readyState") as? JsonPrimitive
         assertEquals("complete", readyState?.content)
+        browser.stop()
     }
 
 }

@@ -6,6 +6,36 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.URI
 
+fun <T> filterRecurse(
+    node: T,
+    predicate: (T) -> Boolean,
+    getChildren: (T) -> List<T>?,
+    getShadowRoots: (T) -> List<T>?,
+): T? {
+    val children = getChildren(node) ?: return null
+
+    for (child in children) {
+        if (predicate(child)) {
+            return child
+        }
+
+        val shadowRoots = getShadowRoots(child)
+        if (shadowRoots != null && shadowRoots.isNotEmpty()) {
+            val shadowResult = filterRecurse(shadowRoots[0], predicate, getChildren, getShadowRoots)
+            if (shadowResult != null) {
+                return shadowResult
+            }
+        }
+
+        val recursiveResult = filterRecurse(child, predicate, getChildren, getShadowRoots)
+        if (recursiveResult != null) {
+            return recursiveResult
+        }
+    }
+    return null
+}
+
+
 fun parseWebSocketUrl(url: String): WebSocketInfo {
     val uri = URI(url)
 

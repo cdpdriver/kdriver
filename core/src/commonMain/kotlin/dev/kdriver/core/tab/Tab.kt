@@ -4,10 +4,13 @@ import dev.kdriver.cdp.domain.*
 import dev.kdriver.cdp.domain.Target
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.BrowserTarget
+import dev.kdriver.core.browser.filterRecurse
 import dev.kdriver.core.connection.Connection
+import dev.kdriver.core.dom.Element
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import java.util.logging.Logger
 import javax.naming.NameNotFoundException
 
 class Tab(
@@ -15,6 +18,8 @@ class Tab(
     targetInfo: Target.TargetInfo,
     var owner: Browser? = null,
 ) : Connection(websocketUrl, targetInfo), BrowserTarget {
+
+    private val logger = Logger.getLogger(Tab::class.java.name)
 
     suspend fun get(
         url: String = "about:blank",
@@ -191,6 +196,159 @@ class Tab(
             }
 
             delay(100) // wait 100 ms
+        }
+    }
+
+    suspend fun select(
+        selector: String,
+        timeoutSeconds: Long = 10L,
+    ): Element {
+        val trimmedSelector = selector.trim()
+        val startTime = System.currentTimeMillis()
+
+        var item = querySelector(trimmedSelector)
+        while (item == null) {
+            wait()
+
+            item = querySelector(trimmedSelector)
+
+            val elapsed = (System.currentTimeMillis() - startTime) / 1000
+            if (elapsed > timeoutSeconds) {
+                throw IllegalStateException("time ran out while waiting for: $selector")
+            }
+
+            delay(500) // sleep for 0.5 seconds
+        }
+        return item
+    }
+
+    suspend fun querySelectorAll(
+        selector: String,
+        node: DOM.Node? = null,
+    ): List<Element> {
+        val doc = if (node == null) {
+            dom.getDocument(-1, true).root
+        } else {
+            var docNode = node
+            if (node.nodeName == "IFRAME") {
+                docNode = node.contentDocument ?: node
+            }
+            docNode
+        }
+
+        val nodeIds = try {
+            dom.querySelectorAll(doc.nodeId, selector)
+        } catch (e: Exception) {
+            if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
+                val last = node.javaClass.getDeclaredField("__last").let {
+                    it.isAccessible = true
+                    it.get(node) as? Boolean
+                }
+
+                if (last == true) {
+                    // Remove the marker to avoid infinite recursion
+                    node.javaClass.getDeclaredField("__last").apply {
+                        isAccessible = true
+                        set(node, null)
+                    }
+                    return emptyList()
+                }
+
+                if (node is Element) node.update()
+
+                // Mark as retried once
+                node.javaClass.getDeclaredField("__last").apply {
+                    isAccessible = true
+                    set(node, true)
+                }
+
+                return querySelectorAll(selector, node)
+            } else {
+                disableDomAgent()
+                throw e
+            }
+        }.nodeIds
+
+        if (nodeIds.isEmpty()) return emptyList()
+
+        val items = mutableListOf<Element>()
+        for (nid in nodeIds) {
+            val innerNode = filterRecurse(
+                doc,
+                predicate = { it.nodeId == nid },
+                getChildren = { it.children },
+                getShadowRoots = { it.shadowRoots }
+            )
+            if (innerNode != null) {
+                val elem = Element(innerNode, this, doc)
+                items.add(elem)
+            }
+        }
+        return items
+    }
+
+    suspend fun querySelector(
+        selector: String,
+        node: DOM.Node? = null,
+    ): Element? {
+        val trimmedSelector = selector.trim()
+
+        val doc = if (node == null) {
+            dom.getDocument(-1, true).root
+        } else {
+            if (node.nodeName == "IFRAME") node.contentDocument ?: node
+            else node
+        }
+
+        val nodeId = try {
+            dom.querySelector(doc.nodeId, trimmedSelector)
+        } catch (e: Exception) {
+            if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
+                val last = node.javaClass.getDeclaredField("__last").let {
+                    it.isAccessible = true
+                    it.get(node) as? Boolean
+                }
+
+                if (last == true) {
+                    // Remove the marker to avoid infinite recursion
+                    node.javaClass.getDeclaredField("__last").apply {
+                        isAccessible = true
+                        set(node, null)
+                    }
+                    return null
+                }
+
+                if (node is Element) node.update()
+
+                // Mark as retried once
+                node.javaClass.getDeclaredField("__last").apply {
+                    isAccessible = true
+                    set(node, true)
+                }
+
+                return querySelector(trimmedSelector, node)
+            } else {
+                disableDomAgent()
+                throw e
+            }
+        }.nodeId
+
+        if (nodeId == null) return null
+
+        val foundNode = filterRecurse(
+            doc,
+            predicate = { it.nodeId == nodeId },
+            getChildren = { it.children },
+            getShadowRoots = { it.shadowRoots }
+        )
+        return foundNode?.let { Element(it, this, doc) }
+    }
+
+    suspend fun disableDomAgent() {
+        try {
+            dom.disable()
+        } catch (_: Exception) {
+            logger.fine("Ignoring DOM.disable exception")
         }
     }
 
