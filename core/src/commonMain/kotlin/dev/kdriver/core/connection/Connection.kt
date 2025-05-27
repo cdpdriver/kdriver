@@ -13,14 +13,11 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.http.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlin.reflect.KClass
@@ -103,10 +100,15 @@ open class Connection(
         this.targetInfo = targetInfo.targetInfo
     }
 
-    suspend fun wait(t: Double? = null) {
+    suspend fun wait(t: Long? = null) {
         updateTarget()
 
         // TODO
+    }
+
+    suspend fun sleep(t: Long) {
+        updateTarget()
+        delay(t)
     }
 
     override fun toString(): String {

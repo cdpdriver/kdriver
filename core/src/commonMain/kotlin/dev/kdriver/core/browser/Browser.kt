@@ -198,11 +198,14 @@ class Browser private constructor(
 
         val info = info ?: run {
             logger.info("Browser info not initialized, reading error")
+            /*
+            // This seems to block indefinitely on CI, so inspection is required
             withTimeoutOrNull(1000) {
                 _process?.errorStream?.bufferedReader()?.use {
                     logger.info("Browser stderr: ${it.readText()}")
                 }
             }
+             */
             stop()
             throw Exception(
                 """

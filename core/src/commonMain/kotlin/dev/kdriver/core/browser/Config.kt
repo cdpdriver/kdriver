@@ -17,7 +17,7 @@ class Config(
     var host: String? = null,
     var port: Int? = null,
     val expert: Boolean = false,
-    val browserConnectionTimeout: Long = 250,
+    val browserConnectionTimeout: Long = 500,
     val browserConnectionMaxTries: Int = 10,
     val autoDiscoverTargets: Boolean = true,
 ) {
