@@ -15,12 +15,8 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 21
-      - name: Set up node environment
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
       - name: Install dependencies and run tests
-        run: ./gradlew build jvmTest koverXmlReport
+        run: ./gradlew jvmTest koverXmlReport --stacktrace
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:
