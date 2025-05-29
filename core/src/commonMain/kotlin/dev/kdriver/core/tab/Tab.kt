@@ -7,6 +7,7 @@ import dev.kdriver.core.browser.BrowserTarget
 import dev.kdriver.core.browser.filterRecurse
 import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.dom.Element
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
@@ -15,9 +16,10 @@ import javax.naming.NameNotFoundException
 
 class Tab(
     websocketUrl: String,
+    messageListeningScope: CoroutineScope,
     targetInfo: Target.TargetInfo,
-    var owner: Browser? = null,
-) : Connection(websocketUrl, targetInfo), BrowserTarget {
+    owner: Browser? = null,
+) : Connection(websocketUrl, messageListeningScope, targetInfo, owner), BrowserTarget {
 
     private val logger = Logger.getLogger(Tab::class.java.name)
 

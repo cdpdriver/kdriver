@@ -12,8 +12,8 @@ import java.nio.file.Path
 import java.util.logging.Logger
 
 class Browser private constructor(
-    val config: Config,
-    val messageListeningScope: CoroutineScope = GlobalScope,
+    val coroutineScope: CoroutineScope,
+    val config: Config = Config(),
 ) {
 
     private val logger = Logger.getLogger(Browser::class.java.name)
@@ -57,6 +57,7 @@ class Browser private constructor(
 
     companion object {
         suspend fun create(
+            coroutineScope: CoroutineScope,
             config: Config? = null,
             userDataDir: Path? = null,
             headless: Boolean = false,
@@ -65,9 +66,9 @@ class Browser private constructor(
             sandbox: Boolean = true,
             host: String? = null,
             port: Int? = null,
-            messageListeningScope: CoroutineScope = GlobalScope,
-            vararg kwargs: Pair<String, Any?>,
         ): Browser {
+            val browserScope = CoroutineScope(coroutineScope.coroutineContext + SupervisorJob())
+
             val cfg = config ?: Config(
                 userDataDir = userDataDir,
                 headless = headless,
@@ -76,10 +77,9 @@ class Browser private constructor(
                 sandbox = sandbox,
                 host = host,
                 port = port,
-                // You can process kwargs here if Config supports it
             )
 
-            val instance = Browser(cfg, messageListeningScope)
+            val instance = Browser(browserScope, cfg)
             instance.start()
 
             Runtime.getRuntime().addShutdownHook(Thread {
@@ -109,7 +109,7 @@ class Browser private constructor(
 
         val future = CompletableDeferred<Target.TargetInfoChangedParameter>()
 
-        val job = messageListeningScope.launch {
+        val job = coroutineScope.launch {
             connection.target.targetInfoChanged.collect {
                 if (future.isCompleted) return@collect
                 if (it.targetInfo.url != "about:blank" || (url == "about:blank" && it.targetInfo.url == "about:blank")) {
@@ -146,7 +146,7 @@ class Browser private constructor(
     suspend fun start(): Browser {
         if (_process != null || _processPid != null) {
             if (_process?.isAlive == false) {
-                return create(config)
+                return create(coroutineScope, config)
             }
             logger.warning("Ignored! Browser is already running.")
             return this
@@ -216,21 +216,21 @@ class Browser private constructor(
         }
 
         logger.info("Connected to browser at ${info.webSocketDebuggerUrl}")
-        val connection = Connection(info.webSocketDebuggerUrl) // , owner = this)
+        val connection = Connection(info.webSocketDebuggerUrl, coroutineScope, owner = this)
         this.connection = connection
 
         if (config.autoDiscoverTargets) {
             logger.info("Enabling autodiscover targets")
-            messageListeningScope.launch {
+            coroutineScope.launch {
                 connection.target.targetInfoChanged.collect(::handleTargetUpdate)
             }
-            messageListeningScope.launch {
+            coroutineScope.launch {
                 connection.target.targetCreated.collect(::handleTargetUpdate)
             }
-            messageListeningScope.launch {
+            coroutineScope.launch {
                 connection.target.targetDestroyed.collect(::handleTargetUpdate)
             }
-            messageListeningScope.launch {
+            coroutineScope.launch {
                 connection.target.targetCrashed.collect(::handleTargetUpdate)
             }
 
@@ -272,6 +272,7 @@ class Browser private constructor(
 
                 val newTarget = Tab(
                     wsUrl,
+                    messageListeningScope = coroutineScope,
                     targetInfo = targetInfo,
                     owner = this
                 )
@@ -310,6 +311,7 @@ class Browser private constructor(
         _processPid = null
         connection?.close()
         connection = null
+        coroutineScope.cancel()
         logger.info("Browser process stopped")
     }
 
@@ -333,8 +335,9 @@ class Browser private constructor(
                 val wsUrl = "ws://${config.host}:${config.port}/devtools/page/${t.targetId}"
                 val newConnection = Connection(
                     websocketUrl = wsUrl,
+                    messageListeningScope = coroutineScope,
                     targetInfo = t,
-                    //owner = this
+                    owner = this
                 )
                 this.targets.add(newConnection)
             }

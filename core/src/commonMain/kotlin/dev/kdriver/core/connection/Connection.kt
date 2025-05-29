@@ -6,6 +6,7 @@ import dev.kdriver.cdp.Message
 import dev.kdriver.cdp.Request
 import dev.kdriver.cdp.domain.Target
 import dev.kdriver.cdp.domain.target
+import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.BrowserTarget
 import dev.kdriver.core.browser.parseWebSocketUrl
 import io.ktor.client.*
@@ -13,19 +14,23 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.http.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlin.reflect.KClass
 
 open class Connection(
     private val websocketUrl: String,
+    private val messageListeningScope: CoroutineScope,
     override var targetInfo: Target.TargetInfo? = null,
-    private val messageListeningScope: CoroutineScope = GlobalScope,
+    var owner: Browser? = null,
 ) : BrowserTarget, CDP {
 
     private val client = HttpClient(CIO) {
@@ -91,7 +96,8 @@ open class Connection(
         return result.result
     }
 
-    fun close() {
+    suspend fun close() {
+        wsSession?.close()
         socketSubscription?.cancel()
     }
 

@@ -18,16 +18,20 @@ class Config(
     var port: Int? = null,
     val expert: Boolean = false,
     val browserConnectionTimeout: Long = 500,
-    val browserConnectionMaxTries: Int = 10,
+    val browserConnectionMaxTries: Int = 60,
     val autoDiscoverTargets: Boolean = true,
 ) {
 
     private val logger: Logger = Logger.getLogger(Config::class.java.name)
-    private var _userDataDir: String? = null
+
+    private var _userDataDir: Path? = null
     private var _customDataDir: Boolean = false
+
     private val _browserArgs: MutableList<String> = browserArgs?.toMutableList() ?: mutableListOf()
     private val _extensions: MutableList<Path> = mutableListOf()
+
     val browserExecutablePath: Path = browserExecutablePath ?: findChromeExecutable()
+
     var sandbox: Boolean = sandbox
         private set
 
@@ -36,9 +40,12 @@ class Config(
             logger.info("Detected root usage, auto disabling sandbox mode")
             this.sandbox = false
         }
+        userDataDir?.let {
+            this.userDataDir = it
+        }
     }
 
-    var userDataDir: String
+    var userDataDir: Path
         get() {
             if (_userDataDir == null) {
                 _userDataDir = tempProfileDir()
@@ -153,8 +160,8 @@ class Config(
             }
         }
 
-        private fun tempProfileDir(): String {
-            return createTempDirectory(prefix = "uc_").toString()
+        private fun tempProfileDir(): Path {
+            return createTempDirectory(prefix = "uc_")
         }
 
         private fun findChromeExecutable(): Path {
