@@ -216,7 +216,12 @@ class Browser private constructor(
         }
 
         logger.info("Connected to browser at ${info.webSocketDebuggerUrl}")
-        val connection = Connection(info.webSocketDebuggerUrl, coroutineScope, owner = this)
+        val connection = Connection(
+            websocketUrl = info.webSocketDebuggerUrl,
+            messageListeningScope = coroutineScope,
+            eventsBufferSize = config.eventsBufferSize,
+            owner = this
+        )
         this.connection = connection
 
         if (config.autoDiscoverTargets) {
@@ -273,6 +278,7 @@ class Browser private constructor(
                 val newTarget = Tab(
                     wsUrl,
                     messageListeningScope = coroutineScope,
+                    eventsBufferSize = config.eventsBufferSize,
                     targetInfo = targetInfo,
                     owner = this
                 )
@@ -336,6 +342,7 @@ class Browser private constructor(
                 val newConnection = Connection(
                     websocketUrl = wsUrl,
                     messageListeningScope = coroutineScope,
+                    eventsBufferSize = config.eventsBufferSize,
                     targetInfo = t,
                     owner = this
                 )

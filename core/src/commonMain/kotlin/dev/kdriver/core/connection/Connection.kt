@@ -29,6 +29,7 @@ import kotlin.reflect.KClass
 open class Connection(
     private val websocketUrl: String,
     private val messageListeningScope: CoroutineScope,
+    private val eventsBufferSize: Int,
     override var targetInfo: Target.TargetInfo? = null,
     var owner: Browser? = null,
 ) : BrowserTarget, CDP {
@@ -65,7 +66,7 @@ open class Connection(
 
     private var currentID = 0
 
-    private var allMessages = MutableSharedFlow<Message>()
+    private var allMessages = MutableSharedFlow<Message>(extraBufferCapacity = eventsBufferSize)
 
     override val events: Flow<Message.Event> = allMessages.filterIsInstance()
     override val responses: Flow<Message.Response> = allMessages.filterIsInstance()

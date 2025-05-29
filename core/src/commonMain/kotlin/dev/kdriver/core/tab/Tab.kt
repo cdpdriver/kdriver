@@ -17,9 +17,10 @@ import javax.naming.NameNotFoundException
 class Tab(
     websocketUrl: String,
     messageListeningScope: CoroutineScope,
+    eventsBufferSize: Int,
     targetInfo: Target.TargetInfo,
     owner: Browser? = null,
-) : Connection(websocketUrl, messageListeningScope, targetInfo, owner), BrowserTarget {
+) : Connection(websocketUrl, messageListeningScope, eventsBufferSize, targetInfo, owner), BrowserTarget {
 
     private val logger = Logger.getLogger(Tab::class.java.name)
 
