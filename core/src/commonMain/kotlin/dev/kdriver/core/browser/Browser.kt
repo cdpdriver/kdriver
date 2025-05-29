@@ -7,16 +7,16 @@ import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.tab.Tab
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
+import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
 import java.nio.file.Path
-import java.util.logging.Logger
 
 class Browser private constructor(
     val coroutineScope: CoroutineScope,
     val config: Config = Config(),
 ) {
 
-    private val logger = Logger.getLogger(Browser::class.java.name)
+    private val logger = LoggerFactory.getLogger("Browser")
 
     private var _process: Process? = null
     private var _processPid: Int? = null
@@ -95,10 +95,6 @@ class Browser private constructor(
         }
     }
 
-    init {
-        logger.fine("Session object initialized: $this")
-    }
-
     suspend fun wait(timeSeconds: Double = 1.0): Browser {
         delay((timeSeconds * 1000).toLong())
         return this
@@ -148,7 +144,7 @@ class Browser private constructor(
             if (_process?.isAlive == false) {
                 return create(coroutineScope, config)
             }
-            logger.warning("Ignored! Browser is already running.")
+            logger.warn("Ignored! Browser is already running.")
             return this
         }
 
@@ -253,7 +249,7 @@ class Browser private constructor(
                 val currentTab = targets.first { it.targetId == targetInfo.targetId }
                 val currentTarget = currentTab.targetInfo
 
-                logger.fine("target #${targets.indexOf(currentTab)} has changed")
+                logger.debug("target #${targets.indexOf(currentTab)} has changed")
                 /*
                 if (logger.isLoggable(Level.FINE)) {
                     val changes = compareTargetInfo(currentTarget, targetInfo)
@@ -283,17 +279,17 @@ class Browser private constructor(
                     owner = this
                 )
                 targets.add(newTarget)
-                logger.fine("target #${targets.size - 1} created => $newTarget")
+                logger.debug("target #{} created => {}", targets.size - 1, newTarget)
             }
 
             is Target.TargetDestroyedParameter -> {
                 val currentTab = targets.first { it.targetId == event.targetId }
-                logger.fine("target removed. id #${targets.indexOf(currentTab)} => $currentTab")
+                logger.debug("target removed. id #{} => {}", targets.indexOf(currentTab), currentTab)
                 targets.remove(currentTab)
             }
 
             is Target.TargetCrashedParameter -> {
-                logger.warning("target crashed: ${event.targetId}")
+                logger.warn("target crashed: ${event.targetId}")
             }
         }
     }
@@ -304,7 +300,7 @@ class Browser private constructor(
             info = http.get<ContraDict>("version")
             true
         } catch (e: Exception) {
-            logger.fine("Could not start: ${e.message}")
+            logger.debug("Could not start: ${e.message}")
             false
         }
     }

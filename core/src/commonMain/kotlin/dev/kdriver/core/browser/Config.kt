@@ -1,9 +1,9 @@
 package dev.kdriver.core.browser
 
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileNotFoundException
 import java.nio.file.Path
-import java.util.logging.Logger
 import java.util.zip.ZipFile
 import kotlin.io.path.createTempDirectory
 
@@ -23,7 +23,7 @@ class Config(
     val autoDiscoverTargets: Boolean = true,
 ) {
 
-    private val logger: Logger = Logger.getLogger(Config::class.java.name)
+    private val logger = LoggerFactory.getLogger("Config")
 
     private var _userDataDir: Path? = null
     private var _customDataDir: Boolean = false

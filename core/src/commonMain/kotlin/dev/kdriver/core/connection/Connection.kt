@@ -1,5 +1,6 @@
 package dev.kdriver.core.connection
 
+import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.CDP
 import dev.kdriver.cdp.Domain
 import dev.kdriver.cdp.Message
@@ -14,16 +15,14 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.http.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import org.slf4j.LoggerFactory
 import kotlin.reflect.KClass
 
 open class Connection(
@@ -33,6 +32,8 @@ open class Connection(
     override var targetInfo: Target.TargetInfo? = null,
     var owner: Browser? = null,
 ) : BrowserTarget, CDP {
+
+    private val logger = LoggerFactory.getLogger("Connection")
 
     private val client = HttpClient(CIO) {
         install(WebSockets)
@@ -52,13 +53,18 @@ open class Connection(
         socketSubscription = messageListeningScope.launch {
             try {
                 for (frame in wsSession?.incoming ?: return@launch) {
-                    val received: Message = when (frame) {
-                        is Frame.Text -> Json.decodeFromString(frame.readText())
-                        else -> error("Unsupported websocket frame type: $frame")
+                    try {
+                        frame as? Frame.Text ?: continue
+                        val text = frame.readText()
+                        logger.debug("WS < CDP: $text")
+                        val received = Serialization.json.decodeFromString<Message>(text)
+                        allMessages.emit(received)
+                    } catch (e: Exception) {
+                        logger.debug("WebSocket exception while receiving message: {}", e.message)
                     }
-                    allMessages.emit(received)
                 }
             } catch (e: Exception) {
+                e.printStackTrace()
                 // Handle disconnect, maybe trigger reconnect logic here
             }
         }
@@ -74,7 +80,7 @@ open class Connection(
     override val generatedDomains: MutableMap<KClass<out Domain>, Domain> = mutableMapOf()
 
     private suspend fun connect() {
-        if (wsSession != null) return
+        if (wsSession != null && wsSession?.isActive == true) return
         wsSession = client.webSocketSession {
             url {
                 val parsed = parseWebSocketUrl(websocketUrl)
@@ -92,6 +98,7 @@ open class Connection(
         val requestID = currentID++
         val jsonString = Json.encodeToString(Request(requestID, method, parameter))
         wsSession?.send(jsonString)
+        logger.debug("WS > CDP: $jsonString")
         val result = responses.first { it.id == requestID }
         result.error?.throwAsException()
         return result.result
@@ -99,7 +106,9 @@ open class Connection(
 
     suspend fun close() {
         wsSession?.close()
+        wsSession = null
         socketSubscription?.cancel()
+        socketSubscription = null
     }
 
     suspend fun updateTarget() {

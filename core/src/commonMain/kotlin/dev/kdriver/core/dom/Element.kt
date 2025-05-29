@@ -5,7 +5,7 @@ import dev.kdriver.core.browser.filterRecurse
 import dev.kdriver.core.tab.Tab
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
-import java.util.logging.Logger
+import org.slf4j.LoggerFactory
 
 data class Element(
     val node: DOM.Node,
@@ -13,7 +13,7 @@ data class Element(
     val tree: DOM.Node? = null,
 ) {
 
-    private val logger = Logger.getLogger(Element::class.java.name)
+    private val logger = LoggerFactory.getLogger("Element")
 
     private var remoteObject: Runtime.RemoteObject? = null
 
@@ -79,11 +79,11 @@ data class Element(
     suspend fun mouseMove() {
         val position = getPosition()
         if (position == null) {
-            logger.warning("Could not find location for $this, not moving mouse")
+            logger.warn("Could not find location for $this, not moving mouse")
             return
         }
         val (x, y) = position.center
-        logger.fine("Mouse move to location %.2f, %.2f where %s is located".format(x, y, this))
+        logger.debug("Mouse move to location %.2f, %.2f where %s is located".format(x, y, this))
 
         tab.input.dispatchMouseEvent(
             type = "mouseMoved",
@@ -145,7 +145,7 @@ data class Element(
             }
             pos
         } catch (e: IndexOutOfBoundsException) {
-            logger.fine("no content quads for $this. mostly caused by element which is not 'in plain sight'")
+            logger.debug("no content quads for {}. mostly caused by element which is not 'in plain sight'", this)
             null
         }
     }

@@ -11,7 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
-import java.util.logging.Logger
+import org.slf4j.LoggerFactory
 import javax.naming.NameNotFoundException
 
 class Tab(
@@ -22,7 +22,7 @@ class Tab(
     owner: Browser? = null,
 ) : Connection(websocketUrl, messageListeningScope, eventsBufferSize, targetInfo, owner), BrowserTarget {
 
-    private val logger = Logger.getLogger(Tab::class.java.name)
+    private val logger = LoggerFactory.getLogger("Tab")
 
     suspend fun get(
         url: String = "about:blank",
@@ -361,7 +361,7 @@ class Tab(
         try {
             dom.disable()
         } catch (_: Exception) {
-            logger.fine("Ignoring DOM.disable exception")
+            logger.debug("Ignoring DOM.disable exception")
         }
     }
 
