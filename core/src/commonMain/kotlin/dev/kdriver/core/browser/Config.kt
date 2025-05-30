@@ -203,7 +203,8 @@ class Config(
                 val subPaths = listOf(
                     "Google/Chrome/Application",
                     "Google/Chrome Beta/Application",
-                    "Google/Chrome Canary/Application"
+                    "Google/Chrome Canary/Application",
+                    "Google/Chrome SxS/Application",
                 )
                 for (base in programFiles) {
                     for (sub in subPaths) {
