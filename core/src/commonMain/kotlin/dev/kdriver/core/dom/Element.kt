@@ -4,7 +4,6 @@ import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.browser.filterRecurse
 import dev.kdriver.core.tab.Tab
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonPrimitive
 import org.slf4j.LoggerFactory
 
 data class Element(
@@ -106,9 +105,7 @@ data class Element(
         )
     }
 
-    suspend fun apply(
-        jsFunction: String,
-    ): JsonElement? {
+    suspend fun apply(jsFunction: String): JsonElement? {
         remoteObject = tab.dom.resolveNode(backendNodeId = backendNodeId).`object`
 
         val result = tab.runtime.callFunctionOn(
@@ -136,8 +133,8 @@ data class Element(
             }
             val pos = Position(quads[0])
             if (abs) {
-                val scrollY = (tab.evaluate("window.scrollY") as? JsonPrimitive)?.content?.toDoubleOrNull() ?: 0.0
-                val scrollX = (tab.evaluate("window.scrollX") as? JsonPrimitive)?.content?.toDoubleOrNull() ?: 0.0
+                val scrollY = tab.evaluate<Double>("window.scrollY") ?: 0.0
+                val scrollX = tab.evaluate<Double>("window.scrollX") ?: 0.0
                 val absX = pos.left + scrollX + pos.width / 2
                 val absY = pos.top + scrollY + pos.height / 2
                 pos.absX = absX

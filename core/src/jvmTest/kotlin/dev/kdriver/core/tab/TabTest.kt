@@ -3,7 +3,6 @@ package dev.kdriver.core.tab
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.sampleFile
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -21,9 +20,9 @@ class TabTest {
             platform = "TestPlatform"
         )
 
-        val navigatorUserAgent = (tab.evaluate("navigator.userAgent") as JsonPrimitive).content
-        val navigatorLanguage = (tab.evaluate("navigator.language") as JsonPrimitive).content
-        val navigatorPlatform = (tab.evaluate("navigator.platform") as JsonPrimitive).content
+        val navigatorUserAgent = tab.evaluate<String>("navigator.userAgent")
+        val navigatorLanguage = tab.evaluate<String>("navigator.language")
+        val navigatorPlatform = tab.evaluate<String>("navigator.platform")
 
         assertEquals("Test user agent", navigatorUserAgent)
         assertEquals("testLang", navigatorLanguage)
@@ -36,14 +35,14 @@ class TabTest {
         val browser = Browser.create(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
-        val existingUserAgent = (tab.evaluate("navigator.userAgent") as JsonPrimitive).content
+        val existingUserAgent = tab.evaluate<String>("navigator.userAgent")
 
         tab.setUserAgent(
             acceptLanguage = "testLang"
         )
 
-        val navigatorUserAgent = (tab.evaluate("navigator.userAgent") as JsonPrimitive).content
-        val navigatorLanguage = (tab.evaluate("navigator.language") as JsonPrimitive).content
+        val navigatorUserAgent = tab.evaluate<String>("navigator.userAgent")
+        val navigatorLanguage = tab.evaluate<String>("navigator.language")
 
         assertEquals(existingUserAgent, navigatorUserAgent)
         assertEquals("testLang", navigatorLanguage)
@@ -70,8 +69,8 @@ class TabTest {
 
         tab.waitForReadyState("complete")
 
-        val readyState = tab.evaluate("document.readyState") as? JsonPrimitive
-        assertEquals("complete", readyState?.content)
+        val readyState = tab.evaluate<String>("document.readyState")
+        assertEquals("complete", readyState)
         browser.stop()
     }
 

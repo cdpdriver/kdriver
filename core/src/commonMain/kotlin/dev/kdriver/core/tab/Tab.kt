@@ -1,5 +1,6 @@
 package dev.kdriver.core.tab
 
+import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.cdp.domain.Target
 import dev.kdriver.core.browser.Browser
@@ -9,8 +10,7 @@ import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.dom.Element
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import org.slf4j.LoggerFactory
 import javax.naming.NameNotFoundException
 
@@ -62,10 +62,10 @@ class Tab(
         )
     }
 
-    suspend fun evaluate(
+    suspend inline fun <reified T> evaluate(
         expression: String,
         awaitPromise: Boolean = false,
-    ): JsonElement? {
+    ): T? {
         val result = runtime.evaluate(
             expression = expression,
             returnByValue = true,
@@ -74,7 +74,9 @@ class Tab(
             allowUnsafeEvalBlockedByCSP = true,
         )
         result.exceptionDetails?.let { throw EvaluateException(it) }
-        return result.result.value
+        return result.result.value?.let {
+            Serialization.json.decodeFromJsonElement<T>(it)
+        }
     }
 
     suspend fun setUserAgent(
@@ -83,7 +85,7 @@ class Tab(
         platform: String? = null,
     ) {
         val ua = userAgent
-            ?: (evaluate("navigator.userAgent") as? JsonPrimitive)?.content
+            ?: evaluate<String>("navigator.userAgent")
             ?: throw IllegalStateException("Could not read existing user agent from navigator object")
 
         network.setUserAgentOverride(
@@ -199,7 +201,7 @@ class Tab(
         val timeoutNanos = timeoutSeconds * 1_000_000_000L
 
         while (true) {
-            val readyState = (evaluate("document.readyState") as? JsonPrimitive)?.content
+            val readyState = evaluate<String>("document.readyState")
             if (readyState == until) {
                 return true
             }
