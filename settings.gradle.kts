@@ -21,7 +21,7 @@ dependencyResolutionManagement {
             plugin("maven", "com.vanniktech.maven.publish").version("0.30.0")
 
             // Kaccelero
-            version("kaccelero", "0.4.13")
+            version("kaccelero", "0.5.0")
             library("kaccelero-core", "dev.kaccelero", "core").versionRef("kaccelero")
 
             // Ktor
@@ -36,8 +36,6 @@ dependencyResolutionManagement {
             library("tests-mockk", "io.mockk:mockk:1.13.12")
             library("tests-jsoup", "org.jsoup:jsoup:1.16.2")
             library("tests-coroutines", "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
-
-            // Others
         }
     }
 }
