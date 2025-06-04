@@ -3,7 +3,6 @@ package dev.kdriver.core.tab
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.sampleFile
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -64,7 +63,7 @@ class TabTest {
     }
 
     @Test
-    fun testEvaluateWaitPromiseError() = runBlocking {
+    fun testEvaluateWaitPromiseFail() = runBlocking {
         val browser = Browser.create(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
@@ -72,7 +71,20 @@ class TabTest {
             tab.evaluate<String>("new Promise((_, r) => setTimeout(() => r(\"fail\")));", true)
         }
 
-        assertEquals("fail", result.error.exception?.value?.jsonPrimitive?.content)
+        assertEquals("fail", result.jsError)
+        browser.stop()
+    }
+
+    @Test
+    fun testEvaluateWaitPromiseError() = runBlocking {
+        val browser = Browser.create(this, headless = true, sandbox = false)
+        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+
+        val result = assertFailsWith<EvaluateException> {
+            tab.evaluate<String>("(async() => { throw new Error(\"Custom error\") })()", true)
+        }
+
+        assertEquals("Error: Custom error\n    at <anonymous>:1:21\n    at <anonymous>:1:49", result.jsError)
         browser.stop()
     }
 
