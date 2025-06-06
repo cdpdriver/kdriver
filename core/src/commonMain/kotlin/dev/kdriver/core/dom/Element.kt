@@ -105,6 +105,14 @@ data class Element(
         )
     }
 
+    suspend fun sendFiles(paths: List<String>) {
+        tab.dom.setFileInputFiles(
+            files = paths,
+            backendNodeId = backendNodeId,
+            objectId = objectId,
+        )
+    }
+
     suspend fun apply(jsFunction: String): JsonElement? {
         remoteObject = tab.dom.resolveNode(backendNodeId = backendNodeId).`object`
 
