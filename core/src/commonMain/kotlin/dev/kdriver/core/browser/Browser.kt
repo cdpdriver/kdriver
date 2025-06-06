@@ -5,11 +5,14 @@ import dev.kdriver.cdp.domain.page
 import dev.kdriver.cdp.domain.target
 import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.tab.Tab
+import dev.kdriver.core.utils.freePort
+import dev.kdriver.core.utils.startProcess
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.io.files.FileNotFoundException
+import kotlinx.io.files.Path
 import org.slf4j.LoggerFactory
-import java.io.FileNotFoundException
-import java.nio.file.Path
+import java.io.File
 
 class Browser private constructor(
     val coroutineScope: CoroutineScope,
@@ -155,30 +158,34 @@ class Browser private constructor(
             config.port = freePort()
         }
 
+        // handle extensions if any
+        config.extensions.takeIf { it.isNotEmpty() }?.let {
+            config.addArgument("--load-extension=${it.joinToString(",")}")
+        }
+
         if (!connectExisting) {
-            logger.info("BROWSER EXECUTABLE PATH: ${config.browserExecutablePath}")
-            if (!config.browserExecutablePath.toFile().exists()) throw FileNotFoundException(
+            val exe = config.browserExecutablePath ?: throw IllegalStateException(
+                """
+                    Browser executable path is not set and findChromeExecutable is not supported on this platform.
+                    Please specify browserExecutablePath parameter.
+                    """.trimIndent()
+            )
+
+            logger.info("BROWSER EXECUTABLE PATH: $exe")
+            if (!File(exe.toString()).exists()) throw FileNotFoundException(
                 """
                 Could not determine browser executable.
                 Make sure your browser is installed in the default location (path).
                 Or specify browserExecutablePath parameter.
                 """.trimIndent()
             )
-        }
 
-        // handle extensions if any
-        config.extensions.takeIf { it.isNotEmpty() }?.let {
-            config.addArgument("--load-extension=${it.joinToString(",")}")
-        }
+            val params = config().toMutableList()
+            params.add("about:blank")
 
-        val exe = config.browserExecutablePath
-        val params = config().toMutableList()
-        params.add("about:blank")
+            logger.info("starting\n\texecutable :$exe\n\narguments:\n${params.joinToString("\n\t")}")
 
-        logger.info("starting\n\texecutable :$exe\n\narguments:\n${params.joinToString("\n\t")}")
-
-        if (!connectExisting) {
-            _process = startProcess(exe.toAbsolutePath().toString(), params, Config.isPosix())
+            _process = startProcess(exe, params)
             _processPid = _process!!.pid().toInt()
         }
 
@@ -323,7 +330,7 @@ class Browser private constructor(
 
     private suspend fun getTargets(): List<Target.TargetInfo> {
         val connection = this.connection ?: error("Browser not yet started. Use browser.start() first.")
-        val info = connection.cdp(isUpdate = true).target.getTargets()
+        val info = connection.target.getTargets()
         return info.targetInfos
     }
 

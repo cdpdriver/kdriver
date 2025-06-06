@@ -9,7 +9,7 @@ import dev.kdriver.cdp.domain.Target
 import dev.kdriver.cdp.domain.target
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.BrowserTarget
-import dev.kdriver.core.browser.parseWebSocketUrl
+import dev.kdriver.core.utils.parseWebSocketUrl
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*

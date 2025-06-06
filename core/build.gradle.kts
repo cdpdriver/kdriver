@@ -35,7 +35,7 @@ mavenPublishing {
 }
 
 kotlin {
-    // jvm
+    // jvm & js
     jvmToolchain(21)
     jvm {
         withJava()
@@ -45,6 +45,14 @@ kotlin {
             }
         }
     }
+    /*
+    js {
+        generateTypeScriptDefinitions()
+        binaries.library()
+        nodejs()
+        browser()
+    }
+    */
 
     applyDefaultHierarchyTemplate()
     sourceSets {
@@ -58,10 +66,22 @@ kotlin {
                 api(project(":cdp"))
                 api(libs.ktor.serialization.kotlinx.json)
                 api(libs.ktor.client.content.negotiation)
+                api(libs.kotlinx.io)
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
                 api(libs.ktor.client.apache)
                 api(libs.ktor.client.cio)
             }
         }
+        /*
+        val jsMain by getting {
+            dependencies {
+                api(libs.ktor.client.js)
+            }
+        }
+        */
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))

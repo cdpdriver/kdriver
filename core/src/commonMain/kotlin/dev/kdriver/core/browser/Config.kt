@@ -1,11 +1,11 @@
 package dev.kdriver.core.browser
 
+import dev.kdriver.core.utils.findChromeExecutable
+import dev.kdriver.core.utils.isPosix
+import dev.kdriver.core.utils.isRoot
+import dev.kdriver.core.utils.tempProfileDir
+import kotlinx.io.files.Path
 import org.slf4j.LoggerFactory
-import java.io.File
-import java.io.FileNotFoundException
-import java.nio.file.Path
-import java.util.zip.ZipFile
-import kotlin.io.path.createTempDirectory
 
 class Config(
     userDataDir: Path? = null,
@@ -29,9 +29,9 @@ class Config(
     private var _customDataDir: Boolean = false
 
     private val _browserArgs: MutableList<String> = browserArgs?.toMutableList() ?: mutableListOf()
-    private val _extensions: MutableList<Path> = mutableListOf()
+    internal val _extensions: MutableList<Path> = mutableListOf()
 
-    val browserExecutablePath: Path = browserExecutablePath ?: findChromeExecutable()
+    val browserExecutablePath: Path? = browserExecutablePath ?: findChromeExecutable()
 
     var sandbox: Boolean = sandbox
         private set
@@ -88,36 +88,6 @@ class Config(
     val extensions: List<Path>
         get() = _extensions.toList()
 
-    fun addExtension(extensionPath: Path) {
-        val path = extensionPath.toFile()
-        if (!path.exists()) {
-            throw FileNotFoundException("Could not find anything here: $extensionPath")
-        }
-        if (path.isFile) {
-            val tempDir = createTempDirectory(prefix = "extension_").toFile()
-            ZipFile(path).use { zip ->
-                zip.entries().asSequence().forEach { entry ->
-                    val file = File(tempDir, entry.name)
-                    if (entry.isDirectory) {
-                        file.mkdirs()
-                    } else {
-                        file.outputStream().use { output ->
-                            zip.getInputStream(entry).copyTo(output)
-                        }
-                    }
-                }
-            }
-            _extensions.add(tempDir.toPath())
-        } else if (path.isDirectory) {
-            val manifestFile = path.walkTopDown().find { it.name.startsWith("manifest.") }
-            if (manifestFile != null) {
-                _extensions.add(manifestFile.parentFile.toPath())
-            } else {
-                throw FileNotFoundException("Manifest file not found in directory: $extensionPath")
-            }
-        }
-    }
-
     operator fun invoke(): List<String> {
         val args = mutableListOf<String>()
         args.addAll(defaultBrowserArgs)
@@ -143,84 +113,6 @@ class Config(
             throw IllegalArgumentException("\"$arg\" not allowed. Please use one of the attributes of the Config object to set it")
         }
         _browserArgs.add(arg)
-    }
-
-    companion object {
-        fun isPosix(): Boolean {
-            val os = System.getProperty("os.name").lowercase()
-            return os.contains("nix") || os.contains("nux") || os.contains("mac")
-        }
-
-        fun isRoot(): Boolean {
-            return try {
-                val process = ProcessBuilder("id", "-u").start()
-                val result = process.inputStream.bufferedReader().readText().trim()
-                result == "0"
-            } catch (e: Exception) {
-                false
-            }
-        }
-
-        private fun tempProfileDir(): Path {
-            return createTempDirectory(prefix = "uc_")
-        }
-
-        private fun findChromeExecutable(): Path {
-            val candidates = mutableListOf<Path>()
-            val os = System.getProperty("os.name").lowercase()
-            val paths = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
-            if (isPosix()) {
-                val executables = listOf(
-                    "google-chrome",
-                    "chromium",
-                    "chromium-browser",
-                    "chrome",
-                    "google-chrome-stable"
-                )
-                for (path in paths) {
-                    for (exe in executables) {
-                        val candidate = File(path, exe)
-                        if (candidate.exists() && candidate.canExecute()) {
-                            candidates.add(candidate.toPath())
-                        }
-                    }
-                }
-                if (os.contains("mac")) {
-                    candidates.addAll(
-                        listOf(
-                            Path.of("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
-                            Path.of("/Applications/Chromium.app/Contents/MacOS/Chromium")
-                        )
-                    )
-                }
-            } else {
-                val programFiles = listOfNotNull(
-                    System.getenv("PROGRAMFILES"),
-                    System.getenv("PROGRAMFILES(X86)"),
-                    System.getenv("LOCALAPPDATA"),
-                    System.getenv("PROGRAMW6432")
-                )
-                val subPaths = listOf(
-                    "Google/Chrome/Application",
-                    "Google/Chrome Beta/Application",
-                    "Google/Chrome Canary/Application",
-                    "Google/Chrome SxS/Application",
-                )
-                for (base in programFiles) {
-                    for (sub in subPaths) {
-                        val candidate = File(base, "$sub/chrome.exe")
-                        candidates.add(candidate.toPath())
-                    }
-                }
-            }
-            return candidates
-                .filter {
-                    val file = it.toFile()
-                    file.exists() && file.canExecute()
-                }
-                .minByOrNull { it.toAbsolutePath().toString().length }
-                ?: throw FileNotFoundException("Could not find a valid Chrome browser binary. Please make sure Chrome is installed or specify the 'browserExecutablePath' parameter.")
-        }
     }
 
 }

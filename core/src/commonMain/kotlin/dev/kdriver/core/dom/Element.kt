@@ -1,8 +1,9 @@
 package dev.kdriver.core.dom
 
 import dev.kdriver.cdp.domain.*
-import dev.kdriver.core.browser.filterRecurse
 import dev.kdriver.core.tab.Tab
+import dev.kdriver.core.utils.filterRecurse
+import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
 import org.slf4j.LoggerFactory
 
@@ -82,7 +83,7 @@ data class Element(
             return
         }
         val (x, y) = position.center
-        logger.debug("Mouse move to location %.2f, %.2f where %s is located".format(x, y, this))
+        logger.debug("Mouse move to location $x, $y where $this is located")
 
         tab.input.dispatchMouseEvent(
             type = "mouseMoved",
@@ -105,9 +106,9 @@ data class Element(
         )
     }
 
-    suspend fun sendFiles(paths: List<String>) {
+    suspend fun sendFiles(paths: List<Path>) {
         tab.dom.setFileInputFiles(
-            files = paths,
+            files = paths.map { it.toString() },
             backendNodeId = backendNodeId,
             objectId = objectId,
         )

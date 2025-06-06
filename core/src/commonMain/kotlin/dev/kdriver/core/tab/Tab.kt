@@ -5,14 +5,14 @@ import dev.kdriver.cdp.domain.*
 import dev.kdriver.cdp.domain.Target
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.BrowserTarget
-import dev.kdriver.core.browser.filterRecurse
 import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.dom.Element
+import dev.kdriver.core.utils.filterRecurse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.decodeFromJsonElement
 import org.slf4j.LoggerFactory
-import javax.naming.NameNotFoundException
 
 class Tab(
     websocketUrl: String,
@@ -138,7 +138,7 @@ class Tab(
 
         val stateName = availableStates.find { stateName ->
             state.lowercase().all { it in stateName }
-        } ?: throw NameNotFoundException(
+        } ?: throw IllegalStateException(
             "Could not determine any of $availableStates from input '$state'"
         )
 
@@ -197,8 +197,7 @@ class Tab(
         until: String = "interactive", // "loading", "interactive", or "complete"
         timeoutSeconds: Int = 10,
     ): Boolean {
-        val startTime = System.nanoTime()
-        val timeoutNanos = timeoutSeconds * 1_000_000_000L
+        val startTime = Clock.System.now().toEpochMilliseconds()
 
         while (true) {
             val readyState = evaluate<String>("document.readyState")
@@ -206,7 +205,8 @@ class Tab(
                 return true
             }
 
-            if (System.nanoTime() - startTime > timeoutNanos) {
+            val elapsed = (Clock.System.now().toEpochMilliseconds() - startTime) / 1000
+            if (elapsed > timeoutSeconds) {
                 throw IllegalStateException("Timeout waiting for readyState == $until")
             }
 
@@ -219,7 +219,7 @@ class Tab(
         timeoutSeconds: Long = 10L,
     ): Element {
         val trimmedSelector = selector.trim()
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
 
         var item = querySelector(trimmedSelector)
         while (item == null) {
@@ -227,7 +227,7 @@ class Tab(
 
             item = querySelector(trimmedSelector)
 
-            val elapsed = (System.currentTimeMillis() - startTime) / 1000
+            val elapsed = (Clock.System.now().toEpochMilliseconds() - startTime) / 1000
             if (elapsed > timeoutSeconds) {
                 throw IllegalStateException("time ran out while waiting for: $selector")
             }
@@ -241,6 +241,8 @@ class Tab(
         selector: String,
         node: DOM.Node? = null,
     ): List<Element> {
+        val lastMap = mutableMapOf<Int, Boolean>()
+
         val doc = if (node == null) {
             dom.getDocument(-1, true).root
         } else {
@@ -255,27 +257,18 @@ class Tab(
             dom.querySelectorAll(doc.nodeId, selector)
         } catch (e: Exception) {
             if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
-                val last = node.javaClass.getDeclaredField("__last").let {
-                    it.isAccessible = true
-                    it.get(node) as? Boolean
-                }
+                val last = lastMap[node.nodeId]
 
                 if (last == true) {
                     // Remove the marker to avoid infinite recursion
-                    node.javaClass.getDeclaredField("__last").apply {
-                        isAccessible = true
-                        set(node, null)
-                    }
+                    lastMap.remove(node.nodeId)
                     return emptyList()
                 }
 
                 if (node is Element) node.update()
 
                 // Mark as retried once
-                node.javaClass.getDeclaredField("__last").apply {
-                    isAccessible = true
-                    set(node, true)
-                }
+                lastMap[node.nodeId] = true
 
                 return querySelectorAll(selector, node)
             } else {
@@ -306,6 +299,8 @@ class Tab(
         selector: String,
         node: DOM.Node? = null,
     ): Element? {
+        val lastMap = mutableMapOf<Int, Boolean>()
+
         val trimmedSelector = selector.trim()
 
         val doc = if (node == null) {
@@ -319,27 +314,18 @@ class Tab(
             dom.querySelector(doc.nodeId, trimmedSelector)
         } catch (e: Exception) {
             if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
-                val last = node.javaClass.getDeclaredField("__last").let {
-                    it.isAccessible = true
-                    it.get(node) as? Boolean
-                }
+                val last = lastMap[node.nodeId]
 
                 if (last == true) {
                     // Remove the marker to avoid infinite recursion
-                    node.javaClass.getDeclaredField("__last").apply {
-                        isAccessible = true
-                        set(node, null)
-                    }
+                    lastMap.remove(node.nodeId)
                     return null
                 }
 
                 if (node is Element) node.update()
 
                 // Mark as retried once
-                node.javaClass.getDeclaredField("__last").apply {
-                    isAccessible = true
-                    set(node, true)
-                }
+                lastMap[node.nodeId] = true
 
                 return querySelector(trimmedSelector, node)
             } else {

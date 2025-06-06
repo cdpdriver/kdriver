@@ -31,11 +31,15 @@ dependencyResolutionManagement {
             library("ktor-client-content-negotiation", "io.ktor", "ktor-client-content-negotiation").versionRef("ktor")
             library("ktor-client-apache", "io.ktor", "ktor-client-apache").versionRef("ktor")
             library("ktor-client-cio", "io.ktor", "ktor-client-cio").versionRef("ktor")
+            library("ktor-client-js", "io.ktor", "ktor-client-js").versionRef("ktor")
 
             // Tests
             library("tests-mockk", "io.mockk:mockk:1.13.12")
             library("tests-jsoup", "org.jsoup:jsoup:1.16.2")
             library("tests-coroutines", "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+
+            // Others
+            library("kotlinx-io", "org.jetbrains.kotlinx:kotlinx-io-core:0.7.0")
         }
     }
 }

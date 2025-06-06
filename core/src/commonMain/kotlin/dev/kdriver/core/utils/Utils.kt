@@ -1,10 +1,10 @@
-package dev.kdriver.core.browser
+package dev.kdriver.core.utils
 
+import dev.kdriver.core.browser.WebSocketInfo
+import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.InetAddress
-import java.net.ServerSocket
-import java.net.URI
+import kotlinx.io.files.Path
 
 fun <T> filterRecurse(
     node: T,
@@ -35,34 +35,27 @@ fun <T> filterRecurse(
     return null
 }
 
-
 fun parseWebSocketUrl(url: String): WebSocketInfo {
-    val uri = URI(url)
+    val uri = Url(url)
 
     val host = uri.host
-    val port = if (uri.port != -1) uri.port else when (uri.scheme) {
-        "ws" -> 80
-        "wss" -> 443
-        else -> throw IllegalArgumentException("Unsupported scheme: ${uri.scheme}")
+    val port = if (uri.port != -1) uri.port else when (uri.protocol) {
+        URLProtocol.WS -> 80
+        URLProtocol.WSS -> 443
+        else -> throw IllegalArgumentException("Unsupported scheme: ${uri.protocol}")
     }
-    val path = uri.rawPath ?: "/"
+    val path = uri.encodedPath
 
     return WebSocketInfo(host, port, path)
 }
 
-fun freePort(): Int {
-    ServerSocket(0, 5, InetAddress.getByName("127.0.0.1")).use { socket ->
-        return socket.localPort
-    }
-}
-
 suspend fun startProcess(
-    exe: String,
+    exe: Path,
     params: List<String>,
-    isPosix: Boolean,
 ): Process {
+    val isPosix = isPosix()
     return withContext(Dispatchers.IO) {
-        val command = listOf(exe) + params
+        val command = listOf(exe.toString()) + params
         val builder = ProcessBuilder(command)
         builder.redirectInput(ProcessBuilder.Redirect.PIPE)
         builder.redirectOutput(ProcessBuilder.Redirect.PIPE)
@@ -77,3 +70,8 @@ suspend fun startProcess(
     }
 }
 
+expect fun isPosix(): Boolean
+expect fun isRoot(): Boolean
+expect fun tempProfileDir(): Path
+expect fun findChromeExecutable(): Path?
+expect fun freePort(): Int?
