@@ -1,11 +1,11 @@
-name: Deploy Dokka Docs
+name: Docs
 on:
   push:
     branches: [ main ]
 permissions:
   contents: write
 jobs:
-  deploy-docs:
+  docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

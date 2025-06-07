@@ -1,10 +1,18 @@
 # kdriver
 
+[![License](https://img.shields.io/github/license/guimauvedigital/kdriver)](LICENSE)
+[![Issues](https://img.shields.io/github/issues/guimauvedigital/kdriver)]()
+[![Pull Requests](https://img.shields.io/github/issues-pr/guimauvedigital/kdriver)]()
+[![Code Size](https://img.shields.io/github/languages/code-size/guimauvedigital/kdriver)]()
+[![codecov](https://codecov.io/github/guimauvedigital/kdriver/branch/main/graph/badge.svg?token=F7K641TYFZ)](https://codecov.io/github/guimauvedigital/kdriver)
+[![CodeFactor](https://www.codefactor.io/repository/github/guimauvedigital/kdriver/badge)](https://www.codefactor.io/repository/github/guimauvedigital/kdriver)
+[![Open Source Helpers](https://www.codetriage.com/guimauvedigital/kdriver/badges/users.svg)](https://www.codetriage.com/guimauvedigital/kdriver)
+
 > This project is a Kotlin port of [@stephanlensky](https://github.com/stephanlensky)'s awesome Python
 > library [zendriver](https://github.com/stephanlensky/zendriver), built to bring the same simplicity and power of
 > CDP-based automation to the JVM world.
 
-**Documentation:** *coming soon*
+**Documentation:** [kdriver.dev](https://kdriver.dev)
 
 kdriver is a blazing fast, coroutine-first, undetectable web scraping / browser automation library for Kotlin. It uses
 the Chrome DevTools Protocol (CDP) under the hood to interact with real Chrome instances, offering a sleek alternative
