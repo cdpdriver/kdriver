@@ -1,0 +1,27 @@
+name: Deploy Dokka Docs
+on:
+  push:
+    branches: [ main ]
+permissions:
+  contents: write
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up our JDK environment
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+      - name: Build Dokka HTML
+        run: ./gradlew dokkaHtmlMultiModule
+      - name: Add CNAME file
+        run: echo 'kdriver.dev' > build/dokka/htmlMultiModule/CNAME
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/dokka/htmlMultiModule
+          publish_branch: gh-pages
