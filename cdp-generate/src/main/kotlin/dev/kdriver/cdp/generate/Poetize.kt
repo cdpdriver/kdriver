@@ -313,7 +313,14 @@ fun Domain.Command.generateParameterExpandedMethod(parentDomain: Domain, domains
     return if (parameters.isNotEmpty()) FunSpec.builder(name)
         .addModifiers(KModifier.SUSPEND)
         .apply {
-            description?.let { addKdoc(it) }
+            val parametersKdoc = this@generateParameterExpandedMethod.parameters.takeIf { it.isNotEmpty() }
+                ?.joinToString("\n", prefix = "\n\n") { param ->
+                    "@param ${param.name} ${param.description ?: "No description"}"
+                }
+                ?.replace("%", "%%")
+                ?: ""
+            description?.let { addKdoc(it + parametersKdoc) } ?: addKdoc(parametersKdoc)
+
             if (deprecated) {
                 addAnnotation(
                     AnnotationSpec.builder(Deprecated::class)
@@ -341,16 +348,11 @@ fun Domain.Command.generateParameterExpandedMethod(parentDomain: Domain, domains
                             "val parameter = %T($paramList)",
                             this@generateParameterExpandedMethod.parameterTypeName
                         )
-                        if (this@generateParameterExpandedMethod.returns.isNotEmpty()) {
-                            addStatement("return $name(parameter)")
-                        } else {
-                            addStatement("$name(parameter)")
-                        }
+                        if (this@generateParameterExpandedMethod.returns.isNotEmpty()) addStatement("return $name(parameter)")
+                        else addStatement("$name(parameter)")
                     }
                     .build())
-            if (this@generateParameterExpandedMethod.returns.isNotEmpty()) {
-                returns(returnTypeName)
-            }
+            if (this@generateParameterExpandedMethod.returns.isNotEmpty()) returns(returnTypeName)
         }
         .build()
     else null

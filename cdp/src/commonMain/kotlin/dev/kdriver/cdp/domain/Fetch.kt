@@ -74,6 +74,12 @@ public class Fetch(
     /**
      * Enables issuing of requestPaused events. A request will be paused until client
      * calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth.
+     *
+     * @param patterns If specified, only requests matching any of these patterns will produce
+     * fetchRequested event and will be paused until clients response. If not set,
+     * all requests will be affected.
+     * @param handleAuthRequests If true, authRequired events will be issued and requests will be paused
+     * expecting a call to continueWithAuth.
      */
     public suspend fun enable(patterns: List<RequestPattern>? = null, handleAuthRequests: Boolean? = null) {
         val parameter = EnableParameter(patterns = patterns, handleAuthRequests = handleAuthRequests)
@@ -90,6 +96,9 @@ public class Fetch(
 
     /**
      * Causes the request to fail with specified reason.
+     *
+     * @param requestId An id the client received in requestPaused event.
+     * @param errorReason Causes the request to fail with the given reason.
      */
     public suspend fun failRequest(requestId: String, errorReason: Network.ErrorReason) {
         val parameter = FailRequestParameter(requestId = requestId, errorReason = errorReason)
@@ -106,6 +115,19 @@ public class Fetch(
 
     /**
      * Provides response to the request.
+     *
+     * @param requestId An id the client received in requestPaused event.
+     * @param responseCode An HTTP response code.
+     * @param responseHeaders Response headers.
+     * @param binaryResponseHeaders Alternative way of specifying response headers as a \0-separated
+     * series of name: value pairs. Prefer the above method unless you
+     * need to represent some non-UTF8 values that can't be transmitted
+     * over the protocol as text. (Encoded as a base64 string when passed over JSON)
+     * @param body A response body. If absent, original response body will be used if
+     * the request is intercepted at the response stage and empty body
+     * will be used if the request is intercepted at the request stage. (Encoded as a base64 string when passed over JSON)
+     * @param responsePhrase A textual representation of responseCode.
+     * If absent, a standard phrase matching responseCode is used.
      */
     public suspend fun fulfillRequest(
         requestId: String,
@@ -136,6 +158,15 @@ public class Fetch(
 
     /**
      * Continues the request, optionally modifying some of its parameters.
+     *
+     * @param requestId An id the client received in requestPaused event.
+     * @param url If set, the request url will be modified in a way that's not observable by page.
+     * @param method If set, the request method is overridden.
+     * @param postData If set, overrides the post data in the request. (Encoded as a base64 string when passed over JSON)
+     * @param headers If set, overrides the request headers. Note that the overrides do not
+     * extend to subsequent redirect hops, if a redirect happens. Another override
+     * may be applied to a different request produced by a redirect.
+     * @param interceptResponse If set, overrides response interception behavior for this request.
      */
     public suspend fun continueRequest(
         requestId: String,
@@ -166,6 +197,9 @@ public class Fetch(
 
     /**
      * Continues a request supplying authChallengeResponse following authRequired event.
+     *
+     * @param requestId An id the client received in authRequired event.
+     * @param authChallengeResponse Response to  with an authChallenge.
      */
     public suspend fun continueWithAuth(requestId: String, authChallengeResponse: AuthChallengeResponse) {
         val parameter = ContinueWithAuthParameter(requestId = requestId, authChallengeResponse = authChallengeResponse)
@@ -186,6 +220,16 @@ public class Fetch(
      * Continues loading of the paused response, optionally modifying the
      * response headers. If either responseCode or headers are modified, all of them
      * must be present.
+     *
+     * @param requestId An id the client received in requestPaused event.
+     * @param responseCode An HTTP response code. If absent, original response code will be used.
+     * @param responsePhrase A textual representation of responseCode.
+     * If absent, a standard phrase matching responseCode is used.
+     * @param responseHeaders Response headers. If absent, original response headers will be used.
+     * @param binaryResponseHeaders Alternative way of specifying response headers as a \0-separated
+     * series of name: value pairs. Prefer the above method unless you
+     * need to represent some non-UTF8 values that can't be transmitted
+     * over the protocol as text. (Encoded as a base64 string when passed over JSON)
      */
     public suspend fun continueResponse(
         requestId: String,
@@ -233,6 +277,8 @@ public class Fetch(
      * paused in the _redirect received_ state may be differentiated by
      * `responseCode` and presence of `location` response header, see
      * comments to `requestPaused` for details.
+     *
+     * @param requestId Identifier for the intercepted request to get body for.
      */
     public suspend fun getResponseBody(requestId: String): GetResponseBodyReturn {
         val parameter = GetResponseBodyParameter(requestId = requestId)
@@ -268,6 +314,8 @@ public class Fetch(
      * This method is mutually exclusive with getResponseBody.
      * Calling other methods that affect the request or disabling fetch
      * domain before body is received results in an undefined behavior.
+     *
+     * @param requestId No description
      */
     public suspend fun takeResponseBodyAsStream(requestId: String): TakeResponseBodyAsStreamReturn {
         val parameter = TakeResponseBodyAsStreamParameter(requestId = requestId)

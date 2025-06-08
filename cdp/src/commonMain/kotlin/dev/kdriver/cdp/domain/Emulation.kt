@@ -76,6 +76,8 @@ public class Emulation(
 
     /**
      * Enables or disables simulating a focused and active page.
+     *
+     * @param enabled Whether to enable to disable focus emulation.
      */
     public suspend fun setFocusEmulationEnabled(enabled: Boolean) {
         val parameter = SetFocusEmulationEnabledParameter(enabled = enabled)
@@ -92,6 +94,9 @@ public class Emulation(
 
     /**
      * Automatically render all web contents using a dark theme.
+     *
+     * @param enabled Whether to enable or disable automatic dark mode.
+     * If not specified, any existing override will be cleared.
      */
     public suspend fun setAutoDarkModeOverride(enabled: Boolean? = null) {
         val parameter = SetAutoDarkModeOverrideParameter(enabled = enabled)
@@ -108,6 +113,8 @@ public class Emulation(
 
     /**
      * Enables CPU throttling to emulate slow CPUs.
+     *
+     * @param rate Throttling rate as a slowdown factor (1 is no throttle, 2 is 2x slowdown, etc).
      */
     public suspend fun setCPUThrottlingRate(rate: Double) {
         val parameter = SetCPUThrottlingRateParameter(rate = rate)
@@ -126,6 +133,9 @@ public class Emulation(
     /**
      * Sets or clears an override of the default background color of the frame. This override is used
      * if the content does not specify one.
+     *
+     * @param color RGBA of the default background color. If not specified, any existing override will be
+     * cleared.
      */
     public suspend fun setDefaultBackgroundColorOverride(color: DOM.RGBA? = null) {
         val parameter = SetDefaultBackgroundColorOverrideParameter(color = color)
@@ -146,6 +156,25 @@ public class Emulation(
      * Overrides the values of device screen dimensions (window.screen.width, window.screen.height,
      * window.innerWidth, window.innerHeight, and "device-width"/"device-height"-related CSS media
      * query results).
+     *
+     * @param width Overriding width value in pixels (minimum 0, maximum 10000000). 0 disables the override.
+     * @param height Overriding height value in pixels (minimum 0, maximum 10000000). 0 disables the override.
+     * @param deviceScaleFactor Overriding device scale factor value. 0 disables the override.
+     * @param mobile Whether to emulate mobile device. This includes viewport meta tag, overlay scrollbars, text
+     * autosizing and more.
+     * @param scale Scale to apply to resulting view image.
+     * @param screenWidth Overriding screen width value in pixels (minimum 0, maximum 10000000).
+     * @param screenHeight Overriding screen height value in pixels (minimum 0, maximum 10000000).
+     * @param positionX Overriding view X position on screen in pixels (minimum 0, maximum 10000000).
+     * @param positionY Overriding view Y position on screen in pixels (minimum 0, maximum 10000000).
+     * @param dontSetVisibleSize Do not set visible view size, rely upon explicit setVisibleSize call.
+     * @param screenOrientation Screen orientation override.
+     * @param viewport If set, the visible area of the page will be overridden to this viewport. This viewport
+     * change is not observed by the page, e.g. viewport-relative elements do not change positions.
+     * @param displayFeature If set, the display feature of a multi-segment screen. If not set, multi-segment support
+     * is turned-off.
+     * @param devicePosture If set, the posture of a foldable device. If not set the posture is set
+     * to continuous.
      */
     public suspend fun setDeviceMetricsOverride(
         width: Int,
@@ -187,6 +216,11 @@ public class Emulation(
         cdp.callCommand("Emulation.setScrollbarsHidden", parameter)
     }
 
+    /**
+     *
+     *
+     * @param hidden Whether scrollbars should be always hidden.
+     */
     public suspend fun setScrollbarsHidden(hidden: Boolean) {
         val parameter = SetScrollbarsHiddenParameter(hidden = hidden)
         setScrollbarsHidden(parameter)
@@ -197,6 +231,11 @@ public class Emulation(
         cdp.callCommand("Emulation.setDocumentCookieDisabled", parameter)
     }
 
+    /**
+     *
+     *
+     * @param disabled Whether document.coookie API should be disabled.
+     */
     public suspend fun setDocumentCookieDisabled(disabled: Boolean) {
         val parameter = SetDocumentCookieDisabledParameter(disabled = disabled)
         setDocumentCookieDisabled(parameter)
@@ -207,6 +246,12 @@ public class Emulation(
         cdp.callCommand("Emulation.setEmitTouchEventsForMouse", parameter)
     }
 
+    /**
+     *
+     *
+     * @param enabled Whether touch emulation based on mouse input should be enabled.
+     * @param configuration Touch/gesture events configuration. Default: current platform.
+     */
     public suspend fun setEmitTouchEventsForMouse(enabled: Boolean, configuration: String? = null) {
         val parameter = SetEmitTouchEventsForMouseParameter(enabled = enabled, configuration = configuration)
         setEmitTouchEventsForMouse(parameter)
@@ -222,6 +267,9 @@ public class Emulation(
 
     /**
      * Emulates the given media type or media feature for CSS media queries.
+     *
+     * @param media Media type to emulate. Empty string disables the override.
+     * @param features Media features to emulate.
      */
     public suspend fun setEmulatedMedia(media: String? = null, features: List<MediaFeature>? = null) {
         val parameter = SetEmulatedMediaParameter(media = media, features = features)
@@ -238,6 +286,9 @@ public class Emulation(
 
     /**
      * Emulates the given vision deficiency.
+     *
+     * @param type Vision deficiency to emulate. Order: best-effort emulations come first, followed by any
+     * physiologically accurate emulations for medically recognized color vision deficiencies.
      */
     public suspend fun setEmulatedVisionDeficiency(type: String) {
         val parameter = SetEmulatedVisionDeficiencyParameter(type = type)
@@ -256,6 +307,10 @@ public class Emulation(
     /**
      * Overrides the Geolocation Position or Error. Omitting any of the parameters emulates position
      * unavailable.
+     *
+     * @param latitude Mock latitude
+     * @param longitude Mock longitude
+     * @param accuracy Mock accuracy
      */
     public suspend fun setGeolocationOverride(
         latitude: Double? = null,
@@ -272,6 +327,11 @@ public class Emulation(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param type No description
+     */
     public suspend fun getOverriddenSensorInformation(type: SensorType): GetOverriddenSensorInformationReturn {
         val parameter = GetOverriddenSensorInformationParameter(type = type)
         return getOverriddenSensorInformation(parameter)
@@ -295,6 +355,10 @@ public class Emulation(
      * data from a real hardware sensor. Otherwise, existing virtual
      * sensor-backend Sensor objects will fire an error event and new calls to
      * Sensor.start() will attempt to use a real sensor instead.
+     *
+     * @param enabled No description
+     * @param type No description
+     * @param metadata No description
      */
     public suspend fun setSensorOverrideEnabled(
         enabled: Boolean,
@@ -317,6 +381,9 @@ public class Emulation(
     /**
      * Updates the sensor readings reported by a sensor type previously overriden
      * by setSensorOverrideEnabled.
+     *
+     * @param type No description
+     * @param reading No description
      */
     public suspend fun setSensorOverrideReadings(type: SensorType, reading: SensorReading) {
         val parameter = SetSensorOverrideReadingsParameter(type = type, reading = reading)
@@ -333,6 +400,9 @@ public class Emulation(
 
     /**
      * Overrides the Idle state.
+     *
+     * @param isUserActive Mock isUserActive
+     * @param isScreenUnlocked Mock isScreenUnlocked
      */
     public suspend fun setIdleOverride(isUserActive: Boolean, isScreenUnlocked: Boolean) {
         val parameter = SetIdleOverrideParameter(isUserActive = isUserActive, isScreenUnlocked = isScreenUnlocked)
@@ -358,6 +428,8 @@ public class Emulation(
 
     /**
      * Overrides value returned by the javascript navigator object.
+     *
+     * @param platform The platform navigator.platform should return.
      */
     @Deprecated(message = "")
     public suspend fun setNavigatorOverrides(platform: String) {
@@ -375,6 +447,8 @@ public class Emulation(
 
     /**
      * Sets a specified page scale factor.
+     *
+     * @param pageScaleFactor Page scale factor.
      */
     public suspend fun setPageScaleFactor(pageScaleFactor: Double) {
         val parameter = SetPageScaleFactorParameter(pageScaleFactor = pageScaleFactor)
@@ -391,6 +465,8 @@ public class Emulation(
 
     /**
      * Switches script execution in the page.
+     *
+     * @param value Whether script execution should be disabled in the page.
      */
     public suspend fun setScriptExecutionDisabled(`value`: Boolean) {
         val parameter = SetScriptExecutionDisabledParameter(value = value)
@@ -407,6 +483,9 @@ public class Emulation(
 
     /**
      * Enables touch on platforms which do not support them.
+     *
+     * @param enabled Whether the touch event emulation should be enabled.
+     * @param maxTouchPoints Maximum touch points supported. Defaults to one.
      */
     public suspend fun setTouchEmulationEnabled(enabled: Boolean, maxTouchPoints: Int? = null) {
         val parameter = SetTouchEmulationEnabledParameter(enabled = enabled, maxTouchPoints = maxTouchPoints)
@@ -426,6 +505,13 @@ public class Emulation(
     /**
      * Turns on virtual time for all frames (replacing real-time with a synthetic time source) and sets
      * the current virtual time policy.  Note this supersedes any previous time budget.
+     *
+     * @param policy No description
+     * @param budget If set, after this many virtual milliseconds have elapsed virtual time will be paused and a
+     * virtualTimeBudgetExpired event is sent.
+     * @param maxVirtualTimeTaskStarvationCount If set this specifies the maximum number of tasks that can be run before virtual is forced
+     * forwards to prevent deadlock.
+     * @param initialVirtualTime If set, base::Time::Now will be overridden to initially return this value.
      */
     public suspend fun setVirtualTimePolicy(
         policy: VirtualTimePolicy,
@@ -452,6 +538,9 @@ public class Emulation(
 
     /**
      * Overrides default host system locale with the specified one.
+     *
+     * @param locale ICU style C locale (e.g. "en_US"). If not specified or empty, disables the override and
+     * restores default host system locale.
      */
     public suspend fun setLocaleOverride(locale: String? = null) {
         val parameter = SetLocaleOverrideParameter(locale = locale)
@@ -468,6 +557,9 @@ public class Emulation(
 
     /**
      * Overrides default host system timezone with the specified one.
+     *
+     * @param timezoneId The timezone identifier. If empty, disables the override and
+     * restores default host system timezone.
      */
     public suspend fun setTimezoneOverride(timezoneId: String) {
         val parameter = SetTimezoneOverrideParameter(timezoneId = timezoneId)
@@ -489,6 +581,9 @@ public class Emulation(
      * Resizes the frame/viewport of the page. Note that this does not affect the frame's container
      * (e.g. browser window). Can be used to produce screenshots of the specified size. Not supported
      * on Android.
+     *
+     * @param width Frame width (DIP).
+     * @param height Frame height (DIP).
      */
     @Deprecated(message = "")
     public suspend fun setVisibleSize(width: Int, height: Int) {
@@ -501,6 +596,11 @@ public class Emulation(
         cdp.callCommand("Emulation.setDisabledImageTypes", parameter)
     }
 
+    /**
+     *
+     *
+     * @param imageTypes Image types to disable.
+     */
     public suspend fun setDisabledImageTypes(imageTypes: List<DisabledImageType>) {
         val parameter = SetDisabledImageTypesParameter(imageTypes = imageTypes)
         setDisabledImageTypes(parameter)
@@ -511,6 +611,11 @@ public class Emulation(
         cdp.callCommand("Emulation.setHardwareConcurrencyOverride", parameter)
     }
 
+    /**
+     *
+     *
+     * @param hardwareConcurrency Hardware concurrency to report
+     */
     public suspend fun setHardwareConcurrencyOverride(hardwareConcurrency: Int) {
         val parameter = SetHardwareConcurrencyOverrideParameter(hardwareConcurrency = hardwareConcurrency)
         setHardwareConcurrencyOverride(parameter)
@@ -526,6 +631,11 @@ public class Emulation(
 
     /**
      * Allows overriding user agent with the given string.
+     *
+     * @param userAgent User agent to use.
+     * @param acceptLanguage Browser language to emulate.
+     * @param platform The platform navigator.platform should return.
+     * @param userAgentMetadata To be sent in Sec-CH-UA-* headers and returned in navigator.userAgentData
      */
     public suspend fun setUserAgentOverride(
         userAgent: String,
@@ -552,6 +662,8 @@ public class Emulation(
 
     /**
      * Allows overriding the automation flag.
+     *
+     * @param enabled Whether the override should be enabled.
      */
     public suspend fun setAutomationOverride(enabled: Boolean) {
         val parameter = SetAutomationOverrideParameter(enabled = enabled)

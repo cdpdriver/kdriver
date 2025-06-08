@@ -8,6 +8,7 @@ class Domain(
     val commands: List<Command>,
     val events: List<Event>,
 ) {
+
     class Type(
         val id: String,
         override val type: String,
@@ -79,4 +80,5 @@ class Domain(
         val ref: String?
         val optional: Boolean
     }
+
 }

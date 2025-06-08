@@ -45,6 +45,10 @@ public class Autofill(
     /**
      * Trigger autofill on a form identified by the fieldId.
      * If the field and related form cannot be autofilled, returns an error.
+     *
+     * @param fieldId Identifies a field that serves as an anchor for autofill.
+     * @param frameId Identifies the frame that field belongs to.
+     * @param card Credit card information to fill out the form. Credit card data is not saved.
      */
     public suspend fun trigger(
         fieldId: Int,
@@ -65,6 +69,8 @@ public class Autofill(
 
     /**
      * Set addresses so that developers can verify their forms implementation.
+     *
+     * @param addresses No description
      */
     public suspend fun setAddresses(addresses: List<Address>) {
         val parameter = SetAddressesParameter(addresses = addresses)

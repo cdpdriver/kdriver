@@ -42,6 +42,8 @@ public class Tethering(
 
     /**
      * Request browser port binding.
+     *
+     * @param port Port number to bind.
      */
     public suspend fun bind(port: Int) {
         val parameter = BindParameter(port = port)
@@ -58,6 +60,8 @@ public class Tethering(
 
     /**
      * Request browser port unbinding.
+     *
+     * @param port Port number to unbind.
      */
     public suspend fun unbind(port: Int) {
         val parameter = UnbindParameter(port = port)

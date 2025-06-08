@@ -32,6 +32,10 @@ public class DeviceOrientation(
 
     /**
      * Overrides the Device Orientation.
+     *
+     * @param alpha Mock alpha
+     * @param beta Mock beta
+     * @param gamma Mock gamma
      */
     public suspend fun setDeviceOrientationOverride(
         alpha: Double,

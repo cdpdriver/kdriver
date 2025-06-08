@@ -296,6 +296,8 @@ public class Page(
 
     /**
      * Deprecated, please use addScriptToEvaluateOnNewDocument instead.
+     *
+     * @param scriptSource No description
      */
     @Deprecated(message = "")
     public suspend fun addScriptToEvaluateOnLoad(scriptSource: String): AddScriptToEvaluateOnLoadReturn {
@@ -314,6 +316,15 @@ public class Page(
 
     /**
      * Evaluates given script in every frame upon creation (before loading frame's scripts).
+     *
+     * @param source No description
+     * @param worldName If specified, creates an isolated world with the given name and evaluates given script in it.
+     * This world name will be used as the ExecutionContextDescription::name when the corresponding
+     * event is emitted.
+     * @param includeCommandLineAPI Specifies whether command line API should be available to the script, defaults
+     * to false.
+     * @param runImmediately If true, runs the script immediately on existing execution contexts or worlds.
+     * Default: false.
      */
     public suspend fun addScriptToEvaluateOnNewDocument(
         source: String,
@@ -349,6 +360,13 @@ public class Page(
 
     /**
      * Capture page screenshot.
+     *
+     * @param format Image compression format (defaults to png).
+     * @param quality Compression quality from range [0..100] (jpeg only).
+     * @param clip Capture the screenshot of a given region only.
+     * @param fromSurface Capture the screenshot from the surface, rather than the view. Defaults to true.
+     * @param captureBeyondViewport Capture the screenshot beyond the viewport. Defaults to false.
+     * @param optimizeForSpeed Optimize image encoding for speed, not for resulting size (defaults to false)
      */
     public suspend fun captureScreenshot(
         format: String? = null,
@@ -382,6 +400,8 @@ public class Page(
     /**
      * Returns a snapshot of the page as a string. For MHTML format, the serialization includes
      * iframes, shadow DOM, external resources, and element-inline styles.
+     *
+     * @param format Format (defaults to mhtml).
      */
     public suspend fun captureSnapshot(format: String? = null): CaptureSnapshotReturn {
         val parameter = CaptureSnapshotParameter(format = format)
@@ -426,6 +446,11 @@ public class Page(
 
     /**
      * Creates an isolated world for the given frame.
+     *
+     * @param frameId Id of the frame in which the isolated world should be created.
+     * @param worldName An optional name which is reported in the Execution Context.
+     * @param grantUniveralAccess Whether or not universal access should be granted to the isolated world. This is a powerful
+     * option, use with caution.
      */
     public suspend fun createIsolatedWorld(
         frameId: String,
@@ -451,6 +476,9 @@ public class Page(
 
     /**
      * Deletes browser cookie with given name, domain and path.
+     *
+     * @param cookieName Name of the cookie to remove.
+     * @param url URL to match cooke domain and path.
      */
     @Deprecated(message = "")
     public suspend fun deleteCookie(cookieName: String, url: String) {
@@ -512,6 +540,11 @@ public class Page(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param frameId No description
+     */
     public suspend fun getAdScriptId(frameId: String): GetAdScriptIdReturn {
         val parameter = GetAdScriptIdParameter(frameId = frameId)
         return getAdScriptId(parameter)
@@ -563,6 +596,9 @@ public class Page(
 
     /**
      * Returns content of the given resource.
+     *
+     * @param frameId Frame id to get resource for.
+     * @param url URL of the resource to get content for.
      */
     public suspend fun getResourceContent(frameId: String, url: String): GetResourceContentReturn {
         val parameter = GetResourceContentParameter(frameId = frameId, url = url)
@@ -588,6 +624,10 @@ public class Page(
 
     /**
      * Accepts or dismisses a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload).
+     *
+     * @param accept Whether to accept or dismiss the dialog.
+     * @param promptText The text to enter into the dialog prompt before accepting. Used only if this is a prompt
+     * dialog.
      */
     public suspend fun handleJavaScriptDialog(accept: Boolean, promptText: String? = null) {
         val parameter = HandleJavaScriptDialogParameter(accept = accept, promptText = promptText)
@@ -605,6 +645,12 @@ public class Page(
 
     /**
      * Navigates current page to the given URL.
+     *
+     * @param url URL to navigate the page to.
+     * @param referrer Referrer URL.
+     * @param transitionType Intended transition type.
+     * @param frameId Frame id to navigate, if not specified navigates the top frame.
+     * @param referrerPolicy Referrer-policy used for the navigation.
      */
     public suspend fun navigate(
         url: String,
@@ -633,6 +679,8 @@ public class Page(
 
     /**
      * Navigates current page to the given history entry.
+     *
+     * @param entryId Unique id of the entry to navigate to.
      */
     public suspend fun navigateToHistoryEntry(entryId: Int) {
         val parameter = NavigateToHistoryEntryParameter(entryId = entryId)
@@ -650,6 +698,40 @@ public class Page(
 
     /**
      * Print page as PDF.
+     *
+     * @param landscape Paper orientation. Defaults to false.
+     * @param displayHeaderFooter Display header and footer. Defaults to false.
+     * @param printBackground Print background graphics. Defaults to false.
+     * @param scale Scale of the webpage rendering. Defaults to 1.
+     * @param paperWidth Paper width in inches. Defaults to 8.5 inches.
+     * @param paperHeight Paper height in inches. Defaults to 11 inches.
+     * @param marginTop Top margin in inches. Defaults to 1cm (~0.4 inches).
+     * @param marginBottom Bottom margin in inches. Defaults to 1cm (~0.4 inches).
+     * @param marginLeft Left margin in inches. Defaults to 1cm (~0.4 inches).
+     * @param marginRight Right margin in inches. Defaults to 1cm (~0.4 inches).
+     * @param pageRanges Paper ranges to print, one based, e.g., '1-5, 8, 11-13'. Pages are
+     * printed in the document order, not in the order specified, and no
+     * more than once.
+     * Defaults to empty string, which implies the entire document is printed.
+     * The page numbers are quietly capped to actual page count of the
+     * document, and ranges beyond the end of the document are ignored.
+     * If this results in no pages to print, an error is reported.
+     * It is an error to specify a range with start greater than end.
+     * @param headerTemplate HTML template for the print header. Should be valid HTML markup with following
+     * classes used to inject printing values into them:
+     * - `date`: formatted print date
+     * - `title`: document title
+     * - `url`: document location
+     * - `pageNumber`: current page number
+     * - `totalPages`: total pages in the document
+     *
+     * For example, `<span class=title></span>` would generate span containing the title.
+     * @param footerTemplate HTML template for the print footer. Should use the same format as the `headerTemplate`.
+     * @param preferCSSPageSize Whether or not to prefer page size as defined by css. Defaults to false,
+     * in which case the content will be scaled to fit the paper size.
+     * @param transferMode return as stream
+     * @param generateTaggedPDF Whether or not to generate tagged (accessible) PDF. Defaults to embedder choice.
+     * @param generateDocumentOutline Whether or not to embed the document outline into the PDF.
      */
     public suspend fun printToPDF(
         landscape: Boolean? = null,
@@ -702,6 +784,10 @@ public class Page(
 
     /**
      * Reloads given page optionally ignoring the cache.
+     *
+     * @param ignoreCache If true, browser cache is ignored (as if the user pressed Shift+refresh).
+     * @param scriptToEvaluateOnLoad If set, the script will be injected into all frames of the inspected page after reload.
+     * Argument will be ignored if reloading dataURL origin.
      */
     public suspend fun reload(ignoreCache: Boolean? = null, scriptToEvaluateOnLoad: String? = null) {
         val parameter = ReloadParameter(ignoreCache = ignoreCache, scriptToEvaluateOnLoad = scriptToEvaluateOnLoad)
@@ -719,6 +805,8 @@ public class Page(
 
     /**
      * Deprecated, please use removeScriptToEvaluateOnNewDocument instead.
+     *
+     * @param identifier No description
      */
     @Deprecated(message = "")
     public suspend fun removeScriptToEvaluateOnLoad(identifier: String) {
@@ -736,6 +824,8 @@ public class Page(
 
     /**
      * Removes given script from the list.
+     *
+     * @param identifier No description
      */
     public suspend fun removeScriptToEvaluateOnNewDocument(identifier: String) {
         val parameter = RemoveScriptToEvaluateOnNewDocumentParameter(identifier = identifier)
@@ -752,6 +842,8 @@ public class Page(
 
     /**
      * Acknowledges that a screencast frame has been received by the frontend.
+     *
+     * @param sessionId Frame number.
      */
     public suspend fun screencastFrameAck(sessionId: Int) {
         val parameter = ScreencastFrameAckParameter(sessionId = sessionId)
@@ -769,6 +861,12 @@ public class Page(
 
     /**
      * Searches for given string in resource content.
+     *
+     * @param frameId Frame id for resource to search in.
+     * @param url URL of the resource to search in.
+     * @param query String to search for.
+     * @param caseSensitive If true, search is case sensitive.
+     * @param isRegex If true, treats string parameter as regex.
      */
     public suspend fun searchInResource(
         frameId: String,
@@ -797,6 +895,8 @@ public class Page(
 
     /**
      * Enable Chrome's experimental ad filter on all sites.
+     *
+     * @param enabled Whether to block ads.
      */
     public suspend fun setAdBlockingEnabled(enabled: Boolean) {
         val parameter = SetAdBlockingEnabledParameter(enabled = enabled)
@@ -813,6 +913,8 @@ public class Page(
 
     /**
      * Enable page Content Security Policy by-passing.
+     *
+     * @param enabled Whether to bypass page CSP.
      */
     public suspend fun setBypassCSP(enabled: Boolean) {
         val parameter = SetBypassCSPParameter(enabled = enabled)
@@ -830,6 +932,8 @@ public class Page(
 
     /**
      * Get Permissions Policy state on given frame.
+     *
+     * @param frameId No description
      */
     public suspend fun getPermissionsPolicyState(frameId: String): GetPermissionsPolicyStateReturn {
         val parameter = GetPermissionsPolicyStateParameter(frameId = frameId)
@@ -847,6 +951,8 @@ public class Page(
 
     /**
      * Get Origin Trials on given frame.
+     *
+     * @param frameId No description
      */
     public suspend fun getOriginTrials(frameId: String): GetOriginTrialsReturn {
         val parameter = GetOriginTrialsParameter(frameId = frameId)
@@ -868,6 +974,20 @@ public class Page(
      * Overrides the values of device screen dimensions (window.screen.width, window.screen.height,
      * window.innerWidth, window.innerHeight, and "device-width"/"device-height"-related CSS media
      * query results).
+     *
+     * @param width Overriding width value in pixels (minimum 0, maximum 10000000). 0 disables the override.
+     * @param height Overriding height value in pixels (minimum 0, maximum 10000000). 0 disables the override.
+     * @param deviceScaleFactor Overriding device scale factor value. 0 disables the override.
+     * @param mobile Whether to emulate mobile device. This includes viewport meta tag, overlay scrollbars, text
+     * autosizing and more.
+     * @param scale Scale to apply to resulting view image.
+     * @param screenWidth Overriding screen width value in pixels (minimum 0, maximum 10000000).
+     * @param screenHeight Overriding screen height value in pixels (minimum 0, maximum 10000000).
+     * @param positionX Overriding view X position on screen in pixels (minimum 0, maximum 10000000).
+     * @param positionY Overriding view Y position on screen in pixels (minimum 0, maximum 10000000).
+     * @param dontSetVisibleSize Do not set visible view size, rely upon explicit setVisibleSize call.
+     * @param screenOrientation Screen orientation override.
+     * @param viewport The viewport dimensions and scale. If not set, the override is cleared.
      */
     @Deprecated(message = "")
     public suspend fun setDeviceMetricsOverride(
@@ -912,6 +1032,10 @@ public class Page(
 
     /**
      * Overrides the Device Orientation.
+     *
+     * @param alpha Mock alpha
+     * @param beta Mock beta
+     * @param gamma Mock gamma
      */
     @Deprecated(message = "")
     public suspend fun setDeviceOrientationOverride(
@@ -933,6 +1057,9 @@ public class Page(
 
     /**
      * Set generic font families.
+     *
+     * @param fontFamilies Specifies font families to set. If a font family is not specified, it won't be changed.
+     * @param forScripts Specifies font families to set for individual scripts.
      */
     public suspend fun setFontFamilies(fontFamilies: FontFamilies, forScripts: List<ScriptFontFamilies>? = null) {
         val parameter = SetFontFamiliesParameter(fontFamilies = fontFamilies, forScripts = forScripts)
@@ -949,6 +1076,8 @@ public class Page(
 
     /**
      * Set default font sizes.
+     *
+     * @param fontSizes Specifies font sizes to set. If a font size is not specified, it won't be changed.
      */
     public suspend fun setFontSizes(fontSizes: FontSizes) {
         val parameter = SetFontSizesParameter(fontSizes = fontSizes)
@@ -965,6 +1094,9 @@ public class Page(
 
     /**
      * Sets given markup as the document's HTML.
+     *
+     * @param frameId Frame id to set HTML for.
+     * @param html HTML content to set.
      */
     public suspend fun setDocumentContent(frameId: String, html: String) {
         val parameter = SetDocumentContentParameter(frameId = frameId, html = html)
@@ -982,6 +1114,10 @@ public class Page(
 
     /**
      * Set the behavior when downloading a file.
+     *
+     * @param behavior Whether to allow all or deny all download requests, or use default Chrome behavior if
+     * available (otherwise deny).
+     * @param downloadPath The default path to save downloaded files to. This is required if behavior is set to 'allow'
      */
     @Deprecated(message = "")
     public suspend fun setDownloadBehavior(behavior: String, downloadPath: String? = null) {
@@ -1002,6 +1138,10 @@ public class Page(
     /**
      * Overrides the Geolocation Position or Error. Omitting any of the parameters emulates position
      * unavailable.
+     *
+     * @param latitude Mock latitude
+     * @param longitude Mock longitude
+     * @param accuracy Mock accuracy
      */
     @Deprecated(message = "")
     public suspend fun setGeolocationOverride(
@@ -1023,6 +1163,8 @@ public class Page(
 
     /**
      * Controls whether page will emit lifecycle events.
+     *
+     * @param enabled If true, starts emitting lifecycle events.
      */
     public suspend fun setLifecycleEventsEnabled(enabled: Boolean) {
         val parameter = SetLifecycleEventsEnabledParameter(enabled = enabled)
@@ -1040,6 +1182,9 @@ public class Page(
 
     /**
      * Toggles mouse event-based touch event emulation.
+     *
+     * @param enabled Whether the touch event emulation should be enabled.
+     * @param configuration Touch/gesture events configuration. Default: current platform.
      */
     @Deprecated(message = "")
     public suspend fun setTouchEmulationEnabled(enabled: Boolean, configuration: String? = null) {
@@ -1057,6 +1202,12 @@ public class Page(
 
     /**
      * Starts sending each frame using the `screencastFrame` event.
+     *
+     * @param format Image compression format.
+     * @param quality Compression quality from range [0..100].
+     * @param maxWidth Maximum screenshot width.
+     * @param maxHeight Maximum screenshot height.
+     * @param everyNthFrame Send every n-th frame.
      */
     public suspend fun startScreencast(
         format: String? = null,
@@ -1113,6 +1264,8 @@ public class Page(
      * Tries to update the web lifecycle state of the page.
      * It will transition the page to the given state according to:
      * https://github.com/WICG/web-lifecycle/
+     *
+     * @param state Target lifecycle state
      */
     public suspend fun setWebLifecycleState(state: String) {
         val parameter = SetWebLifecycleStateParameter(state = state)
@@ -1147,6 +1300,8 @@ public class Page(
      * When script with a matching URL is encountered, the cache is optionally
      * produced upon backend discretion, based on internal heuristics.
      * See also: `Page.compilationCacheProduced`.
+     *
+     * @param scripts No description
      */
     public suspend fun produceCompilationCache(scripts: List<CompilationCacheParams>) {
         val parameter = ProduceCompilationCacheParameter(scripts = scripts)
@@ -1165,6 +1320,9 @@ public class Page(
     /**
      * Seeds compilation cache for given url. Compilation cache does not survive
      * cross-process navigation.
+     *
+     * @param url No description
+     * @param data Base64-encoded data (Encoded as a base64 string when passed over JSON)
      */
     public suspend fun addCompilationCache(url: String, `data`: String) {
         val parameter = AddCompilationCacheParameter(url = url, data = data)
@@ -1191,6 +1349,8 @@ public class Page(
     /**
      * Sets the Secure Payment Confirmation transaction mode.
      * https://w3c.github.io/secure-payment-confirmation/#sctn-automation-set-spc-transaction-mode
+     *
+     * @param mode No description
      */
     public suspend fun setSPCTransactionMode(mode: AutoResponseMode) {
         val parameter = SetSPCTransactionModeParameter(mode = mode)
@@ -1209,6 +1369,8 @@ public class Page(
     /**
      * Extensions for Custom Handlers API:
      * https://html.spec.whatwg.org/multipage/system-state.html#rph-automation
+     *
+     * @param mode No description
      */
     public suspend fun setRPHRegistrationMode(mode: AutoResponseMode) {
         val parameter = SetRPHRegistrationModeParameter(mode = mode)
@@ -1225,6 +1387,9 @@ public class Page(
 
     /**
      * Generates a report for testing.
+     *
+     * @param message Message to be displayed in the report.
+     * @param group Specifies the endpoint group to deliver the report to.
      */
     public suspend fun generateTestReport(message: String, group: String? = null) {
         val parameter = GenerateTestReportParameter(message = message, group = group)
@@ -1253,6 +1418,8 @@ public class Page(
      * Intercept file chooser requests and transfer control to protocol clients.
      * When file chooser interception is enabled, native file chooser dialog is not shown.
      * Instead, a protocol event `Page.fileChooserOpened` is emitted.
+     *
+     * @param enabled No description
      */
     public suspend fun setInterceptFileChooserDialog(enabled: Boolean) {
         val parameter = SetInterceptFileChooserDialogParameter(enabled = enabled)
@@ -1281,6 +1448,8 @@ public class Page(
      * for more details.
      *
      * TODO(https://crbug.com/1440085): Remove this once Puppeteer supports tab targets.
+     *
+     * @param isAllowed No description
      */
     public suspend fun setPrerenderingAllowed(isAllowed: Boolean) {
         val parameter = SetPrerenderingAllowedParameter(isAllowed = isAllowed)

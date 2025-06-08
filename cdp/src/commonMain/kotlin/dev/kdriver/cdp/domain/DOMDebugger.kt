@@ -31,6 +31,12 @@ public class DOMDebugger(
 
     /**
      * Returns event listeners of the given object.
+     *
+     * @param objectId Identifier of the object to return listeners for.
+     * @param depth The maximum depth at which Node children should be retrieved, defaults to 1. Use -1 for the
+     * entire subtree or provide an integer larger than 0.
+     * @param pierce Whether or not iframes and shadow roots should be traversed when returning the subtree
+     * (default is false). Reports listeners for all contexts if pierce is enabled.
      */
     public suspend fun getEventListeners(
         objectId: String,
@@ -51,6 +57,9 @@ public class DOMDebugger(
 
     /**
      * Removes DOM breakpoint that was set using `setDOMBreakpoint`.
+     *
+     * @param nodeId Identifier of the node to remove breakpoint from.
+     * @param type Type of the breakpoint to remove.
      */
     public suspend fun removeDOMBreakpoint(nodeId: Int, type: DOMBreakpointType) {
         val parameter = RemoveDOMBreakpointParameter(nodeId = nodeId, type = type)
@@ -67,6 +76,9 @@ public class DOMDebugger(
 
     /**
      * Removes breakpoint on particular DOM event.
+     *
+     * @param eventName Event name.
+     * @param targetName EventTarget interface name.
      */
     public suspend fun removeEventListenerBreakpoint(eventName: String, targetName: String? = null) {
         val parameter = RemoveEventListenerBreakpointParameter(eventName = eventName, targetName = targetName)
@@ -84,6 +96,8 @@ public class DOMDebugger(
 
     /**
      * Removes breakpoint on particular native event.
+     *
+     * @param eventName Instrumentation name to stop on.
      */
     @Deprecated(message = "")
     public suspend fun removeInstrumentationBreakpoint(eventName: String) {
@@ -101,6 +115,8 @@ public class DOMDebugger(
 
     /**
      * Removes breakpoint from XMLHttpRequest.
+     *
+     * @param url Resource URL substring.
      */
     public suspend fun removeXHRBreakpoint(url: String) {
         val parameter = RemoveXHRBreakpointParameter(url = url)
@@ -117,6 +133,8 @@ public class DOMDebugger(
 
     /**
      * Sets breakpoint on particular CSP violations.
+     *
+     * @param violationTypes CSP Violations to stop upon.
      */
     public suspend fun setBreakOnCSPViolation(violationTypes: List<CSPViolationType>) {
         val parameter = SetBreakOnCSPViolationParameter(violationTypes = violationTypes)
@@ -133,6 +151,9 @@ public class DOMDebugger(
 
     /**
      * Sets breakpoint on particular operation with DOM.
+     *
+     * @param nodeId Identifier of the node to set breakpoint on.
+     * @param type Type of the operation to stop upon.
      */
     public suspend fun setDOMBreakpoint(nodeId: Int, type: DOMBreakpointType) {
         val parameter = SetDOMBreakpointParameter(nodeId = nodeId, type = type)
@@ -149,6 +170,10 @@ public class DOMDebugger(
 
     /**
      * Sets breakpoint on particular DOM event.
+     *
+     * @param eventName DOM Event name to stop on (any DOM event will do).
+     * @param targetName EventTarget interface name to stop on. If equal to `"*"` or not provided, will stop on any
+     * EventTarget.
      */
     public suspend fun setEventListenerBreakpoint(eventName: String, targetName: String? = null) {
         val parameter = SetEventListenerBreakpointParameter(eventName = eventName, targetName = targetName)
@@ -166,6 +191,8 @@ public class DOMDebugger(
 
     /**
      * Sets breakpoint on particular native event.
+     *
+     * @param eventName Instrumentation name to stop on.
      */
     @Deprecated(message = "")
     public suspend fun setInstrumentationBreakpoint(eventName: String) {
@@ -183,6 +210,8 @@ public class DOMDebugger(
 
     /**
      * Sets breakpoint on XMLHttpRequest.
+     *
+     * @param url Resource URL substring. All XHRs having this substring in the URL will get stopped upon.
      */
     public suspend fun setXHRBreakpoint(url: String) {
         val parameter = SetXHRBreakpointParameter(url = url)

@@ -63,6 +63,8 @@ public class Cast(
      * |sinksUpdated| event is fired.
      * Also starts observing for issue messages. When an issue is added or removed,
      * an |issueUpdated| event is fired.
+     *
+     * @param presentationUrl No description
      */
     public suspend fun enable(presentationUrl: String? = null) {
         val parameter = EnableParameter(presentationUrl = presentationUrl)
@@ -89,6 +91,8 @@ public class Cast(
     /**
      * Sets a sink to be used when the web page requests the browser to choose a
      * sink via Presentation API, Remote Playback API, or Cast SDK.
+     *
+     * @param sinkName No description
      */
     public suspend fun setSinkToUse(sinkName: String) {
         val parameter = SetSinkToUseParameter(sinkName = sinkName)
@@ -105,6 +109,8 @@ public class Cast(
 
     /**
      * Starts mirroring the desktop to the sink.
+     *
+     * @param sinkName No description
      */
     public suspend fun startDesktopMirroring(sinkName: String) {
         val parameter = StartDesktopMirroringParameter(sinkName = sinkName)
@@ -121,6 +127,8 @@ public class Cast(
 
     /**
      * Starts mirroring the tab to the sink.
+     *
+     * @param sinkName No description
      */
     public suspend fun startTabMirroring(sinkName: String) {
         val parameter = StartTabMirroringParameter(sinkName = sinkName)
@@ -137,6 +145,8 @@ public class Cast(
 
     /**
      * Stops the active Cast session on the sink.
+     *
+     * @param sinkName No description
      */
     public suspend fun stopCasting(sinkName: String) {
         val parameter = StopCastingParameter(sinkName = sinkName)

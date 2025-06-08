@@ -46,6 +46,13 @@ public class ServiceWorker(
         cdp.callCommand("ServiceWorker.deliverPushMessage", parameter)
     }
 
+    /**
+     *
+     *
+     * @param origin No description
+     * @param registrationId No description
+     * @param data No description
+     */
     public suspend fun deliverPushMessage(
         origin: String,
         registrationId: String,
@@ -65,6 +72,14 @@ public class ServiceWorker(
         cdp.callCommand("ServiceWorker.dispatchSyncEvent", parameter)
     }
 
+    /**
+     *
+     *
+     * @param origin No description
+     * @param registrationId No description
+     * @param tag No description
+     * @param lastChance No description
+     */
     public suspend fun dispatchSyncEvent(
         origin: String,
         registrationId: String,
@@ -85,6 +100,13 @@ public class ServiceWorker(
         cdp.callCommand("ServiceWorker.dispatchPeriodicSyncEvent", parameter)
     }
 
+    /**
+     *
+     *
+     * @param origin No description
+     * @param registrationId No description
+     * @param tag No description
+     */
     public suspend fun dispatchPeriodicSyncEvent(
         origin: String,
         registrationId: String,
@@ -104,6 +126,11 @@ public class ServiceWorker(
         cdp.callCommand("ServiceWorker.inspectWorker", parameter)
     }
 
+    /**
+     *
+     *
+     * @param versionId No description
+     */
     public suspend fun inspectWorker(versionId: String) {
         val parameter = InspectWorkerParameter(versionId = versionId)
         inspectWorker(parameter)
@@ -114,6 +141,11 @@ public class ServiceWorker(
         cdp.callCommand("ServiceWorker.setForceUpdateOnPageLoad", parameter)
     }
 
+    /**
+     *
+     *
+     * @param forceUpdateOnPageLoad No description
+     */
     public suspend fun setForceUpdateOnPageLoad(forceUpdateOnPageLoad: Boolean) {
         val parameter = SetForceUpdateOnPageLoadParameter(forceUpdateOnPageLoad = forceUpdateOnPageLoad)
         setForceUpdateOnPageLoad(parameter)
@@ -124,6 +156,11 @@ public class ServiceWorker(
         cdp.callCommand("ServiceWorker.skipWaiting", parameter)
     }
 
+    /**
+     *
+     *
+     * @param scopeURL No description
+     */
     public suspend fun skipWaiting(scopeURL: String) {
         val parameter = SkipWaitingParameter(scopeURL = scopeURL)
         skipWaiting(parameter)
@@ -134,6 +171,11 @@ public class ServiceWorker(
         cdp.callCommand("ServiceWorker.startWorker", parameter)
     }
 
+    /**
+     *
+     *
+     * @param scopeURL No description
+     */
     public suspend fun startWorker(scopeURL: String) {
         val parameter = StartWorkerParameter(scopeURL = scopeURL)
         startWorker(parameter)
@@ -149,6 +191,11 @@ public class ServiceWorker(
         cdp.callCommand("ServiceWorker.stopWorker", parameter)
     }
 
+    /**
+     *
+     *
+     * @param versionId No description
+     */
     public suspend fun stopWorker(versionId: String) {
         val parameter = StopWorkerParameter(versionId = versionId)
         stopWorker(parameter)
@@ -159,6 +206,11 @@ public class ServiceWorker(
         cdp.callCommand("ServiceWorker.unregister", parameter)
     }
 
+    /**
+     *
+     *
+     * @param scopeURL No description
+     */
     public suspend fun unregister(scopeURL: String) {
         val parameter = UnregisterParameter(scopeURL = scopeURL)
         unregister(parameter)
@@ -169,6 +221,11 @@ public class ServiceWorker(
         cdp.callCommand("ServiceWorker.updateRegistration", parameter)
     }
 
+    /**
+     *
+     *
+     * @param scopeURL No description
+     */
     public suspend fun updateRegistration(scopeURL: String) {
         val parameter = UpdateRegistrationParameter(scopeURL = scopeURL)
         updateRegistration(parameter)

@@ -56,6 +56,9 @@ public class DeviceAccess(
 
     /**
      * Select a device in response to a DeviceAccess.deviceRequestPrompted event.
+     *
+     * @param id No description
+     * @param deviceId No description
      */
     public suspend fun selectPrompt(id: String, deviceId: String) {
         val parameter = SelectPromptParameter(id = id, deviceId = deviceId)
@@ -72,6 +75,8 @@ public class DeviceAccess(
 
     /**
      * Cancel a prompt in response to a DeviceAccess.deviceRequestPrompted event.
+     *
+     * @param id No description
      */
     public suspend fun cancelPrompt(id: String) {
         val parameter = CancelPromptParameter(id = id)

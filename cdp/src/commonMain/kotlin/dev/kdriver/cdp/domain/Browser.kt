@@ -53,6 +53,11 @@ public class Browser(
 
     /**
      * Set permission settings for given origin.
+     *
+     * @param permission Descriptor of permission to override.
+     * @param setting Setting of the permission.
+     * @param origin Origin the permission applies to, all origins if not specified.
+     * @param browserContextId Context to override. When omitted, default browser context is used.
      */
     public suspend fun setPermission(
         permission: PermissionDescriptor,
@@ -79,6 +84,10 @@ public class Browser(
 
     /**
      * Grant specific permissions to the given origin and reject all others.
+     *
+     * @param permissions No description
+     * @param origin Origin the permission applies to, all origins if not specified.
+     * @param browserContextId BrowserContext to override permissions. When omitted, default browser context is used.
      */
     public suspend fun grantPermissions(
         permissions: List<PermissionType>,
@@ -100,6 +109,8 @@ public class Browser(
 
     /**
      * Reset all permission management for all origins.
+     *
+     * @param browserContextId BrowserContext to reset permissions. When omitted, default browser context is used.
      */
     public suspend fun resetPermissions(browserContextId: String? = null) {
         val parameter = ResetPermissionsParameter(browserContextId = browserContextId)
@@ -116,6 +127,14 @@ public class Browser(
 
     /**
      * Set the behavior when downloading a file.
+     *
+     * @param behavior Whether to allow all or deny all download requests, or use default Chrome behavior if
+     * available (otherwise deny). |allowAndName| allows download and names files according to
+     * their dowmload guids.
+     * @param browserContextId BrowserContext to set download behavior. When omitted, default browser context is used.
+     * @param downloadPath The default path to save downloaded files to. This is required if behavior is set to 'allow'
+     * or 'allowAndName'.
+     * @param eventsEnabled Whether to emit download events (defaults to false).
      */
     public suspend fun setDownloadBehavior(
         behavior: String,
@@ -142,6 +161,9 @@ public class Browser(
 
     /**
      * Cancel a download if in progress
+     *
+     * @param guid Global unique identifier of the download.
+     * @param browserContextId BrowserContext to perform the action in. When omitted, default browser context is used.
      */
     public suspend fun cancelDownload(guid: String, browserContextId: String? = null) {
         val parameter = CancelDownloadParameter(guid = guid, browserContextId = browserContextId)
@@ -202,6 +224,11 @@ public class Browser(
 
     /**
      * Get Chrome histograms.
+     *
+     * @param query Requested substring in name. Only histograms which have query as a
+     * substring in their name are extracted. An empty or absent query returns
+     * all histograms.
+     * @param delta If true, retrieve delta since last delta call.
      */
     public suspend fun getHistograms(query: String? = null, delta: Boolean? = null): GetHistogramsReturn {
         val parameter = GetHistogramsParameter(query = query, delta = delta)
@@ -219,6 +246,9 @@ public class Browser(
 
     /**
      * Get a Chrome histogram by name.
+     *
+     * @param name Requested histogram name.
+     * @param delta If true, retrieve delta since last delta call.
      */
     public suspend fun getHistogram(name: String, delta: Boolean? = null): GetHistogramReturn {
         val parameter = GetHistogramParameter(name = name, delta = delta)
@@ -236,6 +266,8 @@ public class Browser(
 
     /**
      * Get position and size of the browser window.
+     *
+     * @param windowId Browser window id.
      */
     public suspend fun getWindowBounds(windowId: Int): GetWindowBoundsReturn {
         val parameter = GetWindowBoundsParameter(windowId = windowId)
@@ -253,6 +285,8 @@ public class Browser(
 
     /**
      * Get the browser window that contains the devtools target.
+     *
+     * @param targetId Devtools agent host id. If called as a part of the session, associated targetId is used.
      */
     public suspend fun getWindowForTarget(targetId: String? = null): GetWindowForTargetReturn {
         val parameter = GetWindowForTargetParameter(targetId = targetId)
@@ -269,6 +303,10 @@ public class Browser(
 
     /**
      * Set position and/or size of the browser window.
+     *
+     * @param windowId Browser window id.
+     * @param bounds New window bounds. The 'minimized', 'maximized' and 'fullscreen' states cannot be combined
+     * with 'left', 'top', 'width' or 'height'. Leaves unspecified fields unchanged.
      */
     public suspend fun setWindowBounds(windowId: Int, bounds: Bounds) {
         val parameter = SetWindowBoundsParameter(windowId = windowId, bounds = bounds)
@@ -285,6 +323,9 @@ public class Browser(
 
     /**
      * Set dock tile details, platform-specific.
+     *
+     * @param badgeLabel No description
+     * @param image Png encoded image. (Encoded as a base64 string when passed over JSON)
      */
     public suspend fun setDockTile(badgeLabel: String? = null, image: String? = null) {
         val parameter = SetDockTileParameter(badgeLabel = badgeLabel, image = image)
@@ -301,6 +342,8 @@ public class Browser(
 
     /**
      * Invoke custom browser commands used by telemetry.
+     *
+     * @param commandId No description
      */
     public suspend fun executeBrowserCommand(commandId: BrowserCommandId) {
         val parameter = ExecuteBrowserCommandParameter(commandId = commandId)
@@ -319,6 +362,8 @@ public class Browser(
     /**
      * Allows a site to use privacy sandbox features that require enrollment
      * without the site actually being enrolled. Only supported on page targets.
+     *
+     * @param url No description
      */
     public suspend fun addPrivacySandboxEnrollmentOverride(url: String) {
         val parameter = AddPrivacySandboxEnrollmentOverrideParameter(url = url)

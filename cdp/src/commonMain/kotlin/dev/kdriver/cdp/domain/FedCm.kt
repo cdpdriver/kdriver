@@ -46,6 +46,13 @@ public class FedCm(
         cdp.callCommand("FedCm.enable", parameter)
     }
 
+    /**
+     *
+     *
+     * @param disableRejectionDelay Allows callers to disable the promise rejection delay that would
+     * normally happen, if this is unimportant to what's being tested.
+     * (step 4 of https://fedidcg.github.io/FedCM/#browser-api-rp-sign-in)
+     */
     public suspend fun enable(disableRejectionDelay: Boolean? = null) {
         val parameter = EnableParameter(disableRejectionDelay = disableRejectionDelay)
         enable(parameter)
@@ -61,6 +68,12 @@ public class FedCm(
         cdp.callCommand("FedCm.selectAccount", parameter)
     }
 
+    /**
+     *
+     *
+     * @param dialogId No description
+     * @param accountIndex No description
+     */
     public suspend fun selectAccount(dialogId: String, accountIndex: Int) {
         val parameter = SelectAccountParameter(dialogId = dialogId, accountIndex = accountIndex)
         selectAccount(parameter)
@@ -71,6 +84,12 @@ public class FedCm(
         cdp.callCommand("FedCm.clickDialogButton", parameter)
     }
 
+    /**
+     *
+     *
+     * @param dialogId No description
+     * @param dialogButton No description
+     */
     public suspend fun clickDialogButton(dialogId: String, dialogButton: DialogButton) {
         val parameter = ClickDialogButtonParameter(dialogId = dialogId, dialogButton = dialogButton)
         clickDialogButton(parameter)
@@ -81,6 +100,12 @@ public class FedCm(
         cdp.callCommand("FedCm.dismissDialog", parameter)
     }
 
+    /**
+     *
+     *
+     * @param dialogId No description
+     * @param triggerCooldown No description
+     */
     public suspend fun dismissDialog(dialogId: String, triggerCooldown: Boolean? = null) {
         val parameter = DismissDialogParameter(dialogId = dialogId, triggerCooldown = triggerCooldown)
         dismissDialog(parameter)

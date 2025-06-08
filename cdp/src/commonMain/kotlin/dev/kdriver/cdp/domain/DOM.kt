@@ -192,6 +192,8 @@ public class DOM(
 
     /**
      * Collects class names for the node with given id and all of it's child nodes.
+     *
+     * @param nodeId Id of the node to collect class names.
      */
     public suspend fun collectClassNamesFromSubtree(nodeId: Int): CollectClassNamesFromSubtreeReturn {
         val parameter = CollectClassNamesFromSubtreeParameter(nodeId = nodeId)
@@ -211,6 +213,11 @@ public class DOM(
     /**
      * Creates a deep copy of the specified node and places it into the target container before the
      * given anchor.
+     *
+     * @param nodeId Id of the node to copy.
+     * @param targetNodeId Id of the element to drop the copy into.
+     * @param insertBeforeNodeId Drop the copy before this node (if absent, the copy becomes the last child of
+     * `targetNodeId`).
      */
     public suspend fun copyTo(
         nodeId: Int,
@@ -235,6 +242,14 @@ public class DOM(
     /**
      * Describes node given its id, does not require domain to be enabled. Does not start tracking any
      * objects, can be used for automation.
+     *
+     * @param nodeId Identifier of the node.
+     * @param backendNodeId Identifier of the backend node.
+     * @param objectId JavaScript object id of the node wrapper.
+     * @param depth The maximum depth at which children should be retrieved, defaults to 1. Use -1 for the
+     * entire subtree or provide an integer larger than 0.
+     * @param pierce Whether or not iframes and shadow roots should be traversed when returning the subtree
+     * (default is false).
      */
     public suspend fun describeNode(
         nodeId: Int? = null,
@@ -267,6 +282,12 @@ public class DOM(
      * Scrolls the specified rect of the given node into view if not already visible.
      * Note: exactly one between nodeId, backendNodeId and objectId should be passed
      * to identify the node.
+     *
+     * @param nodeId Identifier of the node.
+     * @param backendNodeId Identifier of the backend node.
+     * @param objectId JavaScript object id of the node wrapper.
+     * @param rect The rect to be scrolled into view, relative to the node's border box, in CSS pixels.
+     * When omitted, center of the node will be used, similar to Element.scrollIntoView.
      */
     public suspend fun scrollIntoViewIfNeeded(
         nodeId: Int? = null,
@@ -303,6 +324,8 @@ public class DOM(
     /**
      * Discards search results from the session with the given id. `getSearchResults` should no longer
      * be called for that search.
+     *
+     * @param searchId Unique search session identifier.
      */
     public suspend fun discardSearchResults(searchId: String) {
         val parameter = DiscardSearchResultsParameter(searchId = searchId)
@@ -319,6 +342,8 @@ public class DOM(
 
     /**
      * Enables DOM agent for the given page.
+     *
+     * @param includeWhitespace Whether to include whitespaces in the children array of returned Nodes.
      */
     public suspend fun enable(includeWhitespace: String? = null) {
         val parameter = EnableParameter(includeWhitespace = includeWhitespace)
@@ -335,6 +360,10 @@ public class DOM(
 
     /**
      * Focuses the given element.
+     *
+     * @param nodeId Identifier of the node.
+     * @param backendNodeId Identifier of the backend node.
+     * @param objectId JavaScript object id of the node wrapper.
      */
     public suspend fun focus(
         nodeId: Int? = null,
@@ -356,6 +385,8 @@ public class DOM(
 
     /**
      * Returns attributes for the specified node.
+     *
+     * @param nodeId Id of the node to retrieve attibutes for.
      */
     public suspend fun getAttributes(nodeId: Int): GetAttributesReturn {
         val parameter = GetAttributesParameter(nodeId = nodeId)
@@ -373,6 +404,10 @@ public class DOM(
 
     /**
      * Returns boxes for the given node.
+     *
+     * @param nodeId Identifier of the node.
+     * @param backendNodeId Identifier of the backend node.
+     * @param objectId JavaScript object id of the node wrapper.
      */
     public suspend fun getBoxModel(
         nodeId: Int? = null,
@@ -396,6 +431,10 @@ public class DOM(
     /**
      * Returns quads that describe node position on the page. This method
      * might return multiple quads for inline nodes.
+     *
+     * @param nodeId Identifier of the node.
+     * @param backendNodeId Identifier of the backend node.
+     * @param objectId JavaScript object id of the node wrapper.
      */
     public suspend fun getContentQuads(
         nodeId: Int? = null,
@@ -419,6 +458,11 @@ public class DOM(
     /**
      * Returns the root DOM node (and optionally the subtree) to the caller.
      * Implicitly enables the DOM domain events for the current target.
+     *
+     * @param depth The maximum depth at which children should be retrieved, defaults to 1. Use -1 for the
+     * entire subtree or provide an integer larger than 0.
+     * @param pierce Whether or not iframes and shadow roots should be traversed when returning the subtree
+     * (default is false).
      */
     public suspend fun getDocument(depth: Int? = null, pierce: Boolean? = null): GetDocumentReturn {
         val parameter = GetDocumentParameter(depth = depth, pierce = pierce)
@@ -441,6 +485,11 @@ public class DOM(
      * Returns the root DOM node (and optionally the subtree) to the caller.
      * Deprecated, as it is not designed to work well with the rest of the DOM agent.
      * Use DOMSnapshot.captureSnapshot instead.
+     *
+     * @param depth The maximum depth at which children should be retrieved, defaults to 1. Use -1 for the
+     * entire subtree or provide an integer larger than 0.
+     * @param pierce Whether or not iframes and shadow roots should be traversed when returning the subtree
+     * (default is false).
      */
     @Deprecated(message = "")
     public suspend fun getFlattenedDocument(depth: Int? = null, pierce: Boolean? = null): GetFlattenedDocumentReturn {
@@ -459,6 +508,11 @@ public class DOM(
 
     /**
      * Finds nodes with a given computed style in a subtree.
+     *
+     * @param nodeId Node ID pointing to the root of a subtree.
+     * @param computedStyles The style to filter nodes by (includes nodes if any of properties matches).
+     * @param pierce Whether or not iframes and shadow roots in the same target should be traversed when returning the
+     * results (default is false).
      */
     public suspend fun getNodesForSubtreeByStyle(
         nodeId: Int,
@@ -483,6 +537,11 @@ public class DOM(
     /**
      * Returns node id at given location. Depending on whether DOM domain is enabled, nodeId is
      * either returned or not.
+     *
+     * @param x X coordinate.
+     * @param y Y coordinate.
+     * @param includeUserAgentShadowDOM False to skip to the nearest non-UA shadow root ancestor (default: false).
+     * @param ignorePointerEventsNone Whether to ignore pointer-events: none on elements and hit test them.
      */
     public suspend fun getNodeForLocation(
         x: Int,
@@ -510,6 +569,10 @@ public class DOM(
 
     /**
      * Returns node's HTML markup.
+     *
+     * @param nodeId Identifier of the node.
+     * @param backendNodeId Identifier of the backend node.
+     * @param objectId JavaScript object id of the node wrapper.
      */
     public suspend fun getOuterHTML(
         nodeId: Int? = null,
@@ -531,6 +594,8 @@ public class DOM(
 
     /**
      * Returns the id of the nearest ancestor that is a relayout boundary.
+     *
+     * @param nodeId Id of the node.
      */
     public suspend fun getRelayoutBoundary(nodeId: Int): GetRelayoutBoundaryReturn {
         val parameter = GetRelayoutBoundaryParameter(nodeId = nodeId)
@@ -550,6 +615,10 @@ public class DOM(
     /**
      * Returns search results from given `fromIndex` to given `toIndex` from the search with the given
      * identifier.
+     *
+     * @param searchId Unique search session identifier.
+     * @param fromIndex Start index of the search result to be returned.
+     * @param toIndex End index of the search result to be returned.
      */
     public suspend fun getSearchResults(
         searchId: String,
@@ -603,6 +672,11 @@ public class DOM(
 
     /**
      * Moves node into the new container, places it before the given anchor.
+     *
+     * @param nodeId Id of the node to move.
+     * @param targetNodeId Id of the element to drop the moved node into.
+     * @param insertBeforeNodeId Drop node before this one (if absent, the moved node becomes the last child of
+     * `targetNodeId`).
      */
     public suspend fun moveTo(
         nodeId: Int,
@@ -627,6 +701,9 @@ public class DOM(
     /**
      * Searches for a given string in the DOM tree. Use `getSearchResults` to access search results or
      * `cancelSearch` to end this search session.
+     *
+     * @param query Plain text or query selector or XPath search query.
+     * @param includeUserAgentShadowDOM True to search in user agent shadow DOM.
      */
     public suspend fun performSearch(query: String, includeUserAgentShadowDOM: Boolean? = null): PerformSearchReturn {
         val parameter = PerformSearchParameter(query = query, includeUserAgentShadowDOM = includeUserAgentShadowDOM)
@@ -644,6 +721,8 @@ public class DOM(
 
     /**
      * Requests that the node is sent to the caller given its path. // FIXME, use XPath
+     *
+     * @param path Path to node in the proprietary format.
      */
     public suspend fun pushNodeByPathToFrontend(path: String): PushNodeByPathToFrontendReturn {
         val parameter = PushNodeByPathToFrontendParameter(path = path)
@@ -661,6 +740,8 @@ public class DOM(
 
     /**
      * Requests that a batch of nodes is sent to the caller given their backend node ids.
+     *
+     * @param backendNodeIds The array of backend node ids.
      */
     public suspend fun pushNodesByBackendIdsToFrontend(backendNodeIds: List<Int>): PushNodesByBackendIdsToFrontendReturn {
         val parameter = PushNodesByBackendIdsToFrontendParameter(backendNodeIds = backendNodeIds)
@@ -678,6 +759,9 @@ public class DOM(
 
     /**
      * Executes `querySelector` on a given node.
+     *
+     * @param nodeId Id of the node to query upon.
+     * @param selector Selector string.
      */
     public suspend fun querySelector(nodeId: Int, selector: String): QuerySelectorReturn {
         val parameter = QuerySelectorParameter(nodeId = nodeId, selector = selector)
@@ -695,6 +779,9 @@ public class DOM(
 
     /**
      * Executes `querySelectorAll` on a given node.
+     *
+     * @param nodeId Id of the node to query upon.
+     * @param selector Selector string.
      */
     public suspend fun querySelectorAll(nodeId: Int, selector: String): QuerySelectorAllReturn {
         val parameter = QuerySelectorAllParameter(nodeId = nodeId, selector = selector)
@@ -730,6 +817,9 @@ public class DOM(
 
     /**
      * Removes attribute with given name from an element with given id.
+     *
+     * @param nodeId Id of the element to remove attribute from.
+     * @param name Name of the attribute to remove.
      */
     public suspend fun removeAttribute(nodeId: Int, name: String) {
         val parameter = RemoveAttributeParameter(nodeId = nodeId, name = name)
@@ -746,6 +836,8 @@ public class DOM(
 
     /**
      * Removes node with given id.
+     *
+     * @param nodeId Id of the node to remove.
      */
     public suspend fun removeNode(nodeId: Int) {
         val parameter = RemoveNodeParameter(nodeId = nodeId)
@@ -766,6 +858,12 @@ public class DOM(
      * Requests that children of the node with given id are returned to the caller in form of
      * `setChildNodes` events where not only immediate children are retrieved, but all children down to
      * the specified depth.
+     *
+     * @param nodeId Id of the node to get children for.
+     * @param depth The maximum depth at which children should be retrieved, defaults to 1. Use -1 for the
+     * entire subtree or provide an integer larger than 0.
+     * @param pierce Whether or not iframes and shadow roots should be traversed when returning the sub-tree
+     * (default is false).
      */
     public suspend fun requestChildNodes(
         nodeId: Int,
@@ -791,6 +889,8 @@ public class DOM(
      * Requests that the node is sent to the caller given the JavaScript node object reference. All
      * nodes that form the path from the node to the root are also sent to the client as a series of
      * `setChildNodes` notifications.
+     *
+     * @param objectId JavaScript object id to convert into node.
      */
     public suspend fun requestNode(objectId: String): RequestNodeReturn {
         val parameter = RequestNodeParameter(objectId = objectId)
@@ -808,6 +908,11 @@ public class DOM(
 
     /**
      * Resolves the JavaScript node object for a given NodeId or BackendNodeId.
+     *
+     * @param nodeId Id of the node to resolve.
+     * @param backendNodeId Backend identifier of the node to resolve.
+     * @param objectGroup Symbolic group name that can be used to release multiple objects.
+     * @param executionContextId Execution context in which to resolve the node.
      */
     public suspend fun resolveNode(
         nodeId: Int? = null,
@@ -834,6 +939,10 @@ public class DOM(
 
     /**
      * Sets attribute for an element with given id.
+     *
+     * @param nodeId Id of the element to set attribute for.
+     * @param name Attribute name.
+     * @param value Attribute value.
      */
     public suspend fun setAttributeValue(
         nodeId: Int,
@@ -856,6 +965,11 @@ public class DOM(
     /**
      * Sets attributes on element with given id. This method is useful when user edits some existing
      * attribute value and types in several attribute name/value pairs.
+     *
+     * @param nodeId Id of the element to set attributes for.
+     * @param text Text with a number of attributes. Will parse this text using HTML parser.
+     * @param name Attribute name to replace with new attributes derived from text in case text parsed
+     * successfully.
      */
     public suspend fun setAttributesAsText(
         nodeId: Int,
@@ -876,6 +990,11 @@ public class DOM(
 
     /**
      * Sets files for the given file input element.
+     *
+     * @param files Array of file paths to set.
+     * @param nodeId Identifier of the node.
+     * @param backendNodeId Identifier of the backend node.
+     * @param objectId JavaScript object id of the node wrapper.
      */
     public suspend fun setFileInputFiles(
         files: List<String>,
@@ -902,6 +1021,8 @@ public class DOM(
 
     /**
      * Sets if stack traces should be captured for Nodes. See `Node.getNodeStackTraces`. Default is disabled.
+     *
+     * @param enable Enable or disable.
      */
     public suspend fun setNodeStackTracesEnabled(enable: Boolean) {
         val parameter = SetNodeStackTracesEnabledParameter(enable = enable)
@@ -919,6 +1040,8 @@ public class DOM(
 
     /**
      * Gets stack traces associated with a Node. As of now, only provides stack trace for Node creation.
+     *
+     * @param nodeId Id of the node to get stack traces for.
      */
     public suspend fun getNodeStackTraces(nodeId: Int): GetNodeStackTracesReturn {
         val parameter = GetNodeStackTracesParameter(nodeId = nodeId)
@@ -938,6 +1061,8 @@ public class DOM(
     /**
      * Returns file information for the given
      * File wrapper.
+     *
+     * @param objectId JavaScript object id of the node wrapper.
      */
     public suspend fun getFileInfo(objectId: String): GetFileInfoReturn {
         val parameter = GetFileInfoParameter(objectId = objectId)
@@ -956,6 +1081,8 @@ public class DOM(
     /**
      * Enables console to refer to the node with given id via $x (see Command Line API for more details
      * $x functions).
+     *
+     * @param nodeId DOM node id to be accessible by means of $x command line API.
      */
     public suspend fun setInspectedNode(nodeId: Int) {
         val parameter = SetInspectedNodeParameter(nodeId = nodeId)
@@ -973,6 +1100,9 @@ public class DOM(
 
     /**
      * Sets node name for a node with given id.
+     *
+     * @param nodeId Id of the node to set name for.
+     * @param name New node's name.
      */
     public suspend fun setNodeName(nodeId: Int, name: String): SetNodeNameReturn {
         val parameter = SetNodeNameParameter(nodeId = nodeId, name = name)
@@ -989,6 +1119,9 @@ public class DOM(
 
     /**
      * Sets node value for a node with given id.
+     *
+     * @param nodeId Id of the node to set value for.
+     * @param value New node's value.
      */
     public suspend fun setNodeValue(nodeId: Int, `value`: String) {
         val parameter = SetNodeValueParameter(nodeId = nodeId, value = value)
@@ -1005,6 +1138,9 @@ public class DOM(
 
     /**
      * Sets node HTML markup, returns new node id.
+     *
+     * @param nodeId Id of the node to set markup for.
+     * @param outerHTML Outer HTML markup to set.
      */
     public suspend fun setOuterHTML(nodeId: Int, outerHTML: String) {
         val parameter = SetOuterHTMLParameter(nodeId = nodeId, outerHTML = outerHTML)
@@ -1030,6 +1166,8 @@ public class DOM(
 
     /**
      * Returns iframe node that owns iframe with the given domain.
+     *
+     * @param frameId No description
      */
     public suspend fun getFrameOwner(frameId: String): GetFrameOwnerReturn {
         val parameter = GetFrameOwnerParameter(frameId = frameId)
@@ -1053,6 +1191,11 @@ public class DOM(
      * conditions: containerName, physical, and logical axes. If no axes are
      * provided, the style container is returned, which is the direct parent or the
      * closest element with a matching container-name.
+     *
+     * @param nodeId No description
+     * @param containerName No description
+     * @param physicalAxes No description
+     * @param logicalAxes No description
      */
     public suspend fun getContainerForNode(
         nodeId: Int,
@@ -1082,6 +1225,8 @@ public class DOM(
     /**
      * Returns the descendants of a container query container that have
      * container queries against this container.
+     *
+     * @param nodeId Id of the container node to find querying descendants from.
      */
     public suspend fun getQueryingDescendantsForContainer(nodeId: Int): GetQueryingDescendantsForContainerReturn {
         val parameter = GetQueryingDescendantsForContainerParameter(nodeId = nodeId)

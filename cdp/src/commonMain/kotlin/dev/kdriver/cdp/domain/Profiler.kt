@@ -79,6 +79,8 @@ public class Profiler(
 
     /**
      * Changes CPU profiler sampling interval. Must be called before CPU profiles recording started.
+     *
+     * @param interval New sampling interval in microseconds.
      */
     public suspend fun setSamplingInterval(interval: Int) {
         val parameter = SetSamplingIntervalParameter(interval = interval)
@@ -105,6 +107,10 @@ public class Profiler(
      * Enable precise code coverage. Coverage data for JavaScript executed before enabling precise code
      * coverage may be incomplete. Enabling prevents running optimized code and resets execution
      * counters.
+     *
+     * @param callCount Collect accurate call counts beyond simple 'covered' or 'not covered'.
+     * @param detailed Collect block-based coverage.
+     * @param allowTriggeredUpdates Allow the backend to send updates on its own initiative
      */
     public suspend fun startPreciseCoverage(
         callCount: Boolean? = null,

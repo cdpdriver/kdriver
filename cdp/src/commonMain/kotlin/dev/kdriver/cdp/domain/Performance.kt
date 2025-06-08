@@ -47,6 +47,8 @@ public class Performance(
 
     /**
      * Enable collecting and reporting metrics.
+     *
+     * @param timeDomain Time domain to use for collecting and reporting duration metrics.
      */
     public suspend fun enable(timeDomain: String? = null) {
         val parameter = EnableParameter(timeDomain = timeDomain)
@@ -68,6 +70,8 @@ public class Performance(
      * Sets time domain to use for collecting and reporting duration metrics.
      * Note that this must be called before enabling metrics collection. Calling
      * this method while metrics collection is enabled returns an error.
+     *
+     * @param timeDomain Time domain
      */
     @Deprecated(message = "")
     public suspend fun setTimeDomain(timeDomain: String) {

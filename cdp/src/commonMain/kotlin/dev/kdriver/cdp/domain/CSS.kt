@@ -93,6 +93,13 @@ public class CSS(
     /**
      * Inserts a new rule with the given `ruleText` in a stylesheet with given `styleSheetId`, at the
      * position specified by `location`.
+     *
+     * @param styleSheetId The css style sheet identifier where a new rule should be inserted.
+     * @param ruleText The text of a new rule.
+     * @param location Text position of a new rule in the target style sheet.
+     * @param nodeForPropertySyntaxValidation NodeId for the DOM node in whose context custom property declarations for registered properties should be
+     * validated. If omitted, declarations in the new rule text can only be validated statically, which may produce
+     * incorrect results if the declaration contains a var() for example.
      */
     public suspend fun addRule(
         styleSheetId: String,
@@ -120,6 +127,8 @@ public class CSS(
 
     /**
      * Returns all class names from specified stylesheet.
+     *
+     * @param styleSheetId No description
      */
     public suspend fun collectClassNames(styleSheetId: String): CollectClassNamesReturn {
         val parameter = CollectClassNamesParameter(styleSheetId = styleSheetId)
@@ -137,6 +146,8 @@ public class CSS(
 
     /**
      * Creates a new special "via-inspector" stylesheet in the frame with given `frameId`.
+     *
+     * @param frameId Identifier of the frame where "via-inspector" stylesheet should be created.
      */
     public suspend fun createStyleSheet(frameId: String): CreateStyleSheetReturn {
         val parameter = CreateStyleSheetParameter(frameId = frameId)
@@ -172,6 +183,9 @@ public class CSS(
     /**
      * Ensures that the given node will have specified pseudo-classes whenever its style is computed by
      * the browser.
+     *
+     * @param nodeId The element id for which to force the pseudo state.
+     * @param forcedPseudoClasses Element pseudo classes to force when computing the element's style.
      */
     public suspend fun forcePseudoState(nodeId: Int, forcedPseudoClasses: List<String>) {
         val parameter = ForcePseudoStateParameter(nodeId = nodeId, forcedPseudoClasses = forcedPseudoClasses)
@@ -184,6 +198,11 @@ public class CSS(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param nodeId Id of the node to get background colors for.
+     */
     public suspend fun getBackgroundColors(nodeId: Int): GetBackgroundColorsReturn {
         val parameter = GetBackgroundColorsParameter(nodeId = nodeId)
         return getBackgroundColors(parameter)
@@ -200,6 +219,8 @@ public class CSS(
 
     /**
      * Returns the computed style for a DOM node identified by `nodeId`.
+     *
+     * @param nodeId No description
      */
     public suspend fun getComputedStyleForNode(nodeId: Int): GetComputedStyleForNodeReturn {
         val parameter = GetComputedStyleForNodeParameter(nodeId = nodeId)
@@ -219,6 +240,8 @@ public class CSS(
     /**
      * Returns the styles defined inline (explicitly in the "style" attribute and implicitly, using DOM
      * attributes) for a DOM node identified by `nodeId`.
+     *
+     * @param nodeId No description
      */
     public suspend fun getInlineStylesForNode(nodeId: Int): GetInlineStylesForNodeReturn {
         val parameter = GetInlineStylesForNodeParameter(nodeId = nodeId)
@@ -236,6 +259,8 @@ public class CSS(
 
     /**
      * Returns requested styles for a DOM node identified by `nodeId`.
+     *
+     * @param nodeId No description
      */
     public suspend fun getMatchedStylesForNode(nodeId: Int): GetMatchedStylesForNodeReturn {
         val parameter = GetMatchedStylesForNodeParameter(nodeId = nodeId)
@@ -264,6 +289,8 @@ public class CSS(
     /**
      * Requests information about platform fonts which we used to render child TextNodes in the given
      * node.
+     *
+     * @param nodeId No description
      */
     public suspend fun getPlatformFontsForNode(nodeId: Int): GetPlatformFontsForNodeReturn {
         val parameter = GetPlatformFontsForNodeParameter(nodeId = nodeId)
@@ -281,6 +308,8 @@ public class CSS(
 
     /**
      * Returns the current textual content for a stylesheet.
+     *
+     * @param styleSheetId No description
      */
     public suspend fun getStyleSheetText(styleSheetId: String): GetStyleSheetTextReturn {
         val parameter = GetStyleSheetTextParameter(styleSheetId = styleSheetId)
@@ -304,6 +333,8 @@ public class CSS(
      * Given a DOM element identified by nodeId, getLayersForNode returns the root
      * layer for the nearest ancestor document or shadow root. The layer root contains
      * the full layer tree for the tree scope and their ordering.
+     *
+     * @param nodeId No description
      */
     public suspend fun getLayersForNode(nodeId: Int): GetLayersForNodeReturn {
         val parameter = GetLayersForNodeParameter(nodeId = nodeId)
@@ -330,6 +361,8 @@ public class CSS(
      * The changes to computed style properties are only tracked for nodes pushed to the front-end
      * by the DOM agent. If no changes to the tracked properties occur after the node has been pushed
      * to the front-end, no updates will be issued for the node.
+     *
+     * @param propertiesToTrack No description
      */
     public suspend fun trackComputedStyleUpdates(propertiesToTrack: List<CSSComputedStyleProperty>) {
         val parameter = TrackComputedStyleUpdatesParameter(propertiesToTrack = propertiesToTrack)
@@ -357,6 +390,10 @@ public class CSS(
     /**
      * Find a rule with the given active property for the given node and set the new value for this
      * property
+     *
+     * @param nodeId The element id for which to set property.
+     * @param propertyName No description
+     * @param value No description
      */
     public suspend fun setEffectivePropertyValueForNode(
         nodeId: Int,
@@ -379,6 +416,10 @@ public class CSS(
 
     /**
      * Modifies the property rule property name.
+     *
+     * @param styleSheetId No description
+     * @param range No description
+     * @param propertyName No description
      */
     public suspend fun setPropertyRulePropertyName(
         styleSheetId: String,
@@ -404,6 +445,10 @@ public class CSS(
 
     /**
      * Modifies the keyframe rule key text.
+     *
+     * @param styleSheetId No description
+     * @param range No description
+     * @param keyText No description
      */
     public suspend fun setKeyframeKey(
         styleSheetId: String,
@@ -425,6 +470,10 @@ public class CSS(
 
     /**
      * Modifies the rule selector.
+     *
+     * @param styleSheetId No description
+     * @param range No description
+     * @param text No description
      */
     public suspend fun setMediaText(
         styleSheetId: String,
@@ -446,6 +495,10 @@ public class CSS(
 
     /**
      * Modifies the expression of a container query.
+     *
+     * @param styleSheetId No description
+     * @param range No description
+     * @param text No description
      */
     public suspend fun setContainerQueryText(
         styleSheetId: String,
@@ -467,6 +520,10 @@ public class CSS(
 
     /**
      * Modifies the expression of a supports at-rule.
+     *
+     * @param styleSheetId No description
+     * @param range No description
+     * @param text No description
      */
     public suspend fun setSupportsText(
         styleSheetId: String,
@@ -488,6 +545,10 @@ public class CSS(
 
     /**
      * Modifies the expression of a scope at-rule.
+     *
+     * @param styleSheetId No description
+     * @param range No description
+     * @param text No description
      */
     public suspend fun setScopeText(
         styleSheetId: String,
@@ -509,6 +570,10 @@ public class CSS(
 
     /**
      * Modifies the rule selector.
+     *
+     * @param styleSheetId No description
+     * @param range No description
+     * @param selector No description
      */
     public suspend fun setRuleSelector(
         styleSheetId: String,
@@ -530,6 +595,9 @@ public class CSS(
 
     /**
      * Sets the new stylesheet text.
+     *
+     * @param styleSheetId No description
+     * @param text No description
      */
     public suspend fun setStyleSheetText(styleSheetId: String, text: String): SetStyleSheetTextReturn {
         val parameter = SetStyleSheetTextParameter(styleSheetId = styleSheetId, text = text)
@@ -547,6 +615,11 @@ public class CSS(
 
     /**
      * Applies specified style edits one after another in the given order.
+     *
+     * @param edits No description
+     * @param nodeForPropertySyntaxValidation NodeId for the DOM node in whose context custom property declarations for registered properties should be
+     * validated. If omitted, declarations in the new rule text can only be validated statically, which may produce
+     * incorrect results if the declaration contains a var() for example.
      */
     public suspend fun setStyleTexts(
         edits: List<StyleDeclarationEdit>,
@@ -595,6 +668,8 @@ public class CSS(
 
     /**
      * Enables/disables rendering of local CSS fonts (enabled by default).
+     *
+     * @param enabled Whether rendering of local fonts is enabled.
      */
     public suspend fun setLocalFontsEnabled(enabled: Boolean) {
         val parameter = SetLocalFontsEnabledParameter(enabled = enabled)

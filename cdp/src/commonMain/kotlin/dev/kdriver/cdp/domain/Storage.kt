@@ -122,6 +122,8 @@ public class Storage(
 
     /**
      * Returns a storage key given a frame id.
+     *
+     * @param frameId No description
      */
     public suspend fun getStorageKeyForFrame(frameId: String): GetStorageKeyForFrameReturn {
         val parameter = GetStorageKeyForFrameParameter(frameId = frameId)
@@ -138,6 +140,9 @@ public class Storage(
 
     /**
      * Clears storage for origin.
+     *
+     * @param origin Security origin.
+     * @param storageTypes Comma separated list of StorageType to clear.
      */
     public suspend fun clearDataForOrigin(origin: String, storageTypes: String) {
         val parameter = ClearDataForOriginParameter(origin = origin, storageTypes = storageTypes)
@@ -154,6 +159,9 @@ public class Storage(
 
     /**
      * Clears storage for storage key.
+     *
+     * @param storageKey Storage key.
+     * @param storageTypes Comma separated list of StorageType to clear.
      */
     public suspend fun clearDataForStorageKey(storageKey: String, storageTypes: String) {
         val parameter = ClearDataForStorageKeyParameter(storageKey = storageKey, storageTypes = storageTypes)
@@ -171,6 +179,8 @@ public class Storage(
 
     /**
      * Returns all browser cookies.
+     *
+     * @param browserContextId Browser context to use when called on the browser endpoint.
      */
     public suspend fun getCookies(browserContextId: String? = null): GetCookiesReturn {
         val parameter = GetCookiesParameter(browserContextId = browserContextId)
@@ -187,6 +197,9 @@ public class Storage(
 
     /**
      * Sets given cookies.
+     *
+     * @param cookies Cookies to be set.
+     * @param browserContextId Browser context to use when called on the browser endpoint.
      */
     public suspend fun setCookies(cookies: List<Network.CookieParam>, browserContextId: String? = null) {
         val parameter = SetCookiesParameter(cookies = cookies, browserContextId = browserContextId)
@@ -203,6 +216,8 @@ public class Storage(
 
     /**
      * Clears cookies.
+     *
+     * @param browserContextId Browser context to use when called on the browser endpoint.
      */
     public suspend fun clearCookies(browserContextId: String? = null) {
         val parameter = ClearCookiesParameter(browserContextId = browserContextId)
@@ -220,6 +235,8 @@ public class Storage(
 
     /**
      * Returns usage and quota in bytes.
+     *
+     * @param origin Security origin.
      */
     public suspend fun getUsageAndQuota(origin: String): GetUsageAndQuotaReturn {
         val parameter = GetUsageAndQuotaParameter(origin = origin)
@@ -236,6 +253,15 @@ public class Storage(
 
     /**
      * Override quota for the specified origin
+     *
+     * @param origin Security origin.
+     * @param quotaSize The quota size (in bytes) to override the original quota with.
+     * If this is called multiple times, the overridden quota will be equal to
+     * the quotaSize provided in the final call. If this is called without
+     * specifying a quotaSize, the quota will be reset to the default value for
+     * the specified origin. If this is called multiple times with different
+     * origins, the override will be maintained for each origin until it is
+     * disabled (called without a quotaSize).
      */
     public suspend fun overrideQuotaForOrigin(origin: String, quotaSize: Double? = null) {
         val parameter = OverrideQuotaForOriginParameter(origin = origin, quotaSize = quotaSize)
@@ -252,6 +278,8 @@ public class Storage(
 
     /**
      * Registers origin to be notified when an update occurs to its cache storage list.
+     *
+     * @param origin Security origin.
      */
     public suspend fun trackCacheStorageForOrigin(origin: String) {
         val parameter = TrackCacheStorageForOriginParameter(origin = origin)
@@ -268,6 +296,8 @@ public class Storage(
 
     /**
      * Registers storage key to be notified when an update occurs to its cache storage list.
+     *
+     * @param storageKey Storage key.
      */
     public suspend fun trackCacheStorageForStorageKey(storageKey: String) {
         val parameter = TrackCacheStorageForStorageKeyParameter(storageKey = storageKey)
@@ -284,6 +314,8 @@ public class Storage(
 
     /**
      * Registers origin to be notified when an update occurs to its IndexedDB.
+     *
+     * @param origin Security origin.
      */
     public suspend fun trackIndexedDBForOrigin(origin: String) {
         val parameter = TrackIndexedDBForOriginParameter(origin = origin)
@@ -300,6 +332,8 @@ public class Storage(
 
     /**
      * Registers storage key to be notified when an update occurs to its IndexedDB.
+     *
+     * @param storageKey Storage key.
      */
     public suspend fun trackIndexedDBForStorageKey(storageKey: String) {
         val parameter = TrackIndexedDBForStorageKeyParameter(storageKey = storageKey)
@@ -316,6 +350,8 @@ public class Storage(
 
     /**
      * Unregisters origin from receiving notifications for cache storage.
+     *
+     * @param origin Security origin.
      */
     public suspend fun untrackCacheStorageForOrigin(origin: String) {
         val parameter = UntrackCacheStorageForOriginParameter(origin = origin)
@@ -332,6 +368,8 @@ public class Storage(
 
     /**
      * Unregisters storage key from receiving notifications for cache storage.
+     *
+     * @param storageKey Storage key.
      */
     public suspend fun untrackCacheStorageForStorageKey(storageKey: String) {
         val parameter = UntrackCacheStorageForStorageKeyParameter(storageKey = storageKey)
@@ -348,6 +386,8 @@ public class Storage(
 
     /**
      * Unregisters origin from receiving notifications for IndexedDB.
+     *
+     * @param origin Security origin.
      */
     public suspend fun untrackIndexedDBForOrigin(origin: String) {
         val parameter = UntrackIndexedDBForOriginParameter(origin = origin)
@@ -364,6 +404,8 @@ public class Storage(
 
     /**
      * Unregisters storage key from receiving notifications for IndexedDB.
+     *
+     * @param storageKey Storage key.
      */
     public suspend fun untrackIndexedDBForStorageKey(storageKey: String) {
         val parameter = UntrackIndexedDBForStorageKeyParameter(storageKey = storageKey)
@@ -393,6 +435,8 @@ public class Storage(
     /**
      * Removes all Trust Tokens issued by the provided issuerOrigin.
      * Leaves other stored data, including the issuer's Redemption Records, intact.
+     *
+     * @param issuerOrigin No description
      */
     public suspend fun clearTrustTokens(issuerOrigin: String): ClearTrustTokensReturn {
         val parameter = ClearTrustTokensParameter(issuerOrigin = issuerOrigin)
@@ -410,6 +454,9 @@ public class Storage(
 
     /**
      * Gets details for a named interest group.
+     *
+     * @param ownerOrigin No description
+     * @param name No description
      */
     public suspend fun getInterestGroupDetails(ownerOrigin: String, name: String): GetInterestGroupDetailsReturn {
         val parameter = GetInterestGroupDetailsParameter(ownerOrigin = ownerOrigin, name = name)
@@ -426,6 +473,8 @@ public class Storage(
 
     /**
      * Enables/Disables issuing of interestGroupAccessed events.
+     *
+     * @param enable No description
      */
     public suspend fun setInterestGroupTracking(enable: Boolean) {
         val parameter = SetInterestGroupTrackingParameter(enable = enable)
@@ -443,6 +492,8 @@ public class Storage(
 
     /**
      * Gets metadata for an origin's shared storage.
+     *
+     * @param ownerOrigin No description
      */
     public suspend fun getSharedStorageMetadata(ownerOrigin: String): GetSharedStorageMetadataReturn {
         val parameter = GetSharedStorageMetadataParameter(ownerOrigin = ownerOrigin)
@@ -460,6 +511,8 @@ public class Storage(
 
     /**
      * Gets the entries in an given origin's shared storage.
+     *
+     * @param ownerOrigin No description
      */
     public suspend fun getSharedStorageEntries(ownerOrigin: String): GetSharedStorageEntriesReturn {
         val parameter = GetSharedStorageEntriesParameter(ownerOrigin = ownerOrigin)
@@ -476,6 +529,12 @@ public class Storage(
 
     /**
      * Sets entry with `key` and `value` for a given origin's shared storage.
+     *
+     * @param ownerOrigin No description
+     * @param key No description
+     * @param value No description
+     * @param ignoreIfPresent If `ignoreIfPresent` is included and true, then only sets the entry if
+     * `key` doesn't already exist.
      */
     public suspend fun setSharedStorageEntry(
         ownerOrigin: String,
@@ -502,6 +561,9 @@ public class Storage(
 
     /**
      * Deletes entry for `key` (if it exists) for a given origin's shared storage.
+     *
+     * @param ownerOrigin No description
+     * @param key No description
      */
     public suspend fun deleteSharedStorageEntry(ownerOrigin: String, key: String) {
         val parameter = DeleteSharedStorageEntryParameter(ownerOrigin = ownerOrigin, key = key)
@@ -518,6 +580,8 @@ public class Storage(
 
     /**
      * Clears all entries for a given origin's shared storage.
+     *
+     * @param ownerOrigin No description
      */
     public suspend fun clearSharedStorageEntries(ownerOrigin: String) {
         val parameter = ClearSharedStorageEntriesParameter(ownerOrigin = ownerOrigin)
@@ -534,6 +598,8 @@ public class Storage(
 
     /**
      * Resets the budget for `ownerOrigin` by clearing all budget withdrawals.
+     *
+     * @param ownerOrigin No description
      */
     public suspend fun resetSharedStorageBudget(ownerOrigin: String) {
         val parameter = ResetSharedStorageBudgetParameter(ownerOrigin = ownerOrigin)
@@ -550,6 +616,8 @@ public class Storage(
 
     /**
      * Enables/disables issuing of sharedStorageAccessed events.
+     *
+     * @param enable No description
      */
     public suspend fun setSharedStorageTracking(enable: Boolean) {
         val parameter = SetSharedStorageTrackingParameter(enable = enable)
@@ -566,6 +634,9 @@ public class Storage(
 
     /**
      * Set tracking for a storage key's buckets.
+     *
+     * @param storageKey No description
+     * @param enable No description
      */
     public suspend fun setStorageBucketTracking(storageKey: String, enable: Boolean) {
         val parameter = SetStorageBucketTrackingParameter(storageKey = storageKey, enable = enable)
@@ -582,6 +653,8 @@ public class Storage(
 
     /**
      * Deletes the Storage Bucket with the given storage key and bucket name.
+     *
+     * @param bucket No description
      */
     public suspend fun deleteStorageBucket(bucket: StorageBucket) {
         val parameter = DeleteStorageBucketParameter(bucket = bucket)
@@ -607,6 +680,8 @@ public class Storage(
 
     /**
      * https://wicg.github.io/attribution-reporting-api/
+     *
+     * @param enabled If enabled, noise is suppressed and reports are sent immediately.
      */
     public suspend fun setAttributionReportingLocalTestingMode(enabled: Boolean) {
         val parameter = SetAttributionReportingLocalTestingModeParameter(enabled = enabled)
@@ -623,6 +698,8 @@ public class Storage(
 
     /**
      * Enables/disables issuing of Attribution Reporting events.
+     *
+     * @param enable No description
      */
     public suspend fun setAttributionReportingTracking(enable: Boolean) {
         val parameter = SetAttributionReportingTrackingParameter(enable = enable)

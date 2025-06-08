@@ -105,6 +105,8 @@ public class Target(
 
     /**
      * Activates (focuses) the target.
+     *
+     * @param targetId No description
      */
     public suspend fun activateTarget(targetId: String) {
         val parameter = ActivateTargetParameter(targetId = targetId)
@@ -122,6 +124,11 @@ public class Target(
 
     /**
      * Attaches to the target with given id.
+     *
+     * @param targetId No description
+     * @param flatten Enables "flat" access to the session via specifying sessionId attribute in the commands.
+     * We plan to make this the default, deprecate non-flattened mode,
+     * and eventually retire it. See crbug.com/991325.
      */
     public suspend fun attachToTarget(targetId: String, flatten: Boolean? = null): AttachToTargetReturn {
         val parameter = AttachToTargetParameter(targetId = targetId, flatten = flatten)
@@ -148,6 +155,8 @@ public class Target(
 
     /**
      * Closes the target. If the target is a page that gets closed too.
+     *
+     * @param targetId No description
      */
     public suspend fun closeTarget(targetId: String): CloseTargetReturn {
         val parameter = CloseTargetParameter(targetId = targetId)
@@ -178,6 +187,9 @@ public class Target(
      * The object has the follwing API:
      * - `binding.send(json)` - a method to send messages over the remote debugging protocol
      * - `binding.onmessage = json => handleMessage(json)` - a callback that will be called for the protocol notifications and command responses.
+     *
+     * @param targetId No description
+     * @param bindingName Binding name, 'cdp' if not specified.
      */
     public suspend fun exposeDevToolsProtocol(targetId: String, bindingName: String? = null) {
         val parameter = ExposeDevToolsProtocolParameter(targetId = targetId, bindingName = bindingName)
@@ -197,6 +209,12 @@ public class Target(
     /**
      * Creates a new empty BrowserContext. Similar to an incognito profile but you can have more than
      * one.
+     *
+     * @param disposeOnDetach If specified, disposes this context when debugging session disconnects.
+     * @param proxyServer Proxy server, similar to the one passed to --proxy-server
+     * @param proxyBypassList Proxy bypass list, similar to the one passed to --proxy-bypass-list
+     * @param originsWithUniversalNetworkAccess An optional list of origins to grant unlimited cross-origin access to.
+     * Parts of the URL other than those constituting origin are ignored.
      */
     public suspend fun createBrowserContext(
         disposeOnDetach: Boolean? = null,
@@ -233,6 +251,17 @@ public class Target(
 
     /**
      * Creates a new page.
+     *
+     * @param url The initial URL the page will be navigated to. An empty string indicates about:blank.
+     * @param width Frame width in DIP (headless chrome only).
+     * @param height Frame height in DIP (headless chrome only).
+     * @param browserContextId The browser context to create the page in.
+     * @param enableBeginFrameControl Whether BeginFrames for this target will be controlled via DevTools (headless chrome only,
+     * not supported on MacOS yet, false by default).
+     * @param newWindow Whether to create a new Window or Tab (chrome-only, false by default).
+     * @param background Whether to create the target in background or foreground (chrome-only,
+     * false by default).
+     * @param forTab Whether to create the target of type "tab".
      */
     public suspend fun createTarget(
         url: String,
@@ -267,6 +296,9 @@ public class Target(
 
     /**
      * Detaches session with given id.
+     *
+     * @param sessionId Session to detach.
+     * @param targetId Deprecated.
      */
     public suspend fun detachFromTarget(sessionId: String? = null, targetId: String? = null) {
         val parameter = DetachFromTargetParameter(sessionId = sessionId, targetId = targetId)
@@ -285,6 +317,8 @@ public class Target(
     /**
      * Deletes a BrowserContext. All the belonging pages will be closed without calling their
      * beforeunload hooks.
+     *
+     * @param browserContextId No description
      */
     public suspend fun disposeBrowserContext(browserContextId: String) {
         val parameter = DisposeBrowserContextParameter(browserContextId = browserContextId)
@@ -302,6 +336,8 @@ public class Target(
 
     /**
      * Returns information about a target.
+     *
+     * @param targetId No description
      */
     public suspend fun getTargetInfo(targetId: String? = null): GetTargetInfoReturn {
         val parameter = GetTargetInfoParameter(targetId = targetId)
@@ -319,6 +355,10 @@ public class Target(
 
     /**
      * Retrieves a list of available targets.
+     *
+     * @param filter Only targets matching filter will be reported. If filter is not specified
+     * and target discovery is currently enabled, a filter used for target discovery
+     * is used for consistency.
      */
     public suspend fun getTargets(filter: List<Double>? = null): GetTargetsReturn {
         val parameter = GetTargetsParameter(filter = filter)
@@ -340,6 +380,10 @@ public class Target(
      * Sends protocol message over session with given id.
      * Consider using flat mode instead; see commands attachToTarget, setAutoAttach,
      * and crbug.com/991325.
+     *
+     * @param message No description
+     * @param sessionId Identifier of the session.
+     * @param targetId Deprecated.
      */
     @Deprecated(message = "")
     public suspend fun sendMessageToTarget(
@@ -369,6 +413,14 @@ public class Target(
      * automatically detaches from all currently attached targets.
      * This also clears all targets added by `autoAttachRelated` from the list of targets to watch
      * for creation of related targets.
+     *
+     * @param autoAttach Whether to auto-attach to related targets.
+     * @param waitForDebuggerOnStart Whether to pause new targets when attaching to them. Use `Runtime.runIfWaitingForDebugger`
+     * to run paused targets.
+     * @param flatten Enables "flat" access to the session via specifying sessionId attribute in the commands.
+     * We plan to make this the default, deprecate non-flattened mode,
+     * and eventually retire it. See crbug.com/991325.
+     * @param filter Only targets matching filter will be attached.
      */
     public suspend fun setAutoAttach(
         autoAttach: Boolean,
@@ -403,6 +455,11 @@ public class Target(
      * through `attachedToTarget`. The specified target is also auto-attached.
      * This cancels the effect of any previous `setAutoAttach` and is also cancelled by subsequent
      * `setAutoAttach`. Only available at the Browser target.
+     *
+     * @param targetId No description
+     * @param waitForDebuggerOnStart Whether to pause new targets when attaching to them. Use `Runtime.runIfWaitingForDebugger`
+     * to run paused targets.
+     * @param filter Only targets matching filter will be attached.
      */
     public suspend fun autoAttachRelated(
         targetId: String,
@@ -429,6 +486,10 @@ public class Target(
     /**
      * Controls whether to discover available targets and notify via
      * `targetCreated/targetInfoChanged/targetDestroyed` events.
+     *
+     * @param discover Whether to discover available targets.
+     * @param filter Only targets matching filter will be attached. If `discover` is false,
+     * `filter` must be omitted or empty.
      */
     public suspend fun setDiscoverTargets(discover: Boolean, filter: List<Double>? = null) {
         val parameter = SetDiscoverTargetsParameter(discover = discover, filter = filter)
@@ -447,6 +508,8 @@ public class Target(
     /**
      * Enables target discovery for the specified locations, when `setDiscoverTargets` was set to
      * `true`.
+     *
+     * @param locations List of remote locations.
      */
     public suspend fun setRemoteLocations(locations: List<RemoteLocation>) {
         val parameter = SetRemoteLocationsParameter(locations = locations)

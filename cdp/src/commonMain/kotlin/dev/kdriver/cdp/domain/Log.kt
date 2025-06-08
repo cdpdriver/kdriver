@@ -67,6 +67,8 @@ public class Log(
 
     /**
      * start violation reporting.
+     *
+     * @param config Configuration for violations.
      */
     public suspend fun startViolationsReport(config: List<ViolationSetting>) {
         val parameter = StartViolationsReportParameter(config = config)

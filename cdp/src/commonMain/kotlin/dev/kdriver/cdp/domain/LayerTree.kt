@@ -45,6 +45,8 @@ public class LayerTree(
 
     /**
      * Provides the reasons why the given layer was composited.
+     *
+     * @param layerId The id of the layer for which we want to get the reasons it was composited.
      */
     public suspend fun compositingReasons(layerId: String): CompositingReasonsReturn {
         val parameter = CompositingReasonsParameter(layerId = layerId)
@@ -78,6 +80,8 @@ public class LayerTree(
 
     /**
      * Returns the snapshot identifier.
+     *
+     * @param tiles An array of tiles composing the snapshot.
      */
     public suspend fun loadSnapshot(tiles: List<PictureTile>): LoadSnapshotReturn {
         val parameter = LoadSnapshotParameter(tiles = tiles)
@@ -95,6 +99,8 @@ public class LayerTree(
 
     /**
      * Returns the layer snapshot identifier.
+     *
+     * @param layerId The id of the layer.
      */
     public suspend fun makeSnapshot(layerId: String): MakeSnapshotReturn {
         val parameter = MakeSnapshotParameter(layerId = layerId)
@@ -107,6 +113,14 @@ public class LayerTree(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param snapshotId The id of the layer snapshot.
+     * @param minRepeatCount The maximum number of times to replay the snapshot (1, if not specified).
+     * @param minDuration The minimum duration (in seconds) to replay the snapshot.
+     * @param clipRect The clip rectangle to apply when replaying the snapshot.
+     */
     public suspend fun profileSnapshot(
         snapshotId: String,
         minRepeatCount: Int? = null,
@@ -132,6 +146,8 @@ public class LayerTree(
 
     /**
      * Releases layer snapshot captured by the back-end.
+     *
+     * @param snapshotId The id of the layer snapshot.
      */
     public suspend fun releaseSnapshot(snapshotId: String) {
         val parameter = ReleaseSnapshotParameter(snapshotId = snapshotId)
@@ -149,6 +165,11 @@ public class LayerTree(
 
     /**
      * Replays the layer snapshot and returns the resulting bitmap.
+     *
+     * @param snapshotId The id of the layer snapshot.
+     * @param fromStep The first step to replay from (replay from the very start if not specified).
+     * @param toStep The last step to replay to (replay till the end if not specified).
+     * @param scale The scale to apply while replaying (defaults to 1).
      */
     public suspend fun replaySnapshot(
         snapshotId: String,
@@ -172,6 +193,8 @@ public class LayerTree(
 
     /**
      * Replays the layer snapshot and returns canvas log.
+     *
+     * @param snapshotId The id of the layer snapshot.
      */
     public suspend fun snapshotCommandLog(snapshotId: String): SnapshotCommandLogReturn {
         val parameter = SnapshotCommandLogParameter(snapshotId = snapshotId)

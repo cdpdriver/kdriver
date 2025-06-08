@@ -119,6 +119,10 @@ public class Runtime(
 
     /**
      * Add handler to promise with given promise object id.
+     *
+     * @param promiseObjectId Identifier of the promise.
+     * @param returnByValue Whether the result is expected to be a JSON object that should be sent by value.
+     * @param generatePreview Whether preview should be generated for the result.
      */
     public suspend fun awaitPromise(
         promiseObjectId: String,
@@ -146,6 +150,33 @@ public class Runtime(
     /**
      * Calls function with given declaration on the given object. Object group of the result is
      * inherited from the target object.
+     *
+     * @param functionDeclaration Declaration of the function to call.
+     * @param objectId Identifier of the object to call function on. Either objectId or executionContextId should
+     * be specified.
+     * @param arguments Call arguments. All call arguments must belong to the same JavaScript world as the target
+     * object.
+     * @param silent In silent mode exceptions thrown during evaluation are not reported and do not pause
+     * execution. Overrides `setPauseOnException` state.
+     * @param returnByValue Whether the result is expected to be a JSON object which should be sent by value.
+     * Can be overriden by `serializationOptions`.
+     * @param generatePreview Whether preview should be generated for the result.
+     * @param userGesture Whether execution should be treated as initiated by user in the UI.
+     * @param awaitPromise Whether execution should `await` for resulting value and return once awaited promise is
+     * resolved.
+     * @param executionContextId Specifies execution context which global object will be used to call function on. Either
+     * executionContextId or objectId should be specified.
+     * @param objectGroup Symbolic group name that can be used to release multiple objects. If objectGroup is not
+     * specified and objectId is, objectGroup will be inherited from object.
+     * @param throwOnSideEffect Whether to throw an exception if side effect cannot be ruled out during evaluation.
+     * @param uniqueContextId An alternative way to specify the execution context to call function on.
+     * Compared to contextId that may be reused across processes, this is guaranteed to be
+     * system-unique, so it can be used to prevent accidental function call
+     * in context different than intended (e.g. as a result of navigation across process
+     * boundaries).
+     * This is mutually exclusive with `executionContextId`.
+     * @param serializationOptions Specifies the result serialization. If provided, overrides
+     * `generatePreview` and `returnByValue`.
      */
     public suspend fun callFunctionOn(
         functionDeclaration: String,
@@ -191,6 +222,12 @@ public class Runtime(
 
     /**
      * Compiles expression.
+     *
+     * @param expression Expression to compile.
+     * @param sourceURL Source url to be set for the script.
+     * @param persistScript Specifies whether the compiled script should be persisted.
+     * @param executionContextId Specifies in which execution context to perform script run. If the parameter is omitted the
+     * evaluation will be performed in the context of the inspected page.
      */
     public suspend fun compileScript(
         expression: String,
@@ -244,6 +281,41 @@ public class Runtime(
 
     /**
      * Evaluates expression on global object.
+     *
+     * @param expression Expression to evaluate.
+     * @param objectGroup Symbolic group name that can be used to release multiple objects.
+     * @param includeCommandLineAPI Determines whether Command Line API should be available during the evaluation.
+     * @param silent In silent mode exceptions thrown during evaluation are not reported and do not pause
+     * execution. Overrides `setPauseOnException` state.
+     * @param contextId Specifies in which execution context to perform evaluation. If the parameter is omitted the
+     * evaluation will be performed in the context of the inspected page.
+     * This is mutually exclusive with `uniqueContextId`, which offers an
+     * alternative way to identify the execution context that is more reliable
+     * in a multi-process environment.
+     * @param returnByValue Whether the result is expected to be a JSON object that should be sent by value.
+     * @param generatePreview Whether preview should be generated for the result.
+     * @param userGesture Whether execution should be treated as initiated by user in the UI.
+     * @param awaitPromise Whether execution should `await` for resulting value and return once awaited promise is
+     * resolved.
+     * @param throwOnSideEffect Whether to throw an exception if side effect cannot be ruled out during evaluation.
+     * This implies `disableBreaks` below.
+     * @param timeout Terminate execution after timing out (number of milliseconds).
+     * @param disableBreaks Disable breakpoints during execution.
+     * @param replMode Setting this flag to true enables `let` re-declaration and top-level `await`.
+     * Note that `let` variables can only be re-declared if they originate from
+     * `replMode` themselves.
+     * @param allowUnsafeEvalBlockedByCSP The Content Security Policy (CSP) for the target might block 'unsafe-eval'
+     * which includes eval(), Function(), setTimeout() and setInterval()
+     * when called with non-callable arguments. This flag bypasses CSP for this
+     * evaluation and allows unsafe-eval. Defaults to true.
+     * @param uniqueContextId An alternative way to specify the execution context to evaluate in.
+     * Compared to contextId that may be reused across processes, this is guaranteed to be
+     * system-unique, so it can be used to prevent accidental evaluation of the expression
+     * in context different than intended (e.g. as a result of navigation across process
+     * boundaries).
+     * This is mutually exclusive with `contextId`.
+     * @param serializationOptions Specifies the result serialization. If provided, overrides
+     * `generatePreview` and `returnByValue`.
      */
     public suspend fun evaluate(
         expression: String,
@@ -316,6 +388,14 @@ public class Runtime(
     /**
      * Returns properties of a given object. Object group of the result is inherited from the target
      * object.
+     *
+     * @param objectId Identifier of the object to return properties for.
+     * @param ownProperties If true, returns properties belonging only to the element itself, not to its prototype
+     * chain.
+     * @param accessorPropertiesOnly If true, returns accessor properties (with getter/setter) only; internal properties are not
+     * returned either.
+     * @param generatePreview Whether preview should be generated for the results.
+     * @param nonIndexedPropertiesOnly If true, returns non-indexed properties only.
      */
     public suspend fun getProperties(
         objectId: String,
@@ -345,6 +425,8 @@ public class Runtime(
 
     /**
      * Returns all let, const and class variables from global scope.
+     *
+     * @param executionContextId Specifies in which execution context to lookup global scope variables.
      */
     public suspend fun globalLexicalScopeNames(executionContextId: Int? = null): GlobalLexicalScopeNamesReturn {
         val parameter = GlobalLexicalScopeNamesParameter(executionContextId = executionContextId)
@@ -357,6 +439,12 @@ public class Runtime(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param prototypeObjectId Identifier of the prototype to return objects for.
+     * @param objectGroup Symbolic group name that can be used to release the results.
+     */
     public suspend fun queryObjects(prototypeObjectId: String, objectGroup: String? = null): QueryObjectsReturn {
         val parameter = QueryObjectsParameter(prototypeObjectId = prototypeObjectId, objectGroup = objectGroup)
         return queryObjects(parameter)
@@ -372,6 +460,8 @@ public class Runtime(
 
     /**
      * Releases remote object with given id.
+     *
+     * @param objectId Identifier of the object to release.
      */
     public suspend fun releaseObject(objectId: String) {
         val parameter = ReleaseObjectParameter(objectId = objectId)
@@ -388,6 +478,8 @@ public class Runtime(
 
     /**
      * Releases all remote objects that belong to a given group.
+     *
+     * @param objectGroup Symbolic object group name.
      */
     public suspend fun releaseObjectGroup(objectGroup: String) {
         val parameter = ReleaseObjectGroupParameter(objectGroup = objectGroup)
@@ -413,6 +505,18 @@ public class Runtime(
 
     /**
      * Runs script with given id in a given context.
+     *
+     * @param scriptId Id of the script to run.
+     * @param executionContextId Specifies in which execution context to perform script run. If the parameter is omitted the
+     * evaluation will be performed in the context of the inspected page.
+     * @param objectGroup Symbolic group name that can be used to release multiple objects.
+     * @param silent In silent mode exceptions thrown during evaluation are not reported and do not pause
+     * execution. Overrides `setPauseOnException` state.
+     * @param includeCommandLineAPI Determines whether Command Line API should be available during the evaluation.
+     * @param returnByValue Whether the result is expected to be a JSON object which should be sent by value.
+     * @param generatePreview Whether preview should be generated for the result.
+     * @param awaitPromise Whether execution should `await` for resulting value and return once awaited promise is
+     * resolved.
      */
     public suspend fun runScript(
         scriptId: String,
@@ -447,6 +551,9 @@ public class Runtime(
 
     /**
      * Enables or disables async call stacks tracking.
+     *
+     * @param maxDepth Maximum depth of async call stacks. Setting to `0` will effectively disable collecting async
+     * call stacks (default).
      */
     public suspend fun setAsyncCallStackDepth(maxDepth: Int) {
         val parameter = SetAsyncCallStackDepthParameter(maxDepth = maxDepth)
@@ -458,6 +565,11 @@ public class Runtime(
         cdp.callCommand("Runtime.setCustomObjectFormatterEnabled", parameter)
     }
 
+    /**
+     *
+     *
+     * @param enabled No description
+     */
     public suspend fun setCustomObjectFormatterEnabled(enabled: Boolean) {
         val parameter = SetCustomObjectFormatterEnabledParameter(enabled = enabled)
         setCustomObjectFormatterEnabled(parameter)
@@ -468,6 +580,11 @@ public class Runtime(
         cdp.callCommand("Runtime.setMaxCallStackSizeToCapture", parameter)
     }
 
+    /**
+     *
+     *
+     * @param size No description
+     */
     public suspend fun setMaxCallStackSizeToCapture(size: Int) {
         val parameter = SetMaxCallStackSizeToCaptureParameter(size = size)
         setMaxCallStackSizeToCapture(parameter)
@@ -502,6 +619,20 @@ public class Runtime(
      * Binding function takes exactly one argument, this argument should be string,
      * in case of any other input, function throws an exception.
      * Each binding function call produces Runtime.bindingCalled notification.
+     *
+     * @param name No description
+     * @param executionContextId If specified, the binding would only be exposed to the specified
+     * execution context. If omitted and `executionContextName` is not set,
+     * the binding is exposed to all execution contexts of the target.
+     * This parameter is mutually exclusive with `executionContextName`.
+     * Deprecated in favor of `executionContextName` due to an unclear use case
+     * and bugs in implementation (crbug.com/1169639). `executionContextId` will be
+     * removed in the future.
+     * @param executionContextName If specified, the binding is exposed to the executionContext with
+     * matching name, even for contexts created after the binding is added.
+     * See also `ExecutionContext.name` and `worldName` parameter to
+     * `Page.addScriptToEvaluateOnNewDocument`.
+     * This parameter is mutually exclusive with `executionContextId`.
      */
     public suspend fun addBinding(
         name: String,
@@ -528,6 +659,8 @@ public class Runtime(
     /**
      * This method does not remove binding function from global object but
      * unsubscribes current runtime agent from Runtime.bindingCalled notifications.
+     *
+     * @param name No description
      */
     public suspend fun removeBinding(name: String) {
         val parameter = RemoveBindingParameter(name = name)
@@ -553,6 +686,8 @@ public class Runtime(
      * Note that the stackTrace portion of the resulting exceptionDetails will
      * only be populated if the Runtime domain was enabled at the time when the
      * Error was thrown.
+     *
+     * @param errorObjectId The error object for which to resolve the exception details.
      */
     public suspend fun getExceptionDetails(errorObjectId: String): GetExceptionDetailsReturn {
         val parameter = GetExceptionDetailsParameter(errorObjectId = errorObjectId)

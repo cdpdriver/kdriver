@@ -82,6 +82,8 @@ public class Security(
 
     /**
      * Enable/disable whether all certificate errors should be ignored.
+     *
+     * @param ignore If true, all certificate errors will be ignored.
      */
     public suspend fun setIgnoreCertificateErrors(ignore: Boolean) {
         val parameter = SetIgnoreCertificateErrorsParameter(ignore = ignore)
@@ -99,6 +101,9 @@ public class Security(
 
     /**
      * Handles a certificate error that fired a certificateError event.
+     *
+     * @param eventId The ID of the event.
+     * @param action The action to take on the certificate error.
      */
     @Deprecated(message = "")
     public suspend fun handleCertificateError(eventId: Int, action: CertificateErrorAction) {
@@ -119,6 +124,8 @@ public class Security(
     /**
      * Enable/disable overriding certificate errors. If enabled, all certificate error events need to
      * be handled by the DevTools client and should be answered with `handleCertificateError` commands.
+     *
+     * @param override If true, certificate errors will be overridden.
      */
     @Deprecated(message = "")
     public suspend fun setOverrideCertificateErrors(`override`: Boolean) {

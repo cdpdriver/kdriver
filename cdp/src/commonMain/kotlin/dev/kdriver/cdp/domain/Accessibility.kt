@@ -70,6 +70,11 @@ public class Accessibility(
 
     /**
      * Fetches the accessibility node and partial accessibility tree for this DOM node, if it exists.
+     *
+     * @param nodeId Identifier of the node to get the partial accessibility tree for.
+     * @param backendNodeId Identifier of the backend node to get the partial accessibility tree for.
+     * @param objectId JavaScript object id of the node wrapper to get the partial accessibility tree for.
+     * @param fetchRelatives Whether to fetch this node's ancestors, siblings and children. Defaults to true.
      */
     public suspend fun getPartialAXTree(
         nodeId: Int? = null,
@@ -97,6 +102,11 @@ public class Accessibility(
 
     /**
      * Fetches the entire accessibility tree for the root Document
+     *
+     * @param depth The maximum depth at which descendants of the root node should be retrieved.
+     * If omitted, the full tree is returned.
+     * @param frameId The frame for whose document the AX tree should be retrieved.
+     * If omited, the root frame is used.
      */
     public suspend fun getFullAXTree(depth: Int? = null, frameId: String? = null): GetFullAXTreeReturn {
         val parameter = GetFullAXTreeParameter(depth = depth, frameId = frameId)
@@ -116,6 +126,9 @@ public class Accessibility(
     /**
      * Fetches the root node.
      * Requires `enable()` to have been called previously.
+     *
+     * @param frameId The frame in whose document the node resides.
+     * If omitted, the root frame is used.
      */
     public suspend fun getRootAXNode(frameId: String? = null): GetRootAXNodeReturn {
         val parameter = GetRootAXNodeParameter(frameId = frameId)
@@ -135,6 +148,10 @@ public class Accessibility(
     /**
      * Fetches a node and all ancestors up to and including the root.
      * Requires `enable()` to have been called previously.
+     *
+     * @param nodeId Identifier of the node to get.
+     * @param backendNodeId Identifier of the backend node to get.
+     * @param objectId JavaScript object id of the node wrapper to get.
      */
     public suspend fun getAXNodeAndAncestors(
         nodeId: Int? = null,
@@ -159,6 +176,10 @@ public class Accessibility(
     /**
      * Fetches a particular accessibility node by AXNodeId.
      * Requires `enable()` to have been called previously.
+     *
+     * @param id No description
+     * @param frameId The frame in whose document the node resides.
+     * If omitted, the root frame is used.
      */
     public suspend fun getChildAXNodes(id: String, frameId: String? = null): GetChildAXNodesReturn {
         val parameter = GetChildAXNodesParameter(id = id, frameId = frameId)
@@ -184,6 +205,12 @@ public class Accessibility(
      * ignored for accessibility, and returns those that mactch the specified name and role. If no DOM
      * node is specified, or the DOM node does not exist, the command returns an error. If neither
      * `accessibleName` or `role` is specified, it returns all the accessibility nodes in the subtree.
+     *
+     * @param nodeId Identifier of the node for the root to query.
+     * @param backendNodeId Identifier of the backend node for the root to query.
+     * @param objectId JavaScript object id of the node wrapper for the root to query.
+     * @param accessibleName Find nodes with this computed name.
+     * @param role Find nodes with this computed role.
      */
     public suspend fun queryAXTree(
         nodeId: Int? = null,

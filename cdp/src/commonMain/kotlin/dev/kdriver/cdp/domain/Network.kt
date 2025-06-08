@@ -349,6 +349,8 @@ public class Network(
 
     /**
      * Sets a list of content encodings that will be accepted. Empty list means no encoding is accepted.
+     *
+     * @param encodings List of accepted content encodings.
      */
     public suspend fun setAcceptedEncodings(encodings: List<ContentEncoding>) {
         val parameter = SetAcceptedEncodingsParameter(encodings = encodings)
@@ -428,6 +430,21 @@ public class Network(
      * fetch occurs as a result which encounters a redirect an additional Network.requestIntercepted
      * event will be sent with the same InterceptionId.
      * Deprecated, use Fetch.continueRequest, Fetch.fulfillRequest and Fetch.failRequest instead.
+     *
+     * @param interceptionId No description
+     * @param errorReason If set this causes the request to fail with the given reason. Passing `Aborted` for requests
+     * marked with `isNavigationRequest` also cancels the navigation. Must not be set in response
+     * to an authChallenge.
+     * @param rawResponse If set the requests completes using with the provided base64 encoded raw response, including
+     * HTTP status line and headers etc... Must not be set in response to an authChallenge. (Encoded as a base64 string when passed over JSON)
+     * @param url If set the request url will be modified in a way that's not observable by page. Must not be
+     * set in response to an authChallenge.
+     * @param method If set this allows the request method to be overridden. Must not be set in response to an
+     * authChallenge.
+     * @param postData If set this allows postData to be set. Must not be set in response to an authChallenge.
+     * @param headers If set this allows the request headers to be changed. Must not be set in response to an
+     * authChallenge.
+     * @param authChallengeResponse Response to a requestIntercepted with an authChallenge. Must not be set otherwise.
      */
     @Deprecated(message = "")
     public suspend fun continueInterceptedRequest(
@@ -463,6 +480,12 @@ public class Network(
 
     /**
      * Deletes browser cookies with matching name and url or domain/path pair.
+     *
+     * @param name Name of the cookies to remove.
+     * @param url If specified, deletes all the cookies with the given name where domain and path match
+     * provided URL.
+     * @param domain If specified, deletes only cookies with the exact domain.
+     * @param path If specified, deletes only cookies with the exact path.
      */
     public suspend fun deleteCookies(
         name: String,
@@ -492,6 +515,12 @@ public class Network(
 
     /**
      * Activates emulation of network conditions.
+     *
+     * @param offline True to emulate internet disconnection.
+     * @param latency Minimum latency from request sent to response headers received (ms).
+     * @param downloadThroughput Maximal aggregated download throughput (bytes/sec). -1 disables download throttling.
+     * @param uploadThroughput Maximal aggregated upload throughput (bytes/sec).  -1 disables upload throttling.
+     * @param connectionType Connection type if known.
      */
     public suspend fun emulateNetworkConditions(
         offline: Boolean,
@@ -520,6 +549,10 @@ public class Network(
 
     /**
      * Enables network tracking, network events will now be delivered to the client.
+     *
+     * @param maxTotalBufferSize Buffer size in bytes to use when preserving network payloads (XHRs, etc).
+     * @param maxResourceBufferSize Per-resource buffer size in bytes to use when preserving network payloads (XHRs, etc).
+     * @param maxPostDataSize Longest post body size (in bytes) that would be included in requestWillBeSent notification
      */
     public suspend fun enable(
         maxTotalBufferSize: Int? = null,
@@ -557,6 +590,8 @@ public class Network(
 
     /**
      * Returns the DER-encoded certificate.
+     *
+     * @param origin Origin to get certificate for.
      */
     public suspend fun getCertificate(origin: String): GetCertificateReturn {
         val parameter = GetCertificateParameter(origin = origin)
@@ -576,6 +611,10 @@ public class Network(
     /**
      * Returns all browser cookies for the current URL. Depending on the backend support, will return
      * detailed cookie information in the `cookies` field.
+     *
+     * @param urls The list of URLs for which applicable cookies will be fetched.
+     * If not specified, it's assumed to be set to the list containing
+     * the URLs of the page and all of its subframes.
      */
     public suspend fun getCookies(urls: List<String>? = null): GetCookiesReturn {
         val parameter = GetCookiesParameter(urls = urls)
@@ -593,6 +632,8 @@ public class Network(
 
     /**
      * Returns content served for the given request.
+     *
+     * @param requestId Identifier of the network request to get content for.
      */
     public suspend fun getResponseBody(requestId: String): GetResponseBodyReturn {
         val parameter = GetResponseBodyParameter(requestId = requestId)
@@ -610,6 +651,8 @@ public class Network(
 
     /**
      * Returns post data sent with the request. Returns an error when no data was sent with the request.
+     *
+     * @param requestId Identifier of the network request to get content for.
      */
     public suspend fun getRequestPostData(requestId: String): GetRequestPostDataReturn {
         val parameter = GetRequestPostDataParameter(requestId = requestId)
@@ -627,6 +670,8 @@ public class Network(
 
     /**
      * Returns content served for the given currently intercepted request.
+     *
+     * @param interceptionId Identifier for the intercepted request to get body for.
      */
     public suspend fun getResponseBodyForInterception(interceptionId: String): GetResponseBodyForInterceptionReturn {
         val parameter = GetResponseBodyForInterceptionParameter(interceptionId = interceptionId)
@@ -650,6 +695,8 @@ public class Network(
      * the intercepted request can't be continued as is -- you either need to cancel it or to provide
      * the response body. The stream only supports sequential read, IO.read will fail if the position
      * is specified.
+     *
+     * @param interceptionId No description
      */
     public suspend fun takeResponseBodyForInterceptionAsStream(interceptionId: String): TakeResponseBodyForInterceptionAsStreamReturn {
         val parameter = TakeResponseBodyForInterceptionAsStreamParameter(interceptionId = interceptionId)
@@ -670,6 +717,8 @@ public class Network(
      * This method sends a new XMLHttpRequest which is identical to the original one. The following
      * parameters should be identical: method, url, async, request body, extra headers, withCredentials
      * attribute, user, password.
+     *
+     * @param requestId Identifier of XHR to replay.
      */
     public suspend fun replayXHR(requestId: String) {
         val parameter = ReplayXHRParameter(requestId = requestId)
@@ -687,6 +736,11 @@ public class Network(
 
     /**
      * Searches for given string in response content.
+     *
+     * @param requestId Identifier of the network response to search.
+     * @param query String to search for.
+     * @param caseSensitive If true, search is case sensitive.
+     * @param isRegex If true, treats string parameter as regex.
      */
     public suspend fun searchInResponseBody(
         requestId: String,
@@ -713,6 +767,8 @@ public class Network(
 
     /**
      * Blocks URLs from loading.
+     *
+     * @param urls URL patterns to block. Wildcards ('*') are allowed.
      */
     public suspend fun setBlockedURLs(urls: List<String>) {
         val parameter = SetBlockedURLsParameter(urls = urls)
@@ -729,6 +785,8 @@ public class Network(
 
     /**
      * Toggles ignoring of service worker for each request.
+     *
+     * @param bypass Bypass service worker and load from network.
      */
     public suspend fun setBypassServiceWorker(bypass: Boolean) {
         val parameter = SetBypassServiceWorkerParameter(bypass = bypass)
@@ -745,6 +803,8 @@ public class Network(
 
     /**
      * Toggles ignoring cache for each request. If `true`, cache will not be used.
+     *
+     * @param cacheDisabled Cache disabled state.
      */
     public suspend fun setCacheDisabled(cacheDisabled: Boolean) {
         val parameter = SetCacheDisabledParameter(cacheDisabled = cacheDisabled)
@@ -762,6 +822,26 @@ public class Network(
 
     /**
      * Sets a cookie with the given cookie data; may overwrite equivalent cookies if they exist.
+     *
+     * @param name Cookie name.
+     * @param value Cookie value.
+     * @param url The request-URI to associate with the setting of the cookie. This value can affect the
+     * default domain, path, source port, and source scheme values of the created cookie.
+     * @param domain Cookie domain.
+     * @param path Cookie path.
+     * @param secure True if cookie is secure.
+     * @param httpOnly True if cookie is http-only.
+     * @param sameSite Cookie SameSite type.
+     * @param expires Cookie expiration date, session cookie if not set
+     * @param priority Cookie Priority type.
+     * @param sameParty True if cookie is SameParty.
+     * @param sourceScheme Cookie source scheme type.
+     * @param sourcePort Cookie source port. Valid values are {-1, [1, 65535]}, -1 indicates an unspecified port.
+     * An unspecified port value allows protocol clients to emulate legacy cookie scope for the port.
+     * This is a temporary ability and it will be removed in the future.
+     * @param partitionKey Cookie partition key. The site of the top-level URL the browser was visiting at the start
+     * of the request to the endpoint that set the cookie.
+     * If not set, the cookie will be set as not partitioned.
      */
     public suspend fun setCookie(
         name: String,
@@ -808,6 +888,8 @@ public class Network(
 
     /**
      * Sets given cookies.
+     *
+     * @param cookies Cookies to be set.
      */
     public suspend fun setCookies(cookies: List<CookieParam>) {
         val parameter = SetCookiesParameter(cookies = cookies)
@@ -824,6 +906,8 @@ public class Network(
 
     /**
      * Specifies whether to always send extra HTTP headers with the requests from this page.
+     *
+     * @param headers Map with extra HTTP headers.
      */
     public suspend fun setExtraHTTPHeaders(headers: Map<String, JsonElement>) {
         val parameter = SetExtraHTTPHeadersParameter(headers = headers)
@@ -840,6 +924,8 @@ public class Network(
 
     /**
      * Specifies whether to attach a page script stack id in requests
+     *
+     * @param enabled Whether to attach a page script stack for debugging purpose.
      */
     public suspend fun setAttachDebugStack(enabled: Boolean) {
         val parameter = SetAttachDebugStackParameter(enabled = enabled)
@@ -859,6 +945,9 @@ public class Network(
     /**
      * Sets the requests to intercept that match the provided patterns and optionally resource types.
      * Deprecated, please use Fetch.enable instead.
+     *
+     * @param patterns Requests matching any of these patterns will be forwarded and wait for the corresponding
+     * continueInterceptedRequest call.
      */
     @Deprecated(message = "")
     public suspend fun setRequestInterception(patterns: List<RequestPattern>) {
@@ -876,6 +965,11 @@ public class Network(
 
     /**
      * Allows overriding user agent with the given string.
+     *
+     * @param userAgent User agent to use.
+     * @param acceptLanguage Browser language to emulate.
+     * @param platform The platform navigator.platform should return.
+     * @param userAgentMetadata To be sent in Sec-CH-UA-* headers and returned in navigator.userAgentData
      */
     public suspend fun setUserAgentOverride(
         userAgent: String,
@@ -905,6 +999,8 @@ public class Network(
     /**
      * Enables streaming of the response for the given requestId.
      * If enabled, the dataReceived event contains the data that was received during streaming.
+     *
+     * @param requestId Identifier of the request to stream.
      */
     public suspend fun streamResourceContent(requestId: String): StreamResourceContentReturn {
         val parameter = StreamResourceContentParameter(requestId = requestId)
@@ -922,6 +1018,8 @@ public class Network(
 
     /**
      * Returns information about the COEP/COOP isolation status.
+     *
+     * @param frameId If no frameId is provided, the status of the target is provided.
      */
     public suspend fun getSecurityIsolationStatus(frameId: String? = null): GetSecurityIsolationStatusReturn {
         val parameter = GetSecurityIsolationStatusParameter(frameId = frameId)
@@ -940,6 +1038,8 @@ public class Network(
     /**
      * Enables tracking for the Reporting API, events generated by the Reporting API will now be delivered to the client.
      * Enabling triggers 'reportingApiReportAdded' for all existing reports.
+     *
+     * @param enable Whether to enable or disable events for the Reporting API
      */
     public suspend fun enableReportingApi(enable: Boolean) {
         val parameter = EnableReportingApiParameter(enable = enable)
@@ -957,6 +1057,11 @@ public class Network(
 
     /**
      * Fetches the resource and returns the content.
+     *
+     * @param frameId Frame id to get the resource for. Mandatory for frame targets, and
+     * should be omitted for worker targets.
+     * @param url URL of the resource to get content for.
+     * @param options Options for the request.
      */
     public suspend fun loadNetworkResource(
         frameId: String? = null,

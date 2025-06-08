@@ -25,6 +25,13 @@ public class IndexedDB(
 
     /**
      * Clears all entries from an object store.
+     *
+     * @param securityOrigin At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.
+     * Security origin.
+     * @param storageKey Storage key.
+     * @param storageBucket Storage bucket. If not specified, it uses the default bucket.
+     * @param databaseName Database name.
+     * @param objectStoreName Object store name.
      */
     public suspend fun clearObjectStore(
         securityOrigin: String? = null,
@@ -53,6 +60,12 @@ public class IndexedDB(
 
     /**
      * Deletes a database.
+     *
+     * @param securityOrigin At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.
+     * Security origin.
+     * @param storageKey Storage key.
+     * @param storageBucket Storage bucket. If not specified, it uses the default bucket.
+     * @param databaseName Database name.
      */
     public suspend fun deleteDatabase(
         securityOrigin: String? = null,
@@ -79,6 +92,14 @@ public class IndexedDB(
 
     /**
      * Delete a range of entries from an object store
+     *
+     * @param securityOrigin At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.
+     * Security origin.
+     * @param storageKey Storage key.
+     * @param storageBucket Storage bucket. If not specified, it uses the default bucket.
+     * @param databaseName No description
+     * @param objectStoreName No description
+     * @param keyRange Range of entry keys to delete
      */
     public suspend fun deleteObjectStoreEntries(
         securityOrigin: String? = null,
@@ -126,6 +147,17 @@ public class IndexedDB(
 
     /**
      * Requests data from object store or index.
+     *
+     * @param securityOrigin At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.
+     * Security origin.
+     * @param storageKey Storage key.
+     * @param storageBucket Storage bucket. If not specified, it uses the default bucket.
+     * @param databaseName Database name.
+     * @param objectStoreName Object store name.
+     * @param indexName Index name, empty string for object store data requests.
+     * @param skipCount Number of records to skip.
+     * @param pageSize Number of records to fetch.
+     * @param keyRange Key range.
      */
     public suspend fun requestData(
         securityOrigin: String? = null,
@@ -163,6 +195,13 @@ public class IndexedDB(
 
     /**
      * Gets metadata of an object store.
+     *
+     * @param securityOrigin At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.
+     * Security origin.
+     * @param storageKey Storage key.
+     * @param storageBucket Storage bucket. If not specified, it uses the default bucket.
+     * @param databaseName Database name.
+     * @param objectStoreName Object store name.
      */
     public suspend fun getMetadata(
         securityOrigin: String? = null,
@@ -192,6 +231,12 @@ public class IndexedDB(
 
     /**
      * Requests database with given name in given frame.
+     *
+     * @param securityOrigin At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.
+     * Security origin.
+     * @param storageKey Storage key.
+     * @param storageBucket Storage bucket. If not specified, it uses the default bucket.
+     * @param databaseName Database name.
      */
     public suspend fun requestDatabase(
         securityOrigin: String? = null,
@@ -219,6 +264,11 @@ public class IndexedDB(
 
     /**
      * Requests database names for given security origin.
+     *
+     * @param securityOrigin At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.
+     * Security origin.
+     * @param storageKey Storage key.
+     * @param storageBucket Storage bucket. If not specified, it uses the default bucket.
      */
     public suspend fun requestDatabaseNames(
         securityOrigin: String? = null,

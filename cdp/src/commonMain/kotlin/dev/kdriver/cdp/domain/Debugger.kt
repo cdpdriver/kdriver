@@ -86,6 +86,9 @@ public class Debugger(
 
     /**
      * Continues execution until specific location is reached.
+     *
+     * @param location Location to continue to.
+     * @param targetCallFrames No description
      */
     public suspend fun continueToLocation(location: Location, targetCallFrames: String? = null) {
         val parameter = ContinueToLocationParameter(location = location, targetCallFrames = targetCallFrames)
@@ -113,6 +116,9 @@ public class Debugger(
     /**
      * Enables debugger for the given page. Clients should not assume that the debugging has been
      * enabled until the result for this command is received.
+     *
+     * @param maxScriptsCacheSize The maximum size in bytes of collected scripts (not referenced by other heap objects)
+     * the debugger can hold. Puts no limit if parameter is omitted.
      */
     public suspend fun enable(maxScriptsCacheSize: Double? = null): EnableReturn {
         val parameter = EnableParameter(maxScriptsCacheSize = maxScriptsCacheSize)
@@ -130,6 +136,19 @@ public class Debugger(
 
     /**
      * Evaluates expression on a given call frame.
+     *
+     * @param callFrameId Call frame identifier to evaluate on.
+     * @param expression Expression to evaluate.
+     * @param objectGroup String object group name to put result into (allows rapid releasing resulting object handles
+     * using `releaseObjectGroup`).
+     * @param includeCommandLineAPI Specifies whether command line API should be available to the evaluated expression, defaults
+     * to false.
+     * @param silent In silent mode exceptions thrown during evaluation are not reported and do not pause
+     * execution. Overrides `setPauseOnException` state.
+     * @param returnByValue Whether the result is expected to be a JSON object that should be sent by value.
+     * @param generatePreview Whether preview should be generated for the result.
+     * @param throwOnSideEffect Whether to throw an exception if side effect cannot be ruled out during evaluation.
+     * @param timeout Terminate execution after timing out (number of milliseconds).
      */
     public suspend fun evaluateOnCallFrame(
         callFrameId: String,
@@ -169,6 +188,11 @@ public class Debugger(
     /**
      * Returns possible locations for breakpoint. scriptId in start and end range locations should be
      * the same.
+     *
+     * @param start Start of range to search possible breakpoint locations in.
+     * @param end End of range to search possible breakpoint locations in (excluding). When not specified, end
+     * of scripts is used as end of range.
+     * @param restrictToFunction Only consider locations which are in the same (non-nested) function as start.
      */
     public suspend fun getPossibleBreakpoints(
         start: Location,
@@ -191,6 +215,8 @@ public class Debugger(
 
     /**
      * Returns source for the script with given id.
+     *
+     * @param scriptId Id of the script to get source for.
      */
     public suspend fun getScriptSource(scriptId: String): GetScriptSourceReturn {
         val parameter = GetScriptSourceParameter(scriptId = scriptId)
@@ -203,6 +229,11 @@ public class Debugger(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param scriptId Id of the script to disassemble
+     */
     public suspend fun disassembleWasmModule(scriptId: String): DisassembleWasmModuleReturn {
         val parameter = DisassembleWasmModuleParameter(scriptId = scriptId)
         return disassembleWasmModule(parameter)
@@ -225,6 +256,8 @@ public class Debugger(
      * stream. If disassembly is complete, this API will invalidate the streamId
      * and return an empty chunk. Any subsequent calls for the now invalid stream
      * will return errors.
+     *
+     * @param streamId No description
      */
     public suspend fun nextWasmDisassemblyChunk(streamId: String): NextWasmDisassemblyChunkReturn {
         val parameter = NextWasmDisassemblyChunkParameter(streamId = streamId)
@@ -243,6 +276,8 @@ public class Debugger(
 
     /**
      * This command is deprecated. Use getScriptSource instead.
+     *
+     * @param scriptId Id of the Wasm script to get source for.
      */
     @Deprecated(message = "")
     public suspend fun getWasmBytecode(scriptId: String): GetWasmBytecodeReturn {
@@ -261,6 +296,8 @@ public class Debugger(
 
     /**
      * Returns stack trace with given `stackTraceId`.
+     *
+     * @param stackTraceId No description
      */
     public suspend fun getStackTrace(stackTraceId: Runtime.StackTraceId): GetStackTraceReturn {
         val parameter = GetStackTraceParameter(stackTraceId = stackTraceId)
@@ -281,6 +318,11 @@ public class Debugger(
         cdp.callCommand("Debugger.pauseOnAsyncCall", parameter)
     }
 
+    /**
+     *
+     *
+     * @param parentStackTraceId Debugger will pause when async call with given stack trace is started.
+     */
     @Deprecated(message = "")
     public suspend fun pauseOnAsyncCall(parentStackTraceId: Runtime.StackTraceId) {
         val parameter = PauseOnAsyncCallParameter(parentStackTraceId = parentStackTraceId)
@@ -297,6 +339,8 @@ public class Debugger(
 
     /**
      * Removes JavaScript breakpoint.
+     *
+     * @param breakpointId No description
      */
     public suspend fun removeBreakpoint(breakpointId: String) {
         val parameter = RemoveBreakpointParameter(breakpointId = breakpointId)
@@ -338,6 +382,10 @@ public class Debugger(
      * The various return values are deprecated and `callFrames` is always empty.
      * Use the call frames from the `Debugger#paused` events instead, that fires
      * once V8 pauses at the beginning of the restarted function.
+     *
+     * @param callFrameId Call frame identifier to evaluate on.
+     * @param mode The `mode` parameter must be present and set to 'StepInto', otherwise
+     * `restartFrame` will error out.
      */
     public suspend fun restartFrame(callFrameId: String, mode: String? = null): RestartFrameReturn {
         val parameter = RestartFrameParameter(callFrameId = callFrameId, mode = mode)
@@ -354,6 +402,12 @@ public class Debugger(
 
     /**
      * Resumes JavaScript execution.
+     *
+     * @param terminateOnResume Set to true to terminate execution upon resuming execution. In contrast
+     * to Runtime.terminateExecution, this will allows to execute further
+     * JavaScript (i.e. via evaluation) until execution of the paused code
+     * is actually resumed, at which point termination is triggered.
+     * If execution is currently not paused, this parameter has no effect.
      */
     public suspend fun resume(terminateOnResume: Boolean? = null) {
         val parameter = ResumeParameter(terminateOnResume = terminateOnResume)
@@ -371,6 +425,11 @@ public class Debugger(
 
     /**
      * Searches for given string in script content.
+     *
+     * @param scriptId Id of the script to search in.
+     * @param query String to search for.
+     * @param caseSensitive If true, search is case sensitive.
+     * @param isRegex If true, treats string parameter as regex.
      */
     public suspend fun searchInContent(
         scriptId: String,
@@ -397,6 +456,9 @@ public class Debugger(
 
     /**
      * Enables or disables async call stacks tracking.
+     *
+     * @param maxDepth Maximum depth of async call stacks. Setting to `0` will effectively disable collecting async
+     * call stacks (default).
      */
     public suspend fun setAsyncCallStackDepth(maxDepth: Int) {
         val parameter = SetAsyncCallStackDepthParameter(maxDepth = maxDepth)
@@ -417,6 +479,8 @@ public class Debugger(
      * Replace previous blackbox patterns with passed ones. Forces backend to skip stepping/pausing in
      * scripts with url matching one of the patterns. VM will try to leave blackboxed script by
      * performing 'step in' several times, finally resorting to 'step out' if unsuccessful.
+     *
+     * @param patterns Array of regexps that will be used to check script url for blackbox state.
      */
     public suspend fun setBlackboxPatterns(patterns: List<String>) {
         val parameter = SetBlackboxPatternsParameter(patterns = patterns)
@@ -439,6 +503,9 @@ public class Debugger(
      * scripts by performing 'step in' several times, finally resorting to 'step out' if unsuccessful.
      * Positions array contains positions where blackbox state is changed. First interval isn't
      * blackboxed. Array should be sorted.
+     *
+     * @param scriptId Id of the script.
+     * @param positions No description
      */
     public suspend fun setBlackboxedRanges(scriptId: String, positions: List<ScriptPosition>) {
         val parameter = SetBlackboxedRangesParameter(scriptId = scriptId, positions = positions)
@@ -456,6 +523,10 @@ public class Debugger(
 
     /**
      * Sets JavaScript breakpoint at a given location.
+     *
+     * @param location Location to set breakpoint in.
+     * @param condition Expression to use as a breakpoint condition. When specified, debugger will only stop on the
+     * breakpoint if this expression evaluates to true.
      */
     public suspend fun setBreakpoint(location: Location, condition: String? = null): SetBreakpointReturn {
         val parameter = SetBreakpointParameter(location = location, condition = condition)
@@ -473,6 +544,8 @@ public class Debugger(
 
     /**
      * Sets instrumentation breakpoint.
+     *
+     * @param instrumentation Instrumentation name.
      */
     public suspend fun setInstrumentationBreakpoint(instrumentation: String): SetInstrumentationBreakpointReturn {
         val parameter = SetInstrumentationBreakpointParameter(instrumentation = instrumentation)
@@ -496,6 +569,15 @@ public class Debugger(
      * command is issued, all existing parsed scripts will have breakpoints resolved and returned in
      * `locations` property. Further matching script parsing will result in subsequent
      * `breakpointResolved` events issued. This logical breakpoint will survive page reloads.
+     *
+     * @param lineNumber Line number to set breakpoint at.
+     * @param url URL of the resources to set breakpoint on.
+     * @param urlRegex Regex pattern for the URLs of the resources to set breakpoints on. Either `url` or
+     * `urlRegex` must be specified.
+     * @param scriptHash Script hash of the resources to set breakpoint on.
+     * @param columnNumber Offset in the line to set breakpoint at.
+     * @param condition Expression to use as a breakpoint condition. When specified, debugger will only stop on the
+     * breakpoint if this expression evaluates to true.
      */
     public suspend fun setBreakpointByUrl(
         lineNumber: Int,
@@ -531,6 +613,10 @@ public class Debugger(
      * Sets JavaScript breakpoint before each call to the given function.
      * If another function was created from the same source as a given one,
      * calling it will also trigger the breakpoint.
+     *
+     * @param objectId Function object id.
+     * @param condition Expression to use as a breakpoint condition. When specified, debugger will
+     * stop on the breakpoint if this expression evaluates to true.
      */
     public suspend fun setBreakpointOnFunctionCall(
         objectId: String,
@@ -550,6 +636,8 @@ public class Debugger(
 
     /**
      * Activates / deactivates all breakpoints on the page.
+     *
+     * @param active New value for breakpoints active state.
      */
     public suspend fun setBreakpointsActive(active: Boolean) {
         val parameter = SetBreakpointsActiveParameter(active = active)
@@ -568,6 +656,8 @@ public class Debugger(
     /**
      * Defines pause on exceptions state. Can be set to stop on all exceptions, uncaught exceptions,
      * or caught exceptions, no exceptions. Initial pause on exceptions state is `none`.
+     *
+     * @param state Pause on exceptions mode.
      */
     public suspend fun setPauseOnExceptions(state: String) {
         val parameter = SetPauseOnExceptionsParameter(state = state)
@@ -584,6 +674,8 @@ public class Debugger(
 
     /**
      * Changes return value in top frame. Available only at return break position.
+     *
+     * @param newValue New return value.
      */
     public suspend fun setReturnValue(newValue: Runtime.CallArgument) {
         val parameter = SetReturnValueParameter(newValue = newValue)
@@ -613,6 +705,13 @@ public class Debugger(
      * that is the only activation of that function on the stack. In this case
      * the live edit will be successful and a `Debugger.restartFrame` for the
      * top-most function is automatically triggered.
+     *
+     * @param scriptId Id of the script to edit.
+     * @param scriptSource New content of the script.
+     * @param dryRun If true the change will not actually be applied. Dry run may be used to get result
+     * description without actually modifying the code.
+     * @param allowTopFrameEditing If true, then `scriptSource` is allowed to change the function on top of the stack
+     * as long as the top-most stack frame is the only activation of that function.
      */
     public suspend fun setScriptSource(
         scriptId: String,
@@ -639,6 +738,8 @@ public class Debugger(
 
     /**
      * Makes page not interrupt on any pauses (breakpoint, exception, dom exception etc).
+     *
+     * @param skip New value for skip pauses state.
      */
     public suspend fun setSkipAllPauses(skip: Boolean) {
         val parameter = SetSkipAllPausesParameter(skip = skip)
@@ -657,6 +758,12 @@ public class Debugger(
     /**
      * Changes value of variable in a callframe. Object-based scopes are not supported and must be
      * mutated manually.
+     *
+     * @param scopeNumber 0-based number of scope as was listed in scope chain. Only 'local', 'closure' and 'catch'
+     * scope types are allowed. Other scopes could be manipulated manually.
+     * @param variableName Variable name.
+     * @param newValue New variable value.
+     * @param callFrameId Id of callframe that holds variable.
      */
     public suspend fun setVariableValue(
         scopeNumber: Int,
@@ -683,6 +790,10 @@ public class Debugger(
 
     /**
      * Steps into the function call.
+     *
+     * @param breakOnAsyncCall Debugger will pause on the execution of the first async task which was scheduled
+     * before next pause.
+     * @param skipList The skipList specifies location ranges that should be skipped on step into.
      */
     public suspend fun stepInto(breakOnAsyncCall: Boolean? = null, skipList: List<LocationRange>? = null) {
         val parameter = StepIntoParameter(breakOnAsyncCall = breakOnAsyncCall, skipList = skipList)
@@ -707,6 +818,8 @@ public class Debugger(
 
     /**
      * Steps over the statement.
+     *
+     * @param skipList The skipList specifies location ranges that should be skipped on step over.
      */
     public suspend fun stepOver(skipList: List<LocationRange>? = null) {
         val parameter = StepOverParameter(skipList = skipList)

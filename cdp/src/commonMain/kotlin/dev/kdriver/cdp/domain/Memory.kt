@@ -45,6 +45,8 @@ public class Memory(
 
     /**
      * Enable/disable suppressing memory pressure notifications in all processes.
+     *
+     * @param suppressed If true, memory pressure notifications will be suppressed.
      */
     public suspend fun setPressureNotificationsSuppressed(suppressed: Boolean) {
         val parameter = SetPressureNotificationsSuppressedParameter(suppressed = suppressed)
@@ -61,6 +63,8 @@ public class Memory(
 
     /**
      * Simulate a memory pressure notification in all processes.
+     *
+     * @param level Memory pressure level of the notification.
      */
     public suspend fun simulatePressureNotification(level: PressureLevel) {
         val parameter = SimulatePressureNotificationParameter(level = level)
@@ -77,6 +81,9 @@ public class Memory(
 
     /**
      * Start collecting native memory profile.
+     *
+     * @param samplingInterval Average number of bytes between samples.
+     * @param suppressRandomness Do not randomize intervals between samples.
      */
     public suspend fun startSampling(samplingInterval: Int? = null, suppressRandomness: Boolean? = null) {
         val parameter =

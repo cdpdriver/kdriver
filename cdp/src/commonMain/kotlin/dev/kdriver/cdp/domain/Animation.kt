@@ -76,6 +76,8 @@ public class Animation(
 
     /**
      * Returns the current time of the an animation.
+     *
+     * @param id Id of animation.
      */
     public suspend fun getCurrentTime(id: String): GetCurrentTimeReturn {
         val parameter = GetCurrentTimeParameter(id = id)
@@ -101,6 +103,8 @@ public class Animation(
 
     /**
      * Releases a set of animations to no longer be manipulated.
+     *
+     * @param animations List of animation ids to seek.
      */
     public suspend fun releaseAnimations(animations: List<String>) {
         val parameter = ReleaseAnimationsParameter(animations = animations)
@@ -118,6 +122,8 @@ public class Animation(
 
     /**
      * Gets the remote object of the Animation.
+     *
+     * @param animationId Animation id.
      */
     public suspend fun resolveAnimation(animationId: String): ResolveAnimationReturn {
         val parameter = ResolveAnimationParameter(animationId = animationId)
@@ -134,6 +140,9 @@ public class Animation(
 
     /**
      * Seek a set of animations to a particular time within each animation.
+     *
+     * @param animations List of animation ids to seek.
+     * @param currentTime Set the current time of each animation.
      */
     public suspend fun seekAnimations(animations: List<String>, currentTime: Double) {
         val parameter = SeekAnimationsParameter(animations = animations, currentTime = currentTime)
@@ -150,6 +159,9 @@ public class Animation(
 
     /**
      * Sets the paused state of a set of animations.
+     *
+     * @param animations Animations to set the pause state of.
+     * @param paused Paused state to set to.
      */
     public suspend fun setPaused(animations: List<String>, paused: Boolean) {
         val parameter = SetPausedParameter(animations = animations, paused = paused)
@@ -166,6 +178,8 @@ public class Animation(
 
     /**
      * Sets the playback rate of the document timeline.
+     *
+     * @param playbackRate Playback rate for animations on page
      */
     public suspend fun setPlaybackRate(playbackRate: Double) {
         val parameter = SetPlaybackRateParameter(playbackRate = playbackRate)
@@ -182,6 +196,10 @@ public class Animation(
 
     /**
      * Sets the timing of an animation node.
+     *
+     * @param animationId Animation id.
+     * @param duration Duration of the animation.
+     * @param delay Delay of the animation.
      */
     public suspend fun setTiming(
         animationId: String,

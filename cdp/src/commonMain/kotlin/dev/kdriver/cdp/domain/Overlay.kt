@@ -92,6 +92,12 @@ public class Overlay(
 
     /**
      * For testing.
+     *
+     * @param nodeId Id of the node to get highlight object for.
+     * @param includeDistance Whether to include distance info.
+     * @param includeStyle Whether to include style info.
+     * @param colorFormat The color format to get config with (default: hex).
+     * @param showAccessibilityInfo Whether to show accessibility info (default: true).
      */
     public suspend fun getHighlightObjectForTest(
         nodeId: Int,
@@ -121,6 +127,8 @@ public class Overlay(
 
     /**
      * For Persistent Grid testing.
+     *
+     * @param nodeIds Ids of the node to get highlight object for.
      */
     public suspend fun getGridHighlightObjectsForTest(nodeIds: List<Int>): GetGridHighlightObjectsForTestReturn {
         val parameter = GetGridHighlightObjectsForTestParameter(nodeIds = nodeIds)
@@ -138,6 +146,8 @@ public class Overlay(
 
     /**
      * For Source Order Viewer testing.
+     *
+     * @param nodeId Id of the node to highlight.
      */
     public suspend fun getSourceOrderHighlightObjectForTest(nodeId: Int): GetSourceOrderHighlightObjectForTestReturn {
         val parameter = GetSourceOrderHighlightObjectForTestParameter(nodeId = nodeId)
@@ -169,6 +179,10 @@ public class Overlay(
      * Deprecated: Doesn't work reliablity and cannot be fixed due to process
      * separatation (the owner node might be in a different process). Determine
      * the owner node in the client and use highlightNode.
+     *
+     * @param frameId Identifier of the frame to highlight.
+     * @param contentColor The content box highlight fill color (default: transparent).
+     * @param contentOutlineColor The content box highlight outline color (default: transparent).
      */
     @Deprecated(message = "")
     public suspend fun highlightFrame(
@@ -196,6 +210,12 @@ public class Overlay(
     /**
      * Highlights DOM node with given id or with the given JavaScript object wrapper. Either nodeId or
      * objectId must be specified.
+     *
+     * @param highlightConfig A descriptor for the highlight appearance.
+     * @param nodeId Identifier of the node to highlight.
+     * @param backendNodeId Identifier of the backend node to highlight.
+     * @param objectId JavaScript object id of the node to be highlighted.
+     * @param selector Selectors to highlight relevant nodes.
      */
     public suspend fun highlightNode(
         highlightConfig: HighlightConfig,
@@ -224,6 +244,10 @@ public class Overlay(
 
     /**
      * Highlights given quad. Coordinates are absolute with respect to the main frame viewport.
+     *
+     * @param quad Quad to highlight
+     * @param color The highlight fill color (default: transparent).
+     * @param outlineColor The highlight outline color (default: transparent).
      */
     public suspend fun highlightQuad(
         quad: List<Double>,
@@ -244,6 +268,13 @@ public class Overlay(
 
     /**
      * Highlights given rectangle. Coordinates are absolute with respect to the main frame viewport.
+     *
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param width Rectangle width
+     * @param height Rectangle height
+     * @param color The highlight fill color (default: transparent).
+     * @param outlineColor The highlight outline color (default: transparent).
      */
     public suspend fun highlightRect(
         x: Int,
@@ -276,6 +307,11 @@ public class Overlay(
     /**
      * Highlights the source order of the children of the DOM node with given id or with the given
      * JavaScript object wrapper. Either nodeId or objectId must be specified.
+     *
+     * @param sourceOrderConfig A descriptor for the appearance of the overlay drawing.
+     * @param nodeId Identifier of the node to highlight.
+     * @param backendNodeId Identifier of the backend node to highlight.
+     * @param objectId JavaScript object id of the node to be highlighted.
      */
     public suspend fun highlightSourceOrder(
         sourceOrderConfig: SourceOrderConfig,
@@ -304,6 +340,10 @@ public class Overlay(
     /**
      * Enters the 'inspect' mode. In this mode, elements that user is hovering over are highlighted.
      * Backend then generates 'inspectNodeRequested' event upon element selection.
+     *
+     * @param mode Set an inspection mode.
+     * @param highlightConfig A descriptor for the highlight appearance of hovered-over nodes. May be omitted if `enabled
+     * == false`.
      */
     public suspend fun setInspectMode(mode: InspectMode, highlightConfig: HighlightConfig? = null) {
         val parameter = SetInspectModeParameter(mode = mode, highlightConfig = highlightConfig)
@@ -320,6 +360,8 @@ public class Overlay(
 
     /**
      * Highlights owner element of all frames detected to be ads.
+     *
+     * @param show True for showing ad highlights
      */
     public suspend fun setShowAdHighlights(show: Boolean) {
         val parameter = SetShowAdHighlightsParameter(show = show)
@@ -331,6 +373,11 @@ public class Overlay(
         cdp.callCommand("Overlay.setPausedInDebuggerMessage", parameter)
     }
 
+    /**
+     *
+     *
+     * @param message The message to display, also triggers resume and step over controls.
+     */
     public suspend fun setPausedInDebuggerMessage(message: String? = null) {
         val parameter = SetPausedInDebuggerMessageParameter(message = message)
         setPausedInDebuggerMessage(parameter)
@@ -346,6 +393,8 @@ public class Overlay(
 
     /**
      * Requests that backend shows debug borders on layers
+     *
+     * @param show True for showing debug borders
      */
     public suspend fun setShowDebugBorders(show: Boolean) {
         val parameter = SetShowDebugBordersParameter(show = show)
@@ -362,6 +411,8 @@ public class Overlay(
 
     /**
      * Requests that backend shows the FPS counter
+     *
+     * @param show True for showing the FPS counter
      */
     public suspend fun setShowFPSCounter(show: Boolean) {
         val parameter = SetShowFPSCounterParameter(show = show)
@@ -378,6 +429,8 @@ public class Overlay(
 
     /**
      * Highlight multiple elements with the CSS Grid overlay.
+     *
+     * @param gridNodeHighlightConfigs An array of node identifiers and descriptors for the highlight appearance.
      */
     public suspend fun setShowGridOverlays(gridNodeHighlightConfigs: List<GridNodeHighlightConfig>) {
         val parameter = SetShowGridOverlaysParameter(gridNodeHighlightConfigs = gridNodeHighlightConfigs)
@@ -389,6 +442,11 @@ public class Overlay(
         cdp.callCommand("Overlay.setShowFlexOverlays", parameter)
     }
 
+    /**
+     *
+     *
+     * @param flexNodeHighlightConfigs An array of node identifiers and descriptors for the highlight appearance.
+     */
     public suspend fun setShowFlexOverlays(flexNodeHighlightConfigs: List<FlexNodeHighlightConfig>) {
         val parameter = SetShowFlexOverlaysParameter(flexNodeHighlightConfigs = flexNodeHighlightConfigs)
         setShowFlexOverlays(parameter)
@@ -399,6 +457,11 @@ public class Overlay(
         cdp.callCommand("Overlay.setShowScrollSnapOverlays", parameter)
     }
 
+    /**
+     *
+     *
+     * @param scrollSnapHighlightConfigs An array of node identifiers and descriptors for the highlight appearance.
+     */
     public suspend fun setShowScrollSnapOverlays(scrollSnapHighlightConfigs: List<ScrollSnapHighlightConfig>) {
         val parameter = SetShowScrollSnapOverlaysParameter(scrollSnapHighlightConfigs = scrollSnapHighlightConfigs)
         setShowScrollSnapOverlays(parameter)
@@ -409,6 +472,11 @@ public class Overlay(
         cdp.callCommand("Overlay.setShowContainerQueryOverlays", parameter)
     }
 
+    /**
+     *
+     *
+     * @param containerQueryHighlightConfigs An array of node identifiers and descriptors for the highlight appearance.
+     */
     public suspend fun setShowContainerQueryOverlays(containerQueryHighlightConfigs: List<ContainerQueryHighlightConfig>) {
         val parameter =
             SetShowContainerQueryOverlaysParameter(containerQueryHighlightConfigs = containerQueryHighlightConfigs)
@@ -425,6 +493,8 @@ public class Overlay(
 
     /**
      * Requests that backend shows paint rectangles
+     *
+     * @param result True for showing paint rectangles
      */
     public suspend fun setShowPaintRects(result: Boolean) {
         val parameter = SetShowPaintRectsParameter(result = result)
@@ -441,6 +511,8 @@ public class Overlay(
 
     /**
      * Requests that backend shows layout shift regions
+     *
+     * @param result True for showing layout shift regions
      */
     public suspend fun setShowLayoutShiftRegions(result: Boolean) {
         val parameter = SetShowLayoutShiftRegionsParameter(result = result)
@@ -457,6 +529,8 @@ public class Overlay(
 
     /**
      * Requests that backend shows scroll bottleneck rects
+     *
+     * @param show True for showing scroll bottleneck rects
      */
     public suspend fun setShowScrollBottleneckRects(show: Boolean) {
         val parameter = SetShowScrollBottleneckRectsParameter(show = show)
@@ -474,6 +548,8 @@ public class Overlay(
 
     /**
      * Deprecated, no longer has any effect.
+     *
+     * @param show True for showing hit-test borders
      */
     @Deprecated(message = "")
     public suspend fun setShowHitTestBorders(show: Boolean) {
@@ -491,6 +567,8 @@ public class Overlay(
 
     /**
      * Request that backend shows an overlay with web vital metrics.
+     *
+     * @param show No description
      */
     public suspend fun setShowWebVitals(show: Boolean) {
         val parameter = SetShowWebVitalsParameter(show = show)
@@ -507,6 +585,8 @@ public class Overlay(
 
     /**
      * Paints viewport size upon main frame resize.
+     *
+     * @param show Whether to paint size or not.
      */
     public suspend fun setShowViewportSizeOnResize(show: Boolean) {
         val parameter = SetShowViewportSizeOnResizeParameter(show = show)
@@ -523,6 +603,8 @@ public class Overlay(
 
     /**
      * Add a dual screen device hinge
+     *
+     * @param hingeConfig hinge data, null means hideHinge
      */
     public suspend fun setShowHinge(hingeConfig: HingeConfig? = null) {
         val parameter = SetShowHingeParameter(hingeConfig = hingeConfig)
@@ -539,6 +621,8 @@ public class Overlay(
 
     /**
      * Show elements in isolation mode with overlays.
+     *
+     * @param isolatedElementHighlightConfigs An array of node identifiers and descriptors for the highlight appearance.
      */
     public suspend fun setShowIsolatedElements(isolatedElementHighlightConfigs: List<IsolatedElementHighlightConfig>) {
         val parameter =
@@ -556,6 +640,8 @@ public class Overlay(
 
     /**
      * Show Window Controls Overlay for PWA
+     *
+     * @param windowControlsOverlayConfig Window Controls Overlay data, null means hide Window Controls Overlay
      */
     public suspend fun setShowWindowControlsOverlay(windowControlsOverlayConfig: WindowControlsOverlayConfig? = null) {
         val parameter = SetShowWindowControlsOverlayParameter(windowControlsOverlayConfig = windowControlsOverlayConfig)

@@ -56,6 +56,12 @@ public class WebAuthn(
     /**
      * Enable the WebAuthn domain and start intercepting credential storage and
      * retrieval with a virtual authenticator.
+     *
+     * @param enableUI Whether to enable the WebAuthn user interface. Enabling the UI is
+     * recommended for debugging and demo purposes, as it is closer to the real
+     * experience. Disabling the UI is recommended for automated testing.
+     * Supported at the embedder's discretion if UI is available.
+     * Defaults to false.
      */
     public suspend fun enable(enableUI: Boolean? = null) {
         val parameter = EnableParameter(enableUI = enableUI)
@@ -81,6 +87,8 @@ public class WebAuthn(
 
     /**
      * Creates and adds a virtual authenticator.
+     *
+     * @param options No description
      */
     public suspend fun addVirtualAuthenticator(options: VirtualAuthenticatorOptions): AddVirtualAuthenticatorReturn {
         val parameter = AddVirtualAuthenticatorParameter(options = options)
@@ -97,6 +105,14 @@ public class WebAuthn(
 
     /**
      * Resets parameters isBogusSignature, isBadUV, isBadUP to false if they are not present.
+     *
+     * @param authenticatorId No description
+     * @param isBogusSignature If isBogusSignature is set, overrides the signature in the authenticator response to be zero.
+     * Defaults to false.
+     * @param isBadUV If isBadUV is set, overrides the UV bit in the flags in the authenticator response to
+     * be zero. Defaults to false.
+     * @param isBadUP If isBadUP is set, overrides the UP bit in the flags in the authenticator response to
+     * be zero. Defaults to false.
      */
     public suspend fun setResponseOverrideBits(
         authenticatorId: String,
@@ -123,6 +139,8 @@ public class WebAuthn(
 
     /**
      * Removes the given authenticator.
+     *
+     * @param authenticatorId No description
      */
     public suspend fun removeVirtualAuthenticator(authenticatorId: String) {
         val parameter = RemoveVirtualAuthenticatorParameter(authenticatorId = authenticatorId)
@@ -139,6 +157,9 @@ public class WebAuthn(
 
     /**
      * Adds the credential to the specified authenticator.
+     *
+     * @param authenticatorId No description
+     * @param credential No description
      */
     public suspend fun addCredential(authenticatorId: String, credential: Credential) {
         val parameter = AddCredentialParameter(authenticatorId = authenticatorId, credential = credential)
@@ -158,6 +179,9 @@ public class WebAuthn(
     /**
      * Returns a single credential stored in the given virtual authenticator that
      * matches the credential ID.
+     *
+     * @param authenticatorId No description
+     * @param credentialId No description
      */
     public suspend fun getCredential(authenticatorId: String, credentialId: String): GetCredentialReturn {
         val parameter = GetCredentialParameter(authenticatorId = authenticatorId, credentialId = credentialId)
@@ -175,6 +199,8 @@ public class WebAuthn(
 
     /**
      * Returns all the credentials stored in the given virtual authenticator.
+     *
+     * @param authenticatorId No description
      */
     public suspend fun getCredentials(authenticatorId: String): GetCredentialsReturn {
         val parameter = GetCredentialsParameter(authenticatorId = authenticatorId)
@@ -191,6 +217,9 @@ public class WebAuthn(
 
     /**
      * Removes a credential from the authenticator.
+     *
+     * @param authenticatorId No description
+     * @param credentialId No description
      */
     public suspend fun removeCredential(authenticatorId: String, credentialId: String) {
         val parameter = RemoveCredentialParameter(authenticatorId = authenticatorId, credentialId = credentialId)
@@ -207,6 +236,8 @@ public class WebAuthn(
 
     /**
      * Clears all the credentials from the specified device.
+     *
+     * @param authenticatorId No description
      */
     public suspend fun clearCredentials(authenticatorId: String) {
         val parameter = ClearCredentialsParameter(authenticatorId = authenticatorId)
@@ -225,6 +256,9 @@ public class WebAuthn(
     /**
      * Sets whether User Verification succeeds or fails for an authenticator.
      * The default is true.
+     *
+     * @param authenticatorId No description
+     * @param isUserVerified No description
      */
     public suspend fun setUserVerified(authenticatorId: String, isUserVerified: Boolean) {
         val parameter = SetUserVerifiedParameter(authenticatorId = authenticatorId, isUserVerified = isUserVerified)
@@ -243,6 +277,9 @@ public class WebAuthn(
     /**
      * Sets whether tests of user presence will succeed immediately (if true) or fail to resolve (if false) for an authenticator.
      * The default is true.
+     *
+     * @param authenticatorId No description
+     * @param enabled No description
      */
     public suspend fun setAutomaticPresenceSimulation(authenticatorId: String, enabled: Boolean) {
         val parameter = SetAutomaticPresenceSimulationParameter(authenticatorId = authenticatorId, enabled = enabled)

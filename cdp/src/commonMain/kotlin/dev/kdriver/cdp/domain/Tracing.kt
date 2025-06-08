@@ -77,6 +77,8 @@ public class Tracing(
 
     /**
      * Record a clock sync marker in the trace.
+     *
+     * @param syncId The ID of this clock sync marker
      */
     public suspend fun recordClockSyncMarker(syncId: String) {
         val parameter = RecordClockSyncMarkerParameter(syncId = syncId)
@@ -94,6 +96,9 @@ public class Tracing(
 
     /**
      * Request a global memory dump.
+     *
+     * @param deterministic Enables more deterministic results by forcing garbage collection
+     * @param levelOfDetail Specifies level of details in memory dump. Defaults to "detailed".
      */
     public suspend fun requestMemoryDump(
         deterministic: Boolean? = null,
@@ -113,6 +118,21 @@ public class Tracing(
 
     /**
      * Start trace events collection.
+     *
+     * @param categories Category/tag filter
+     * @param options Tracing options
+     * @param bufferUsageReportingInterval If set, the agent will issue bufferUsage events at this interval, specified in milliseconds
+     * @param transferMode Whether to report trace events as series of dataCollected events or to save trace to a
+     * stream (defaults to `ReportEvents`).
+     * @param streamFormat Trace data format to use. This only applies when using `ReturnAsStream`
+     * transfer mode (defaults to `json`).
+     * @param streamCompression Compression format to use. This only applies when using `ReturnAsStream`
+     * transfer mode (defaults to `none`)
+     * @param traceConfig No description
+     * @param perfettoConfig Base64-encoded serialized perfetto.protos.TraceConfig protobuf message
+     * When specified, the parameters `categories`, `options`, `traceConfig`
+     * are ignored. (Encoded as a base64 string when passed over JSON)
+     * @param tracingBackend Backend type (defaults to `auto`)
      */
     public suspend fun start(
         categories: String? = null,

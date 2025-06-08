@@ -45,6 +45,12 @@ public class PerformanceTimeline(
     /**
      * Previously buffered events would be reported before method returns.
      * See also: timelineEventAdded
+     *
+     * @param eventTypes The types of event to report, as specified in
+     * https://w3c.github.io/performance-timeline/#dom-performanceentry-entrytype
+     * The specified filter overrides any previous filters, passing empty
+     * filter disables recording.
+     * Note that not all types exposed to the web platform are currently supported.
      */
     public suspend fun enable(eventTypes: List<String>) {
         val parameter = EnableParameter(eventTypes = eventTypes)

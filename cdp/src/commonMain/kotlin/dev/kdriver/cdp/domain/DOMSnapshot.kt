@@ -52,6 +52,11 @@ public class DOMSnapshot(
      * template contents, and imported documents) in a flattened array, as well as layout and
      * white-listed computed style information for the nodes. Shadow DOM in the returned DOM tree is
      * flattened.
+     *
+     * @param computedStyleWhitelist Whitelist of computed styles to return.
+     * @param includeEventListeners Whether or not to retrieve details of DOM listeners (default false).
+     * @param includePaintOrder Whether to determine and include the paint order index of LayoutTreeNodes (default false).
+     * @param includeUserAgentShadowTree Whether to include UA shadow tree in the snapshot (default false).
      */
     @Deprecated(message = "")
     public suspend fun getSnapshot(
@@ -86,6 +91,16 @@ public class DOMSnapshot(
      * template contents, and imported documents) in a flattened array, as well as layout and
      * white-listed computed style information for the nodes. Shadow DOM in the returned DOM tree is
      * flattened.
+     *
+     * @param computedStyles Whitelist of computed styles to return.
+     * @param includePaintOrder Whether to include layout object paint orders into the snapshot.
+     * @param includeDOMRects Whether to include DOM rectangles (offsetRects, clientRects, scrollRects) into the snapshot
+     * @param includeBlendedBackgroundColors Whether to include blended background colors in the snapshot (default: false).
+     * Blended background color is achieved by blending background colors of all elements
+     * that overlap with the current element.
+     * @param includeTextColorOpacities Whether to include text color opacity in the snapshot (default: false).
+     * An element might have the opacity property set that affects the text color of the element.
+     * The final text color opacity is computed based on the opacity of all overlapping elements.
      */
     public suspend fun captureSnapshot(
         computedStyles: List<String>,

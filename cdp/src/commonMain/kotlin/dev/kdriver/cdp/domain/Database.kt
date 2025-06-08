@@ -49,6 +49,12 @@ public class Database(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param databaseId No description
+     * @param query No description
+     */
     public suspend fun executeSQL(databaseId: String, query: String): ExecuteSQLReturn {
         val parameter = ExecuteSQLParameter(databaseId = databaseId, query = query)
         return executeSQL(parameter)
@@ -60,6 +66,11 @@ public class Database(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param databaseId No description
+     */
     public suspend fun getDatabaseTableNames(databaseId: String): GetDatabaseTableNamesReturn {
         val parameter = GetDatabaseTableNamesParameter(databaseId = databaseId)
         return getDatabaseTableNames(parameter)

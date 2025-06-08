@@ -74,6 +74,8 @@ public class HeapProfiler(
     /**
      * Enables console to refer to the node with given id via $x (see Command Line API for more details
      * $x functions).
+     *
+     * @param heapObjectId Heap snapshot object id to be accessible by means of $x command line API.
      */
     public suspend fun addInspectedHeapObject(heapObjectId: String) {
         val parameter = AddInspectedHeapObjectParameter(heapObjectId = heapObjectId)
@@ -101,6 +103,11 @@ public class HeapProfiler(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param objectId Identifier of the object to get heap object id for.
+     */
     public suspend fun getHeapObjectId(objectId: String): GetHeapObjectIdReturn {
         val parameter = GetHeapObjectIdParameter(objectId = objectId)
         return getHeapObjectId(parameter)
@@ -112,6 +119,12 @@ public class HeapProfiler(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param objectId No description
+     * @param objectGroup Symbolic group name that can be used to release multiple objects.
+     */
     public suspend fun getObjectByHeapObjectId(
         objectId: String,
         objectGroup: String? = null,
@@ -131,6 +144,26 @@ public class HeapProfiler(
         cdp.callCommand("HeapProfiler.startSampling", parameter)
     }
 
+    /**
+     *
+     *
+     * @param samplingInterval Average sample interval in bytes. Poisson distribution is used for the intervals. The
+     * default value is 32768 bytes.
+     * @param includeObjectsCollectedByMajorGC By default, the sampling heap profiler reports only objects which are
+     * still alive when the profile is returned via getSamplingProfile or
+     * stopSampling, which is useful for determining what functions contribute
+     * the most to steady-state memory usage. This flag instructs the sampling
+     * heap profiler to also include information about objects discarded by
+     * major GC, which will show which functions cause large temporary memory
+     * usage or long GC pauses.
+     * @param includeObjectsCollectedByMinorGC By default, the sampling heap profiler reports only objects which are
+     * still alive when the profile is returned via getSamplingProfile or
+     * stopSampling, which is useful for determining what functions contribute
+     * the most to steady-state memory usage. This flag instructs the sampling
+     * heap profiler to also include information about objects discarded by
+     * minor GC, which is useful when tuning a latency-sensitive application
+     * for minimal GC activity.
+     */
     public suspend fun startSampling(
         samplingInterval: Double? = null,
         includeObjectsCollectedByMajorGC: Boolean? = null,
@@ -149,6 +182,11 @@ public class HeapProfiler(
         cdp.callCommand("HeapProfiler.startTrackingHeapObjects", parameter)
     }
 
+    /**
+     *
+     *
+     * @param trackAllocations No description
+     */
     public suspend fun startTrackingHeapObjects(trackAllocations: Boolean? = null) {
         val parameter = StartTrackingHeapObjectsParameter(trackAllocations = trackAllocations)
         startTrackingHeapObjects(parameter)
@@ -165,6 +203,15 @@ public class HeapProfiler(
         cdp.callCommand("HeapProfiler.stopTrackingHeapObjects", parameter)
     }
 
+    /**
+     *
+     *
+     * @param reportProgress If true 'reportHeapSnapshotProgress' events will be generated while snapshot is being taken
+     * when the tracking is stopped.
+     * @param treatGlobalObjectsAsRoots Deprecated in favor of `exposeInternals`.
+     * @param captureNumericValue If true, numerical values are included in the snapshot
+     * @param exposeInternals If true, exposes internals of the snapshot.
+     */
     public suspend fun stopTrackingHeapObjects(
         reportProgress: Boolean? = null,
         treatGlobalObjectsAsRoots: Boolean? = null,
@@ -185,6 +232,15 @@ public class HeapProfiler(
         cdp.callCommand("HeapProfiler.takeHeapSnapshot", parameter)
     }
 
+    /**
+     *
+     *
+     * @param reportProgress If true 'reportHeapSnapshotProgress' events will be generated while snapshot is being taken.
+     * @param treatGlobalObjectsAsRoots If true, a raw snapshot without artificial roots will be generated.
+     * Deprecated in favor of `exposeInternals`.
+     * @param captureNumericValue If true, numerical values are included in the snapshot
+     * @param exposeInternals If true, exposes internals of the snapshot.
+     */
     public suspend fun takeHeapSnapshot(
         reportProgress: Boolean? = null,
         treatGlobalObjectsAsRoots: Boolean? = null,

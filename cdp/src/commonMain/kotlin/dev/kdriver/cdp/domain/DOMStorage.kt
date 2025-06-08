@@ -55,6 +55,11 @@ public class DOMStorage(
         cdp.callCommand("DOMStorage.clear", parameter)
     }
 
+    /**
+     *
+     *
+     * @param storageId No description
+     */
     public suspend fun clear(storageId: StorageId) {
         val parameter = ClearParameter(storageId = storageId)
         clear(parameter)
@@ -82,6 +87,11 @@ public class DOMStorage(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     *
+     *
+     * @param storageId No description
+     */
     public suspend fun getDOMStorageItems(storageId: StorageId): GetDOMStorageItemsReturn {
         val parameter = GetDOMStorageItemsParameter(storageId = storageId)
         return getDOMStorageItems(parameter)
@@ -92,6 +102,12 @@ public class DOMStorage(
         cdp.callCommand("DOMStorage.removeDOMStorageItem", parameter)
     }
 
+    /**
+     *
+     *
+     * @param storageId No description
+     * @param key No description
+     */
     public suspend fun removeDOMStorageItem(storageId: StorageId, key: String) {
         val parameter = RemoveDOMStorageItemParameter(storageId = storageId, key = key)
         removeDOMStorageItem(parameter)
@@ -102,6 +118,13 @@ public class DOMStorage(
         cdp.callCommand("DOMStorage.setDOMStorageItem", parameter)
     }
 
+    /**
+     *
+     *
+     * @param storageId No description
+     * @param key No description
+     * @param value No description
+     */
     public suspend fun setDOMStorageItem(
         storageId: StorageId,
         key: String,

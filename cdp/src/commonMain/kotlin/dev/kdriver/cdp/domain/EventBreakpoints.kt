@@ -29,6 +29,8 @@ public class EventBreakpoints(
 
     /**
      * Sets breakpoint on particular native event.
+     *
+     * @param eventName Instrumentation name to stop on.
      */
     public suspend fun setInstrumentationBreakpoint(eventName: String) {
         val parameter = SetInstrumentationBreakpointParameter(eventName = eventName)
@@ -45,6 +47,8 @@ public class EventBreakpoints(
 
     /**
      * Removes breakpoint on particular native event.
+     *
+     * @param eventName Instrumentation name to stop on.
      */
     public suspend fun removeInstrumentationBreakpoint(eventName: String) {
         val parameter = RemoveInstrumentationBreakpointParameter(eventName = eventName)

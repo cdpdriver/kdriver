@@ -54,6 +54,8 @@ public class BackgroundService(
 
     /**
      * Enables event updates for the service.
+     *
+     * @param service No description
      */
     public suspend fun startObserving(service: ServiceName) {
         val parameter = StartObservingParameter(service = service)
@@ -70,6 +72,8 @@ public class BackgroundService(
 
     /**
      * Disables event updates for the service.
+     *
+     * @param service No description
      */
     public suspend fun stopObserving(service: ServiceName) {
         val parameter = StopObservingParameter(service = service)
@@ -86,6 +90,9 @@ public class BackgroundService(
 
     /**
      * Set the recording state for the service.
+     *
+     * @param shouldRecord No description
+     * @param service No description
      */
     public suspend fun setRecording(shouldRecord: Boolean, service: ServiceName) {
         val parameter = SetRecordingParameter(shouldRecord = shouldRecord, service = service)
@@ -102,6 +109,8 @@ public class BackgroundService(
 
     /**
      * Clears all stored data for the service.
+     *
+     * @param service No description
      */
     public suspend fun clearEvents(service: ServiceName) {
         val parameter = ClearEventsParameter(service = service)

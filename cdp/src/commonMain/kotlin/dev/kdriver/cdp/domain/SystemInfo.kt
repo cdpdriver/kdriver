@@ -40,6 +40,8 @@ public class SystemInfo(
 
     /**
      * Returns information about the feature state.
+     *
+     * @param featureState No description
      */
     public suspend fun getFeatureState(featureState: String): GetFeatureStateReturn {
         val parameter = GetFeatureStateParameter(featureState = featureState)

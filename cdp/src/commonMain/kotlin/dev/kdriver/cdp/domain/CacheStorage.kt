@@ -26,6 +26,8 @@ public class CacheStorage(
 
     /**
      * Deletes a cache.
+     *
+     * @param cacheId Id of cache for deletion.
      */
     public suspend fun deleteCache(cacheId: String) {
         val parameter = DeleteCacheParameter(cacheId = cacheId)
@@ -42,6 +44,9 @@ public class CacheStorage(
 
     /**
      * Deletes a cache entry.
+     *
+     * @param cacheId Id of cache where the entry will be deleted.
+     * @param request URL spec of the request.
      */
     public suspend fun deleteEntry(cacheId: String, request: String) {
         val parameter = DeleteEntryParameter(cacheId = cacheId, request = request)
@@ -59,6 +64,11 @@ public class CacheStorage(
 
     /**
      * Requests cache names.
+     *
+     * @param securityOrigin At least and at most one of securityOrigin, storageKey, storageBucket must be specified.
+     * Security origin.
+     * @param storageKey Storage key.
+     * @param storageBucket Storage bucket. If not specified, it uses the default bucket.
      */
     public suspend fun requestCacheNames(
         securityOrigin: String? = null,
@@ -84,6 +94,10 @@ public class CacheStorage(
 
     /**
      * Fetches cache entry.
+     *
+     * @param cacheId Id of cache that contains the entry.
+     * @param requestURL URL spec of the request.
+     * @param requestHeaders headers of the request.
      */
     public suspend fun requestCachedResponse(
         cacheId: String,
@@ -106,6 +120,11 @@ public class CacheStorage(
 
     /**
      * Requests data from cache.
+     *
+     * @param cacheId ID of cache to get entries from.
+     * @param skipCount Number of records to skip.
+     * @param pageSize Number of records to fetch.
+     * @param pathFilter If present, only return the entries containing this substring in the path
      */
     public suspend fun requestEntries(
         cacheId: String,
