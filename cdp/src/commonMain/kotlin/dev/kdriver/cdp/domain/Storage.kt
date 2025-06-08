@@ -20,137 +20,96 @@ public val CDP.storage: Storage
 public class Storage(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * A cache's contents have been modified.
+     */
     public val cacheStorageContentUpdated: Flow<CacheStorageContentUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Storage.cacheStorageContentUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Storage.cacheStorageContentUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * A cache has been added/deleted.
+     */
     public val cacheStorageListUpdated: Flow<CacheStorageListUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Storage.cacheStorageListUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Storage.cacheStorageListUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * The origin's IndexedDB object store has been modified.
+     */
     public val indexedDBContentUpdated: Flow<IndexedDBContentUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Storage.indexedDBContentUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Storage.indexedDBContentUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * The origin's IndexedDB database list has been modified.
+     */
     public val indexedDBListUpdated: Flow<IndexedDBListUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Storage.indexedDBListUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Storage.indexedDBListUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * One of the interest groups was accessed by the associated page.
+     */
     public val interestGroupAccessed: Flow<InterestGroupAccessedParameter> = cdp
         .events
-        .filter {
-            it.method == "Storage.interestGroupAccessed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Storage.interestGroupAccessed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Shared storage was accessed by the associated page.
+     * The following parameters are included in all events.
+     */
     public val sharedStorageAccessed: Flow<SharedStorageAccessedParameter> = cdp
         .events
-        .filter {
-            it.method == "Storage.sharedStorageAccessed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Storage.sharedStorageAccessed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val storageBucketCreatedOrUpdated: Flow<StorageBucketCreatedOrUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Storage.storageBucketCreatedOrUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Storage.storageBucketCreatedOrUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val storageBucketDeleted: Flow<StorageBucketDeletedParameter> = cdp
         .events
-        .filter {
-            it.method == "Storage.storageBucketDeleted"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Storage.storageBucketDeleted" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val attributionReportingSourceRegistered:
             Flow<AttributionReportingSourceRegisteredParameter> = cdp
         .events
-        .filter {
-            it.method == "Storage.attributionReportingSourceRegistered"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Storage.attributionReportingSourceRegistered" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val attributionReportingTriggerRegistered:
             Flow<AttributionReportingTriggerRegisteredParameter> = cdp
         .events
-        .filter {
-            it.method == "Storage.attributionReportingTriggerRegistered"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Storage.attributionReportingTriggerRegistered" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Returns a storage key given a frame id.

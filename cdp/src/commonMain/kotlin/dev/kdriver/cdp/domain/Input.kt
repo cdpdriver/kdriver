@@ -20,18 +20,16 @@ public val CDP.input: Input
 public class Input(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Emitted only when `Input.setInterceptDrags` is enabled. Use this data with `Input.dispatchDragEvent` to
+     * restore normal drag and drop behavior.
+     */
     public val dragIntercepted: Flow<DragInterceptedParameter> = cdp
         .events
-        .filter {
-            it.method == "Input.dragIntercepted"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Input.dragIntercepted" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Dispatches a drag event into the page.

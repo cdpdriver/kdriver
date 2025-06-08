@@ -22,42 +22,24 @@ public class ServiceWorker(
 ) : Domain {
     public val workerErrorReported: Flow<WorkerErrorReportedParameter> = cdp
         .events
-        .filter {
-            it.method == "ServiceWorker.workerErrorReported"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "ServiceWorker.workerErrorReported" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val workerRegistrationUpdated: Flow<WorkerRegistrationUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "ServiceWorker.workerRegistrationUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "ServiceWorker.workerRegistrationUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val workerVersionUpdated: Flow<WorkerVersionUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "ServiceWorker.workerVersionUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "ServiceWorker.workerVersionUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public suspend fun deliverPushMessage(args: DeliverPushMessageParameter) {
         val parameter = Serialization.json.encodeToJsonElement(args)

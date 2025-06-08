@@ -25,403 +25,319 @@ public val CDP.network: Network
 public class Network(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Fired when data chunk was received over the network.
+     */
     public val dataReceived: Flow<DataReceivedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.dataReceived"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.dataReceived" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when EventSource message is received.
+     */
     public val eventSourceMessageReceived: Flow<EventSourceMessageReceivedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.eventSourceMessageReceived"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.eventSourceMessageReceived" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when HTTP request has failed to load.
+     */
     public val loadingFailed: Flow<LoadingFailedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.loadingFailed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.loadingFailed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when HTTP request has finished loading.
+     */
     public val loadingFinished: Flow<LoadingFinishedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.loadingFinished"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.loadingFinished" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Details of an intercepted HTTP request, which must be either allowed, blocked, modified or
+     * mocked.
+     * Deprecated, use Fetch.requestPaused instead.
+     */
     public val requestIntercepted: Flow<RequestInterceptedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.requestIntercepted"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.requestIntercepted" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired if request ended up loading from cache.
+     */
     public val requestServedFromCache: Flow<RequestServedFromCacheParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.requestServedFromCache"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.requestServedFromCache" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when page is about to send HTTP request.
+     */
     public val requestWillBeSent: Flow<RequestWillBeSentParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.requestWillBeSent"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.requestWillBeSent" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when resource loading priority is changed
+     */
     public val resourceChangedPriority: Flow<ResourceChangedPriorityParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.resourceChangedPriority"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.resourceChangedPriority" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when a signed exchange was received over the network
+     */
     public val signedExchangeReceived: Flow<SignedExchangeReceivedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.signedExchangeReceived"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.signedExchangeReceived" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when HTTP response is available.
+     */
     public val responseReceived: Flow<ResponseReceivedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.responseReceived"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.responseReceived" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when WebSocket is closed.
+     */
     public val webSocketClosed: Flow<WebSocketClosedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.webSocketClosed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.webSocketClosed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired upon WebSocket creation.
+     */
     public val webSocketCreated: Flow<WebSocketCreatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.webSocketCreated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.webSocketCreated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when WebSocket message error occurs.
+     */
     public val webSocketFrameError: Flow<WebSocketFrameErrorParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.webSocketFrameError"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.webSocketFrameError" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when WebSocket message is received.
+     */
     public val webSocketFrameReceived: Flow<WebSocketFrameReceivedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.webSocketFrameReceived"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.webSocketFrameReceived" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when WebSocket message is sent.
+     */
     public val webSocketFrameSent: Flow<WebSocketFrameSentParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.webSocketFrameSent"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.webSocketFrameSent" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
-    public val webSocketHandshakeResponseReceived: Flow<WebSocketHandshakeResponseReceivedParameter> =
-        cdp
-            .events
-            .filter {
-                it.method == "Network.webSocketHandshakeResponseReceived"
-            }
-            .map {
-                it.params
-            }
-            .filterNotNull()
-            .map {
-                Serialization.json.decodeFromJsonElement(it)
-            }
+    /**
+     * Fired when WebSocket handshake response becomes available.
+     */
+    public val webSocketHandshakeResponseReceived: Flow<WebSocketHandshakeResponseReceivedParameter> = cdp
+        .events
+        .filter { it.method == "Network.webSocketHandshakeResponseReceived" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when WebSocket is about to initiate handshake.
+     */
     public val webSocketWillSendHandshakeRequest: Flow<WebSocketWillSendHandshakeRequestParameter> =
         cdp
             .events
-            .filter {
-                it.method == "Network.webSocketWillSendHandshakeRequest"
-            }
-            .map {
-                it.params
-            }
+            .filter { it.method == "Network.webSocketWillSendHandshakeRequest" }
+            .map { it.params }
             .filterNotNull()
-            .map {
-                Serialization.json.decodeFromJsonElement(it)
-            }
+            .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired upon WebTransport creation.
+     */
     public val webTransportCreated: Flow<WebTransportCreatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.webTransportCreated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.webTransportCreated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when WebTransport handshake is finished.
+     */
     public val webTransportConnectionEstablished: Flow<WebTransportConnectionEstablishedParameter> =
         cdp
             .events
-            .filter {
-                it.method == "Network.webTransportConnectionEstablished"
-            }
-            .map {
-                it.params
-            }
+            .filter { it.method == "Network.webTransportConnectionEstablished" }
+            .map { it.params }
             .filterNotNull()
-            .map {
-                Serialization.json.decodeFromJsonElement(it)
-            }
+            .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when WebTransport is disposed.
+     */
     public val webTransportClosed: Flow<WebTransportClosedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.webTransportClosed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.webTransportClosed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when additional information about a requestWillBeSent event is available from the
+     * network stack. Not every requestWillBeSent event will have an additional
+     * requestWillBeSentExtraInfo fired for it, and there is no guarantee whether requestWillBeSent
+     * or requestWillBeSentExtraInfo will be fired first for the same request.
+     */
     public val requestWillBeSentExtraInfo: Flow<RequestWillBeSentExtraInfoParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.requestWillBeSentExtraInfo"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.requestWillBeSentExtraInfo" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when additional information about a responseReceived event is available from the network
+     * stack. Not every responseReceived event will have an additional responseReceivedExtraInfo for
+     * it, and responseReceivedExtraInfo may be fired before or after responseReceived.
+     */
     public val responseReceivedExtraInfo: Flow<ResponseReceivedExtraInfoParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.responseReceivedExtraInfo"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.responseReceivedExtraInfo" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired exactly once for each Trust Token operation. Depending on
+     * the type of the operation and whether the operation succeeded or
+     * failed, the event is fired before the corresponding request was sent
+     * or after the response was received.
+     */
     public val trustTokenOperationDone: Flow<TrustTokenOperationDoneParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.trustTokenOperationDone"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.trustTokenOperationDone" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired once when parsing the .wbn file has succeeded.
+     * The event contains the information about the web bundle contents.
+     */
     public val subresourceWebBundleMetadataReceived:
             Flow<SubresourceWebBundleMetadataReceivedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.subresourceWebBundleMetadataReceived"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.subresourceWebBundleMetadataReceived" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired once when parsing the .wbn file has failed.
+     */
     public val subresourceWebBundleMetadataError: Flow<SubresourceWebBundleMetadataErrorParameter> =
         cdp
             .events
-            .filter {
-                it.method == "Network.subresourceWebBundleMetadataError"
-            }
-            .map {
-                it.params
-            }
+            .filter { it.method == "Network.subresourceWebBundleMetadataError" }
+            .map { it.params }
             .filterNotNull()
-            .map {
-                Serialization.json.decodeFromJsonElement(it)
-            }
+            .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when handling requests for resources within a .wbn file.
+     * Note: this will only be fired for resources that are requested by the webpage.
+     */
     public val subresourceWebBundleInnerResponseParsed:
             Flow<SubresourceWebBundleInnerResponseParsedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.subresourceWebBundleInnerResponseParsed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.subresourceWebBundleInnerResponseParsed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when request for resources within a .wbn file failed.
+     */
     public val subresourceWebBundleInnerResponseError:
             Flow<SubresourceWebBundleInnerResponseErrorParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.subresourceWebBundleInnerResponseError"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.subresourceWebBundleInnerResponseError" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Is sent whenever a new report is added.
+     * And after 'enableReportingApi' for all existing reports.
+     */
     public val reportingApiReportAdded: Flow<ReportingApiReportAddedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.reportingApiReportAdded"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.reportingApiReportAdded" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val reportingApiReportUpdated: Flow<ReportingApiReportUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.reportingApiReportUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.reportingApiReportUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val reportingApiEndpointsChangedForOrigin:
             Flow<ReportingApiEndpointsChangedForOriginParameter> = cdp
         .events
-        .filter {
-            it.method == "Network.reportingApiEndpointsChangedForOrigin"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Network.reportingApiEndpointsChangedForOrigin" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Sets a list of content encodings that will be accepted. Empty list means no encoding is accepted.

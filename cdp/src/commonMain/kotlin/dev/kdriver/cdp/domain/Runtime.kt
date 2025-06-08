@@ -27,109 +27,86 @@ public val CDP.runtime: Runtime
 public class Runtime(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Notification is issued every time when binding is called.
+     */
     public val bindingCalled: Flow<BindingCalledParameter> = cdp
         .events
-        .filter {
-            it.method == "Runtime.bindingCalled"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Runtime.bindingCalled" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when console API was called.
+     */
     public val consoleAPICalled: Flow<ConsoleAPICalledParameter> = cdp
         .events
-        .filter {
-            it.method == "Runtime.consoleAPICalled"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Runtime.consoleAPICalled" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when unhandled exception was revoked.
+     */
     public val exceptionRevoked: Flow<ExceptionRevokedParameter> = cdp
         .events
-        .filter {
-            it.method == "Runtime.exceptionRevoked"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Runtime.exceptionRevoked" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when exception was thrown and unhandled.
+     */
     public val exceptionThrown: Flow<ExceptionThrownParameter> = cdp
         .events
-        .filter {
-            it.method == "Runtime.exceptionThrown"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Runtime.exceptionThrown" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when new execution context is created.
+     */
     public val executionContextCreated: Flow<ExecutionContextCreatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Runtime.executionContextCreated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Runtime.executionContextCreated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when execution context is destroyed.
+     */
     public val executionContextDestroyed: Flow<ExecutionContextDestroyedParameter> = cdp
         .events
-        .filter {
-            it.method == "Runtime.executionContextDestroyed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Runtime.executionContextDestroyed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when all executionContexts were cleared in browser
+     */
     public val executionContextsCleared: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "Runtime.executionContextsCleared"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Runtime.executionContextsCleared" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when object should be inspected (for example, as a result of inspect() command line API
+     * call).
+     */
     public val inspectRequested: Flow<InspectRequestedParameter> = cdp
         .events
-        .filter {
-            it.method == "Runtime.inspectRequested"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Runtime.inspectRequested" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Add handler to promise with given promise object id.

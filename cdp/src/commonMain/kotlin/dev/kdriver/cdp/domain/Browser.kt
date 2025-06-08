@@ -23,31 +23,25 @@ public val CDP.browser: Browser
 public class Browser(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Fired when page is about to start a download.
+     */
     public val downloadWillBegin: Flow<DownloadWillBeginParameter> = cdp
         .events
-        .filter {
-            it.method == "Browser.downloadWillBegin"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Browser.downloadWillBegin" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when download makes progress. Last call has |done| == true.
+     */
     public val downloadProgress: Flow<DownloadProgressParameter> = cdp
         .events
-        .filter {
-            it.method == "Browser.downloadProgress"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Browser.downloadProgress" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Set permission settings for given origin.

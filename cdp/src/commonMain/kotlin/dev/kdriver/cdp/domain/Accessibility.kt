@@ -21,31 +21,26 @@ public val CDP.accessibility: Accessibility
 public class Accessibility(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * The loadComplete event mirrors the load complete event sent by the browser to assistive
+     * technology when the web page has finished loading.
+     */
     public val loadComplete: Flow<LoadCompleteParameter> = cdp
         .events
-        .filter {
-            it.method == "Accessibility.loadComplete"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Accessibility.loadComplete" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * The nodesUpdated event is sent every time a previously requested node has changed the in tree.
+     */
     public val nodesUpdated: Flow<NodesUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Accessibility.nodesUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Accessibility.nodesUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Disables the accessibility domain.

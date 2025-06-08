@@ -19,44 +19,35 @@ public val CDP.animation: Animation
 public class Animation(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Event for when an animation has been cancelled.
+     */
     public val animationCanceled: Flow<AnimationCanceledParameter> = cdp
         .events
-        .filter {
-            it.method == "Animation.animationCanceled"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Animation.animationCanceled" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Event for each animation that has been created.
+     */
     public val animationCreated: Flow<AnimationCreatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Animation.animationCreated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Animation.animationCreated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Event for animation that has been started.
+     */
     public val animationStarted: Flow<AnimationStartedParameter> = cdp
         .events
-        .filter {
-            it.method == "Animation.animationStarted"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Animation.animationStarted" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Disables animation domain notifications.

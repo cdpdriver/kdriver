@@ -18,44 +18,35 @@ public val CDP.inspector: Inspector
 public class Inspector(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Fired when remote debugging connection is about to be terminated. Contains detach reason.
+     */
     public val detached: Flow<DetachedParameter> = cdp
         .events
-        .filter {
-            it.method == "Inspector.detached"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Inspector.detached" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when debugging target has crashed
+     */
     public val targetCrashed: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "Inspector.targetCrashed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Inspector.targetCrashed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when debugging target has reloaded after crash
+     */
     public val targetReloadedAfterCrash: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "Inspector.targetReloadedAfterCrash"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Inspector.targetReloadedAfterCrash" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Disables inspector domain notifications.

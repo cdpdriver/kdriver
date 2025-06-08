@@ -30,200 +30,156 @@ public val CDP.dom: DOM
 public class DOM(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Fired when `Element`'s attribute is modified.
+     */
     public val attributeModified: Flow<AttributeModifiedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.attributeModified"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.attributeModified" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when `Element`'s attribute is removed.
+     */
     public val attributeRemoved: Flow<AttributeRemovedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.attributeRemoved"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.attributeRemoved" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Mirrors `DOMCharacterDataModified` event.
+     */
     public val characterDataModified: Flow<CharacterDataModifiedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.characterDataModified"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.characterDataModified" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when `Container`'s child node count has changed.
+     */
     public val childNodeCountUpdated: Flow<ChildNodeCountUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.childNodeCountUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.childNodeCountUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Mirrors `DOMNodeInserted` event.
+     */
     public val childNodeInserted: Flow<ChildNodeInsertedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.childNodeInserted"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.childNodeInserted" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Mirrors `DOMNodeRemoved` event.
+     */
     public val childNodeRemoved: Flow<ChildNodeRemovedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.childNodeRemoved"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.childNodeRemoved" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Called when distribution is changed.
+     */
     public val distributedNodesUpdated: Flow<DistributedNodesUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.distributedNodesUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.distributedNodesUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when `Document` has been totally updated. Node ids are no longer valid.
+     */
     public val documentUpdated: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "DOM.documentUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.documentUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when `Element`'s inline style is modified via a CSS property modification.
+     */
     public val inlineStyleInvalidated: Flow<InlineStyleInvalidatedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.inlineStyleInvalidated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.inlineStyleInvalidated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Called when a pseudo element is added to an element.
+     */
     public val pseudoElementAdded: Flow<PseudoElementAddedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.pseudoElementAdded"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.pseudoElementAdded" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Called when top layer elements are changed.
+     */
     public val topLayerElementsUpdated: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "DOM.topLayerElementsUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.topLayerElementsUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Called when a pseudo element is removed from an element.
+     */
     public val pseudoElementRemoved: Flow<PseudoElementRemovedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.pseudoElementRemoved"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.pseudoElementRemoved" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when backend wants to provide client with the missing DOM structure. This happens upon
+     * most of the calls requesting node ids.
+     */
     public val setChildNodes: Flow<SetChildNodesParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.setChildNodes"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.setChildNodes" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Called when shadow root is popped from the element.
+     */
     public val shadowRootPopped: Flow<ShadowRootPoppedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.shadowRootPopped"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.shadowRootPopped" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Called when shadow root is pushed into the element.
+     */
     public val shadowRootPushed: Flow<ShadowRootPushedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOM.shadowRootPushed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOM.shadowRootPushed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Collects class names for the node with given id and all of it's child nodes.

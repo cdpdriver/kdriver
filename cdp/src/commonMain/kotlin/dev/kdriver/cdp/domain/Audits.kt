@@ -25,16 +25,10 @@ public class Audits(
 ) : Domain {
     public val issueAdded: Flow<IssueAddedParameter> = cdp
         .events
-        .filter {
-            it.method == "Audits.issueAdded"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Audits.issueAdded" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Returns the response body and size if it were re-encoded with the specified settings. Only
@@ -1072,7 +1066,8 @@ public class Audits(
         public val clientHintIssueDetails: ClientHintIssueDetails? = null,
         public val federatedAuthRequestIssueDetails: FederatedAuthRequestIssueDetails? = null,
         public val bounceTrackingIssueDetails: BounceTrackingIssueDetails? = null,
-        public val cookieDeprecationMetadataIssueDetails: CookieDeprecationMetadataIssueDetails? = null,
+        public val cookieDeprecationMetadataIssueDetails:
+        CookieDeprecationMetadataIssueDetails? = null,
         public val stylesheetLoadingIssueDetails: StylesheetLoadingIssueDetails? = null,
         public val propertyRuleIssueDetails: PropertyRuleIssueDetails? = null,
         public val federatedAuthUserInfoRequestIssueDetails:

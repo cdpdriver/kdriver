@@ -19,83 +19,62 @@ public val CDP.preload: Preload
 public class Preload(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Upsert. Currently, it is only emitted when a rule set added.
+     */
     public val ruleSetUpdated: Flow<RuleSetUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Preload.ruleSetUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Preload.ruleSetUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val ruleSetRemoved: Flow<RuleSetRemovedParameter> = cdp
         .events
-        .filter {
-            it.method == "Preload.ruleSetRemoved"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Preload.ruleSetRemoved" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when a preload enabled state is updated.
+     */
     public val preloadEnabledStateUpdated: Flow<PreloadEnabledStateUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Preload.preloadEnabledStateUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Preload.preloadEnabledStateUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when a prefetch attempt is updated.
+     */
     public val prefetchStatusUpdated: Flow<PrefetchStatusUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Preload.prefetchStatusUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Preload.prefetchStatusUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when a prerender attempt is updated.
+     */
     public val prerenderStatusUpdated: Flow<PrerenderStatusUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Preload.prerenderStatusUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Preload.prerenderStatusUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Send a list of sources for all preloading attempts in a document.
+     */
     public val preloadingAttemptSourcesUpdated: Flow<PreloadingAttemptSourcesUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Preload.preloadingAttemptSourcesUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Preload.preloadingAttemptSourcesUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public suspend fun enable() {
         val parameter = null

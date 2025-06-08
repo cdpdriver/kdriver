@@ -19,18 +19,16 @@ public val CDP.deviceAccess: DeviceAccess
 public class DeviceAccess(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * A device request opened a user prompt to select a device. Respond with the
+     * selectPrompt or cancelPrompt command.
+     */
     public val deviceRequestPrompted: Flow<DeviceRequestPromptedParameter> = cdp
         .events
-        .filter {
-            it.method == "DeviceAccess.deviceRequestPrompted"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DeviceAccess.deviceRequestPrompted" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Enable events in this domain.

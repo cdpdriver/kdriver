@@ -21,68 +21,46 @@ public class HeapProfiler(
 ) : Domain {
     public val addHeapSnapshotChunk: Flow<AddHeapSnapshotChunkParameter> = cdp
         .events
-        .filter {
-            it.method == "HeapProfiler.addHeapSnapshotChunk"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "HeapProfiler.addHeapSnapshotChunk" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * If heap objects tracking has been started then backend may send update for one or more fragments
+     */
     public val heapStatsUpdate: Flow<HeapStatsUpdateParameter> = cdp
         .events
-        .filter {
-            it.method == "HeapProfiler.heapStatsUpdate"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "HeapProfiler.heapStatsUpdate" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * If heap objects tracking has been started then backend regularly sends a current value for last
+     * seen object id and corresponding timestamp. If the were changes in the heap since last event
+     * then one or more heapStatsUpdate events will be sent before a new lastSeenObjectId event.
+     */
     public val lastSeenObjectId: Flow<LastSeenObjectIdParameter> = cdp
         .events
-        .filter {
-            it.method == "HeapProfiler.lastSeenObjectId"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "HeapProfiler.lastSeenObjectId" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val reportHeapSnapshotProgress: Flow<ReportHeapSnapshotProgressParameter> = cdp
         .events
-        .filter {
-            it.method == "HeapProfiler.reportHeapSnapshotProgress"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "HeapProfiler.reportHeapSnapshotProgress" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val resetProfiles: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "HeapProfiler.resetProfiles"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "HeapProfiler.resetProfiles" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Enables console to refer to the node with given id via $x (see Command Line API for more details

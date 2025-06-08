@@ -23,31 +23,27 @@ public val CDP.cast: Cast
 public class Cast(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * This is fired whenever the list of available sinks changes. A sink is a
+     * device or a software surface that you can cast to.
+     */
     public val sinksUpdated: Flow<SinksUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Cast.sinksUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Cast.sinksUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * This is fired whenever the outstanding issue/error message changes.
+     * |issueMessage| is empty if there is no issue.
+     */
     public val issueUpdated: Flow<IssueUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Cast.issueUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Cast.issueUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Starts observing for sinks that can be used for tab mirroring, and if set,

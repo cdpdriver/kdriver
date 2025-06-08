@@ -23,44 +23,38 @@ public val CDP.security: Security
 public class Security(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * There is a certificate error. If overriding certificate errors is enabled, then it should be
+     * handled with the `handleCertificateError` command. Note: this event does not fire if the
+     * certificate error has been allowed internally. Only one client per target should override
+     * certificate errors at the same time.
+     */
     public val certificateError: Flow<CertificateErrorParameter> = cdp
         .events
-        .filter {
-            it.method == "Security.certificateError"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Security.certificateError" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * The security state of the page changed.
+     */
     public val visibleSecurityStateChanged: Flow<VisibleSecurityStateChangedParameter> = cdp
         .events
-        .filter {
-            it.method == "Security.visibleSecurityStateChanged"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Security.visibleSecurityStateChanged" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * The security state of the page changed. No longer being sent.
+     */
     public val securityStateChanged: Flow<SecurityStateChangedParameter> = cdp
         .events
-        .filter {
-            it.method == "Security.securityStateChanged"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Security.securityStateChanged" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Disables tracking security state changes.

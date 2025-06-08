@@ -28,70 +28,57 @@ public val CDP.css: CSS
 public class CSS(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Fires whenever a web font is updated.  A non-empty font parameter indicates a successfully loaded
+     * web font.
+     */
     public val fontsUpdated: Flow<FontsUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "CSS.fontsUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "CSS.fontsUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fires whenever a MediaQuery result changes (for example, after a browser window has been
+     * resized.) The current implementation considers only viewport-dependent media features.
+     */
     public val mediaQueryResultChanged: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "CSS.mediaQueryResultChanged"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "CSS.mediaQueryResultChanged" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired whenever an active document stylesheet is added.
+     */
     public val styleSheetAdded: Flow<StyleSheetAddedParameter> = cdp
         .events
-        .filter {
-            it.method == "CSS.styleSheetAdded"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "CSS.styleSheetAdded" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired whenever a stylesheet is changed as a result of the client operation.
+     */
     public val styleSheetChanged: Flow<StyleSheetChangedParameter> = cdp
         .events
-        .filter {
-            it.method == "CSS.styleSheetChanged"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "CSS.styleSheetChanged" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired whenever an active document stylesheet is removed.
+     */
     public val styleSheetRemoved: Flow<StyleSheetRemovedParameter> = cdp
         .events
-        .filter {
-            it.method == "CSS.styleSheetRemoved"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "CSS.styleSheetRemoved" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Inserts a new rule with the given `ruleText` in a stylesheet with given `styleSheetId`, at the

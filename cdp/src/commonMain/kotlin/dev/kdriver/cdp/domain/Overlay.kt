@@ -24,57 +24,46 @@ public val CDP.overlay: Overlay
 public class Overlay(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Fired when the node should be inspected. This happens after call to `setInspectMode` or when
+     * user manually inspects an element.
+     */
     public val inspectNodeRequested: Flow<InspectNodeRequestedParameter> = cdp
         .events
-        .filter {
-            it.method == "Overlay.inspectNodeRequested"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Overlay.inspectNodeRequested" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when the node should be highlighted. This happens after call to `setInspectMode`.
+     */
     public val nodeHighlightRequested: Flow<NodeHighlightRequestedParameter> = cdp
         .events
-        .filter {
-            it.method == "Overlay.nodeHighlightRequested"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Overlay.nodeHighlightRequested" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when user asks to capture screenshot of some area on the page.
+     */
     public val screenshotRequested: Flow<ScreenshotRequestedParameter> = cdp
         .events
-        .filter {
-            it.method == "Overlay.screenshotRequested"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Overlay.screenshotRequested" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when user cancels the inspect mode.
+     */
     public val inspectModeCanceled: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "Overlay.inspectModeCanceled"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Overlay.inspectModeCanceled" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Disables domain notifications.

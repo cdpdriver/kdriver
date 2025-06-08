@@ -23,18 +23,15 @@ public val CDP.autofill: Autofill
 public class Autofill(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Emitted when an address form is filled.
+     */
     public val addressFormFilled: Flow<AddressFormFilledParameter> = cdp
         .events
-        .filter {
-            it.method == "Autofill.addressFormFilled"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Autofill.addressFormFilled" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Trigger autofill on a form identified by the fieldId.

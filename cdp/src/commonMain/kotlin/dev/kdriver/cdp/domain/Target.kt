@@ -22,96 +22,78 @@ public val CDP.target: Target
 public class Target(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Issued when attached to target because of auto-attach or `attachToTarget` command.
+     */
     public val attachedToTarget: Flow<AttachedToTargetParameter> = cdp
         .events
-        .filter {
-            it.method == "Target.attachedToTarget"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Target.attachedToTarget" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when detached from target for any reason (including `detachFromTarget` command). Can be
+     * issued multiple times per target if multiple sessions have been attached to it.
+     */
     public val detachedFromTarget: Flow<DetachedFromTargetParameter> = cdp
         .events
-        .filter {
-            it.method == "Target.detachedFromTarget"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Target.detachedFromTarget" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies about a new protocol message received from the session (as reported in
+     * `attachedToTarget` event).
+     */
     public val receivedMessageFromTarget: Flow<ReceivedMessageFromTargetParameter> = cdp
         .events
-        .filter {
-            it.method == "Target.receivedMessageFromTarget"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Target.receivedMessageFromTarget" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when a possible inspection target is created.
+     */
     public val targetCreated: Flow<TargetCreatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Target.targetCreated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Target.targetCreated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when a target is destroyed.
+     */
     public val targetDestroyed: Flow<TargetDestroyedParameter> = cdp
         .events
-        .filter {
-            it.method == "Target.targetDestroyed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Target.targetDestroyed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when a target has crashed.
+     */
     public val targetCrashed: Flow<TargetCrashedParameter> = cdp
         .events
-        .filter {
-            it.method == "Target.targetCrashed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Target.targetCrashed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when some information about a target has changed. This only happens between
+     * `targetCreated` and `targetDestroyed`.
+     */
     public val targetInfoChanged: Flow<TargetInfoChangedParameter> = cdp
         .events
-        .filter {
-            it.method == "Target.targetInfoChanged"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Target.targetInfoChanged" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Activates (focuses) the target.

@@ -22,70 +22,59 @@ public val CDP.media: Media
 public class Media(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * This can be called multiple times, and can be used to set / override /
+     * remove player properties. A null propValue indicates removal.
+     */
     public val playerPropertiesChanged: Flow<PlayerPropertiesChangedParameter> = cdp
         .events
-        .filter {
-            it.method == "Media.playerPropertiesChanged"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Media.playerPropertiesChanged" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Send events as a list, allowing them to be batched on the browser for less
+     * congestion. If batched, events must ALWAYS be in chronological order.
+     */
     public val playerEventsAdded: Flow<PlayerEventsAddedParameter> = cdp
         .events
-        .filter {
-            it.method == "Media.playerEventsAdded"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Media.playerEventsAdded" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Send a list of any messages that need to be delivered.
+     */
     public val playerMessagesLogged: Flow<PlayerMessagesLoggedParameter> = cdp
         .events
-        .filter {
-            it.method == "Media.playerMessagesLogged"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Media.playerMessagesLogged" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Send a list of any errors that need to be delivered.
+     */
     public val playerErrorsRaised: Flow<PlayerErrorsRaisedParameter> = cdp
         .events
-        .filter {
-            it.method == "Media.playerErrorsRaised"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Media.playerErrorsRaised" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Called whenever a player is created, or when a new agent joins and receives
+     * a list of active players. If an agent is restored, it will receive the full
+     * list of player ids and all events again.
+     */
     public val playersCreated: Flow<PlayersCreatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Media.playersCreated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Media.playersCreated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Enables the Media domain

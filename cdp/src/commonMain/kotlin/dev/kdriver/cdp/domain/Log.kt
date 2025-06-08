@@ -22,18 +22,15 @@ public val CDP.log: Log
 public class Log(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Issued when new message was logged.
+     */
     public val entryAdded: Flow<EntryAddedParameter> = cdp
         .events
-        .filter {
-            it.method == "Log.entryAdded"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Log.entryAdded" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Clears the log.

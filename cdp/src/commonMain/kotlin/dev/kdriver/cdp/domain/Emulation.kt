@@ -23,18 +23,15 @@ public val CDP.emulation: Emulation
 public class Emulation(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Notification sent after the virtual time budget for the current VirtualTimePolicy has run out.
+     */
     public val virtualTimeBudgetExpired: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "Emulation.virtualTimeBudgetExpired"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Emulation.virtualTimeBudgetExpired" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Tells whether emulation is supported.

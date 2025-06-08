@@ -23,31 +23,36 @@ public val CDP.fetch: Fetch
 public class Fetch(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Issued when the domain is enabled and the request URL matches the
+     * specified filter. The request is paused until the client responds
+     * with one of continueRequest, failRequest or fulfillRequest.
+     * The stage of the request can be determined by presence of responseErrorReason
+     * and responseStatusCode -- the request is at the response stage if either
+     * of these fields is present and in the request stage otherwise.
+     * Redirect responses and subsequent requests are reported similarly to regular
+     * responses and requests. Redirect responses may be distinguished by the value
+     * of `responseStatusCode` (which is one of 301, 302, 303, 307, 308) along with
+     * presence of the `location` header. Requests resulting from a redirect will
+     * have `redirectedRequestId` field set.
+     */
     public val requestPaused: Flow<RequestPausedParameter> = cdp
         .events
-        .filter {
-            it.method == "Fetch.requestPaused"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Fetch.requestPaused" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued when the domain is enabled with handleAuthRequests set to true.
+     * The request is paused until client responds with continueWithAuth.
+     */
     public val authRequired: Flow<AuthRequiredParameter> = cdp
         .events
-        .filter {
-            it.method == "Fetch.authRequired"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Fetch.authRequired" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Disables the fetch domain.

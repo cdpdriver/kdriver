@@ -21,42 +21,33 @@ public class Profiler(
 ) : Domain {
     public val consoleProfileFinished: Flow<ConsoleProfileFinishedParameter> = cdp
         .events
-        .filter {
-            it.method == "Profiler.consoleProfileFinished"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Profiler.consoleProfileFinished" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Sent when new profile recording is started using console.profile() call.
+     */
     public val consoleProfileStarted: Flow<ConsoleProfileStartedParameter> = cdp
         .events
-        .filter {
-            it.method == "Profiler.consoleProfileStarted"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Profiler.consoleProfileStarted" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Reports coverage delta since the last poll (either from an event like this, or from
+     * `takePreciseCoverage` for the current isolate. May only be sent if precise code
+     * coverage has been started. This event can be trigged by the embedder to, for example,
+     * trigger collection of coverage data immediately at a certain point in time.
+     */
     public val preciseCoverageDeltaUpdate: Flow<PreciseCoverageDeltaUpdateParameter> = cdp
         .events
-        .filter {
-            it.method == "Profiler.preciseCoverageDeltaUpdate"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Profiler.preciseCoverageDeltaUpdate" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public suspend fun disable() {
         val parameter = null

@@ -25,341 +25,264 @@ public class Page(
 ) : Domain {
     public val domContentEventFired: Flow<DomContentEventFiredParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.domContentEventFired"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.domContentEventFired" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Emitted only when `page.interceptFileChooser` is enabled.
+     */
     public val fileChooserOpened: Flow<FileChooserOpenedParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.fileChooserOpened"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.fileChooserOpened" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when frame has been attached to its parent.
+     */
     public val frameAttached: Flow<FrameAttachedParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.frameAttached"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.frameAttached" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when frame no longer has a scheduled navigation.
+     */
     public val frameClearedScheduledNavigation: Flow<FrameClearedScheduledNavigationParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.frameClearedScheduledNavigation"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.frameClearedScheduledNavigation" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when frame has been detached from its parent.
+     */
     public val frameDetached: Flow<FrameDetachedParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.frameDetached"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.frameDetached" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired once navigation of the frame has completed. Frame is now associated with the new loader.
+     */
     public val frameNavigated: Flow<FrameNavigatedParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.frameNavigated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.frameNavigated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when opening document to write to.
+     */
     public val documentOpened: Flow<DocumentOpenedParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.documentOpened"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.documentOpened" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val frameResized: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "Page.frameResized"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.frameResized" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when a renderer-initiated navigation is requested.
+     * Navigation may still be cancelled after the event is issued.
+     */
     public val frameRequestedNavigation: Flow<FrameRequestedNavigationParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.frameRequestedNavigation"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.frameRequestedNavigation" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when frame schedules a potential navigation.
+     */
     public val frameScheduledNavigation: Flow<FrameScheduledNavigationParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.frameScheduledNavigation"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.frameScheduledNavigation" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when frame has started loading.
+     */
     public val frameStartedLoading: Flow<FrameStartedLoadingParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.frameStartedLoading"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.frameStartedLoading" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when frame has stopped loading.
+     */
     public val frameStoppedLoading: Flow<FrameStoppedLoadingParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.frameStoppedLoading"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.frameStoppedLoading" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when page is about to start a download.
+     * Deprecated. Use Browser.downloadWillBegin instead.
+     */
     public val downloadWillBegin: Flow<DownloadWillBeginParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.downloadWillBegin"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.downloadWillBegin" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when download makes progress. Last call has |done| == true.
+     * Deprecated. Use Browser.downloadProgress instead.
+     */
     public val downloadProgress: Flow<DownloadProgressParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.downloadProgress"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.downloadProgress" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when interstitial page was hidden
+     */
     public val interstitialHidden: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "Page.interstitialHidden"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.interstitialHidden" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when interstitial page was shown
+     */
     public val interstitialShown: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "Page.interstitialShown"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.interstitialShown" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload) has been
+     * closed.
+     */
     public val javascriptDialogClosed: Flow<JavascriptDialogClosedParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.javascriptDialogClosed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.javascriptDialogClosed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload) is about to
+     * open.
+     */
     public val javascriptDialogOpening: Flow<JavascriptDialogOpeningParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.javascriptDialogOpening"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.javascriptDialogOpening" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired for top level page lifecycle events such as navigation, load, paint, etc.
+     */
     public val lifecycleEvent: Flow<LifecycleEventParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.lifecycleEvent"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.lifecycleEvent" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired for failed bfcache history navigations if BackForwardCache feature is enabled. Do
+     * not assume any ordering with the Page.frameNavigated event. This event is fired only for
+     * main-frame history navigation where the document changes (non-same-document navigations),
+     * when bfcache navigation fails.
+     */
     public val backForwardCacheNotUsed: Flow<BackForwardCacheNotUsedParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.backForwardCacheNotUsed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.backForwardCacheNotUsed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val loadEventFired: Flow<LoadEventFiredParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.loadEventFired"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.loadEventFired" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when same-document navigation happens, e.g. due to history API usage or anchor navigation.
+     */
     public val navigatedWithinDocument: Flow<NavigatedWithinDocumentParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.navigatedWithinDocument"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.navigatedWithinDocument" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Compressed image data requested by the `startScreencast`.
+     */
     public val screencastFrame: Flow<ScreencastFrameParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.screencastFrame"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.screencastFrame" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when the page with currently enabled screencast was shown or hidden `.
+     */
     public val screencastVisibilityChanged: Flow<ScreencastVisibilityChangedParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.screencastVisibilityChanged"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.screencastVisibilityChanged" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when a new window is going to be opened, via window.open(), link click, form submission,
+     * etc.
+     */
     public val windowOpen: Flow<WindowOpenParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.windowOpen"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.windowOpen" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Issued for every compilation cache generated. Is only available
+     * if Page.setGenerateCompilationCache is enabled.
+     */
     public val compilationCacheProduced: Flow<CompilationCacheProducedParameter> = cdp
         .events
-        .filter {
-            it.method == "Page.compilationCacheProduced"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Page.compilationCacheProduced" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Deprecated, please use addScriptToEvaluateOnNewDocument instead.

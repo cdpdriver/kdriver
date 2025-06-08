@@ -23,42 +23,32 @@ public class Tracing(
 ) : Domain {
     public val bufferUsage: Flow<BufferUsageParameter> = cdp
         .events
-        .filter {
-            it.method == "Tracing.bufferUsage"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Tracing.bufferUsage" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Contains a bucket of collected trace events. When tracing is stopped collected events will be
+     * sent as a sequence of dataCollected events followed by tracingComplete event.
+     */
     public val dataCollected: Flow<DataCollectedParameter> = cdp
         .events
-        .filter {
-            it.method == "Tracing.dataCollected"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Tracing.dataCollected" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Signals that tracing is stopped and there is no trace buffers pending flush, all data were
+     * delivered via dataCollected events.
+     */
     public val tracingComplete: Flow<TracingCompleteParameter> = cdp
         .events
-        .filter {
-            it.method == "Tracing.tracingComplete"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Tracing.tracingComplete" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Stop trace events collection.

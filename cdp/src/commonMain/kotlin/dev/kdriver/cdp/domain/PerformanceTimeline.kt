@@ -23,18 +23,15 @@ public val CDP.performanceTimeline: PerformanceTimeline
 public class PerformanceTimeline(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Sent when a performance timeline event is added. See reportPerformanceTimeline method.
+     */
     public val timelineEventAdded: Flow<TimelineEventAddedParameter> = cdp
         .events
-        .filter {
-            it.method == "PerformanceTimeline.timelineEventAdded"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "PerformanceTimeline.timelineEventAdded" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Previously buffered events would be reported before method returns.

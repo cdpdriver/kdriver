@@ -21,18 +21,15 @@ public val CDP.console: Console
 public class Console(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Issued when new console message is added.
+     */
     public val messageAdded: Flow<MessageAddedParameter> = cdp
         .events
-        .filter {
-            it.method == "Console.messageAdded"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Console.messageAdded" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Does nothing.

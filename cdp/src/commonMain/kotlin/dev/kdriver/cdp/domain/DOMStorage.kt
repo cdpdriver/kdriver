@@ -24,55 +24,31 @@ public class DOMStorage(
 ) : Domain {
     public val domStorageItemAdded: Flow<DomStorageItemAddedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOMStorage.domStorageItemAdded"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOMStorage.domStorageItemAdded" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val domStorageItemRemoved: Flow<DomStorageItemRemovedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOMStorage.domStorageItemRemoved"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOMStorage.domStorageItemRemoved" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val domStorageItemUpdated: Flow<DomStorageItemUpdatedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOMStorage.domStorageItemUpdated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOMStorage.domStorageItemUpdated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val domStorageItemsCleared: Flow<DomStorageItemsClearedParameter> = cdp
         .events
-        .filter {
-            it.method == "DOMStorage.domStorageItemsCleared"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "DOMStorage.domStorageItemsCleared" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public suspend fun clear(args: ClearParameter) {
         val parameter = Serialization.json.encodeToJsonElement(args)

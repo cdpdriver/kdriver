@@ -23,31 +23,26 @@ public val CDP.backgroundService: BackgroundService
 public class BackgroundService(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Called when the recording state for the service has been updated.
+     */
     public val recordingStateChanged: Flow<RecordingStateChangedParameter> = cdp
         .events
-        .filter {
-            it.method == "BackgroundService.recordingStateChanged"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "BackgroundService.recordingStateChanged" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Called with all existing backgroundServiceEvents when enabled, and all new
+     * events afterwards if enabled and recording.
+     */
     public val backgroundServiceEventReceived: Flow<BackgroundServiceEventReceivedParameter> = cdp
         .events
-        .filter {
-            it.method == "BackgroundService.backgroundServiceEventReceived"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "BackgroundService.backgroundServiceEventReceived" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Enables event updates for the service.

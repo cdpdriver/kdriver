@@ -25,70 +25,56 @@ public val CDP.debugger: Debugger
 public class Debugger(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Fired when breakpoint is resolved to an actual script and location.
+     */
     public val breakpointResolved: Flow<BreakpointResolvedParameter> = cdp
         .events
-        .filter {
-            it.method == "Debugger.breakpointResolved"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Debugger.breakpointResolved" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when the virtual machine stopped on breakpoint or exception or any other stop criteria.
+     */
     public val paused: Flow<PausedParameter> = cdp
         .events
-        .filter {
-            it.method == "Debugger.paused"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Debugger.paused" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when the virtual machine resumed execution.
+     */
     public val resumed: Flow<Unit> = cdp
         .events
-        .filter {
-            it.method == "Debugger.resumed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Debugger.resumed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when virtual machine fails to parse the script.
+     */
     public val scriptFailedToParse: Flow<ScriptFailedToParseParameter> = cdp
         .events
-        .filter {
-            it.method == "Debugger.scriptFailedToParse"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Debugger.scriptFailedToParse" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Fired when virtual machine parses script. This event is also fired for all known and uncollected
+     * scripts upon enabling debugger.
+     */
     public val scriptParsed: Flow<ScriptParsedParameter> = cdp
         .events
-        .filter {
-            it.method == "Debugger.scriptParsed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Debugger.scriptParsed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Continues execution until specific location is reached.

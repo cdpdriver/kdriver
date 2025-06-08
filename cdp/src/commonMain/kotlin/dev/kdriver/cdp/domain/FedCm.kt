@@ -25,29 +25,21 @@ public class FedCm(
 ) : Domain {
     public val dialogShown: Flow<DialogShownParameter> = cdp
         .events
-        .filter {
-            it.method == "FedCm.dialogShown"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "FedCm.dialogShown" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Triggered when a dialog is closed, either by user action, JS abort,
+     * or a command below.
+     */
     public val dialogClosed: Flow<DialogClosedParameter> = cdp
         .events
-        .filter {
-            it.method == "FedCm.dialogClosed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "FedCm.dialogClosed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public suspend fun enable(args: EnableParameter) {
         val parameter = Serialization.json.encodeToJsonElement(args)

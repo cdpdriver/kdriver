@@ -24,174 +24,135 @@ public val CDP.webAudio: WebAudio
 public class WebAudio(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Notifies that a new BaseAudioContext has been created.
+     */
     public val contextCreated: Flow<ContextCreatedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.contextCreated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.contextCreated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that an existing BaseAudioContext will be destroyed.
+     */
     public val contextWillBeDestroyed: Flow<ContextWillBeDestroyedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.contextWillBeDestroyed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.contextWillBeDestroyed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that existing BaseAudioContext has changed some properties (id stays the same)..
+     */
     public val contextChanged: Flow<ContextChangedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.contextChanged"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.contextChanged" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that the construction of an AudioListener has finished.
+     */
     public val audioListenerCreated: Flow<AudioListenerCreatedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.audioListenerCreated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.audioListenerCreated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that a new AudioListener has been created.
+     */
     public val audioListenerWillBeDestroyed: Flow<AudioListenerWillBeDestroyedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.audioListenerWillBeDestroyed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.audioListenerWillBeDestroyed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that a new AudioNode has been created.
+     */
     public val audioNodeCreated: Flow<AudioNodeCreatedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.audioNodeCreated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.audioNodeCreated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that an existing AudioNode has been destroyed.
+     */
     public val audioNodeWillBeDestroyed: Flow<AudioNodeWillBeDestroyedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.audioNodeWillBeDestroyed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.audioNodeWillBeDestroyed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that a new AudioParam has been created.
+     */
     public val audioParamCreated: Flow<AudioParamCreatedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.audioParamCreated"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.audioParamCreated" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that an existing AudioParam has been destroyed.
+     */
     public val audioParamWillBeDestroyed: Flow<AudioParamWillBeDestroyedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.audioParamWillBeDestroyed"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.audioParamWillBeDestroyed" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that two AudioNodes are connected.
+     */
     public val nodesConnected: Flow<NodesConnectedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.nodesConnected"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.nodesConnected" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that AudioNodes are disconnected. The destination can be null, and it means all the outgoing connections from the source are disconnected.
+     */
     public val nodesDisconnected: Flow<NodesDisconnectedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.nodesDisconnected"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.nodesDisconnected" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that an AudioNode is connected to an AudioParam.
+     */
     public val nodeParamConnected: Flow<NodeParamConnectedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.nodeParamConnected"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.nodeParamConnected" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Notifies that an AudioNode is disconnected to an AudioParam.
+     */
     public val nodeParamDisconnected: Flow<NodeParamDisconnectedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAudio.nodeParamDisconnected"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAudio.nodeParamDisconnected" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Enables the WebAudio domain and starts sending context lifetime events.

@@ -19,18 +19,15 @@ public val CDP.performance: Performance
 public class Performance(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Current values of the metrics.
+     */
     public val metrics: Flow<MetricsParameter> = cdp
         .events
-        .filter {
-            it.method == "Performance.metrics"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Performance.metrics" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Disable collecting and reporting metrics.

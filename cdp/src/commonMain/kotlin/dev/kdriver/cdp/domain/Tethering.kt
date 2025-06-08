@@ -22,18 +22,15 @@ public val CDP.tethering: Tethering
 public class Tethering(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Informs that port was successfully bound and got a specified connection id.
+     */
     public val accepted: Flow<AcceptedParameter> = cdp
         .events
-        .filter {
-            it.method == "Tethering.accepted"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Tethering.accepted" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Request browser port binding.

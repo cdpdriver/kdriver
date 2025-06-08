@@ -24,31 +24,25 @@ public val CDP.webAuthn: WebAuthn
 public class WebAuthn(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Triggered when a credential is added to an authenticator.
+     */
     public val credentialAdded: Flow<CredentialAddedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAuthn.credentialAdded"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAuthn.credentialAdded" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
+    /**
+     * Triggered when a credential is used in a webauthn assertion.
+     */
     public val credentialAsserted: Flow<CredentialAssertedParameter> = cdp
         .events
-        .filter {
-            it.method == "WebAuthn.credentialAsserted"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "WebAuthn.credentialAsserted" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Enable the WebAuthn domain and start intercepting credential storage and

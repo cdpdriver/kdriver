@@ -22,16 +22,10 @@ public class Database(
 ) : Domain {
     public val addDatabase: Flow<AddDatabaseParameter> = cdp
         .events
-        .filter {
-            it.method == "Database.addDatabase"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "Database.addDatabase" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Disables database tracking, prevents database events from being sent to the client.

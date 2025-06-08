@@ -22,29 +22,17 @@ public class LayerTree(
 ) : Domain {
     public val layerPainted: Flow<LayerPaintedParameter> = cdp
         .events
-        .filter {
-            it.method == "LayerTree.layerPainted"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "LayerTree.layerPainted" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     public val layerTreeDidChange: Flow<LayerTreeDidChangeParameter> = cdp
         .events
-        .filter {
-            it.method == "LayerTree.layerTreeDidChange"
-        }
-        .map {
-            it.params
-        }
+        .filter { it.method == "LayerTree.layerTreeDidChange" }
+        .map { it.params }
         .filterNotNull()
-        .map {
-            Serialization.json.decodeFromJsonElement(it)
-        }
+        .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
      * Provides the reasons why the given layer was composited.
