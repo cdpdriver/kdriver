@@ -134,7 +134,8 @@ class Browser private constructor(
             }
         }
 
-        withTimeout(10_000) {
+        // Wait for the target info to be updated (but with a timeout so we don't block indefinitely nor crash)
+        withTimeoutOrNull(10_000) {
             future.await()
         }
         job.cancel()
