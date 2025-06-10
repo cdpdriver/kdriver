@@ -14,6 +14,7 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.http.*
+import io.ktor.util.logging.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +23,6 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import org.slf4j.LoggerFactory
 import kotlin.reflect.KClass
 
 open class Connection(
@@ -33,18 +33,14 @@ open class Connection(
     var owner: Browser? = null,
 ) : BrowserTarget, CDP {
 
-    private val logger = LoggerFactory.getLogger("Connection")
+    private val logger = KtorSimpleLogger("Connection")
+    private val debugStringLimit = 64
 
     private val client = HttpClient(CIO) {
         install(WebSockets)
     }
 
     private var wsSession: ClientWebSocketSession? = null
-
-    @Deprecated("Just remove cdp().")
-    fun cdp(isUpdate: Boolean = false): CDP {
-        return this
-    }
 
     private var socketSubscription: Job? = null
 
@@ -56,7 +52,7 @@ open class Connection(
                     try {
                         frame as? Frame.Text ?: continue
                         val text = frame.readText()
-                        logger.debug("WS < CDP: $text")
+                        logger.debug("WS < CDP: ${text.take(debugStringLimit)}")
                         val received = Serialization.json.decodeFromString<Message>(text)
                         allMessages.emit(received)
                     } catch (e: Exception) {
@@ -98,7 +94,7 @@ open class Connection(
         val requestID = currentID++
         val jsonString = Json.encodeToString(Request(requestID, method, parameter))
         wsSession?.send(jsonString)
-        logger.debug("WS > CDP: $jsonString")
+        logger.debug("WS > CDP: ${jsonString.take(debugStringLimit)}")
         val result = responses.first { it.id == requestID }
         result.error?.throwAsException()
         return result.result
@@ -112,7 +108,7 @@ open class Connection(
     }
 
     suspend fun updateTarget() {
-        val targetInfo = cdp(isUpdate = true).target.getTargetInfo(targetId)
+        val targetInfo = target.getTargetInfo(targetId)
         this.targetInfo = targetInfo.targetInfo
     }
 

@@ -3,9 +3,9 @@ package dev.kdriver.core.dom
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.tab.Tab
 import dev.kdriver.core.utils.filterRecurse
+import io.ktor.util.logging.*
 import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
-import org.slf4j.LoggerFactory
 
 data class Element(
     val node: DOM.Node,
@@ -13,7 +13,7 @@ data class Element(
     val tree: DOM.Node? = null,
 ) {
 
-    private val logger = LoggerFactory.getLogger("Element")
+    private val logger = KtorSimpleLogger("Element")
 
     private var remoteObject: Runtime.RemoteObject? = null
 
@@ -151,7 +151,7 @@ data class Element(
             }
             pos
         } catch (e: IndexOutOfBoundsException) {
-            logger.debug("no content quads for {}. mostly caused by element which is not 'in plain sight'", this)
+            logger.debug("no content quads for $this. mostly caused by element which is not 'in plain sight'")
             null
         }
     }

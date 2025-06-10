@@ -5,25 +5,25 @@ import dev.kdriver.cdp.domain.page
 import dev.kdriver.cdp.domain.target
 import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.tab.Tab
+import dev.kdriver.core.utils.Process
+import dev.kdriver.core.utils.exists
 import dev.kdriver.core.utils.freePort
 import dev.kdriver.core.utils.startProcess
+import io.ktor.util.logging.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.io.files.FileNotFoundException
 import kotlinx.io.files.Path
-import org.slf4j.LoggerFactory
-import java.io.File
 
 class Browser private constructor(
     val coroutineScope: CoroutineScope,
     val config: Config = Config(),
 ) {
 
-    private val logger = LoggerFactory.getLogger("Browser")
+    private val logger = KtorSimpleLogger("Browser")
 
-    private var _process: Process? = null
-    private var _processPid: Int? = null
-    private var _http: HTTPApi? = null
+    private var process: Process? = null
+    private var http: HTTPApi? = null
     //private var _cookies: CookieJar? = null
 
     var connection: Connection? = null
@@ -56,7 +56,7 @@ class Browser private constructor(
      */
 
     val stopped: Boolean
-        get() = _process?.isAlive?.not() ?: true
+        get() = process?.isAlive()?.not() ?: true
 
     companion object {
         suspend fun create(
@@ -127,7 +127,6 @@ class Browser private constructor(
                 it.owner = this
             }
         } else {
-            logger.info(targets.toString())
             targets.filterIsInstance<Tab>().first { it.type == "page" }.also {
                 it.page.navigate(url)
                 it.owner = this
@@ -144,10 +143,8 @@ class Browser private constructor(
     }
 
     suspend fun start(): Browser {
-        if (_process != null || _processPid != null) {
-            if (_process?.isAlive == false) {
-                return create(coroutineScope, config)
-            }
+        process?.let {
+            if (process?.isAlive() == false) return create(coroutineScope, config)
             logger.warn("Ignored! Browser is already running.")
             return this
         }
@@ -173,7 +170,7 @@ class Browser private constructor(
             )
 
             logger.info("BROWSER EXECUTABLE PATH: $exe")
-            if (!File(exe.toString()).exists()) throw FileNotFoundException(
+            if (!exists(exe)) throw FileNotFoundException(
                 """
                 Could not determine browser executable.
                 Make sure your browser is installed in the default location (path).
@@ -186,12 +183,11 @@ class Browser private constructor(
 
             logger.info("starting\n\texecutable :$exe\n\narguments:\n${params.joinToString("\n\t")}")
 
-            _process = startProcess(exe, params)
-            _processPid = _process!!.pid().toInt()
+            process = startProcess(exe, params)
         }
 
-        logger.info("Browser process started with PID: $_processPid")
-        _http = HTTPApi(config.host ?: "127.0.0.1", config.port ?: throw IllegalStateException("Port not set"))
+        logger.info("Browser process started with PID: ${process?.pid()}")
+        http = HTTPApi(config.host ?: "127.0.0.1", config.port ?: throw IllegalStateException("Port not set"))
 
         delay(config.browserConnectionTimeout)
         repeat(config.browserConnectionMaxTries) {
@@ -303,7 +299,7 @@ class Browser private constructor(
     }
 
     suspend fun testConnection(): Boolean {
-        val http = _http ?: throw IllegalStateException("HTTPApi not initialized")
+        val http = http ?: throw IllegalStateException("HTTPApi not initialized")
         return try {
             info = http.get<ContraDict>("version")
             true
@@ -315,10 +311,9 @@ class Browser private constructor(
 
     suspend fun stop() {
         // implement stopping the browser process and cleaning up resources
-        logger.info("Stopping browser process with PID: $_processPid")
-        _process?.destroy()
-        _process = null
-        _processPid = null
+        logger.info("Stopping browser process with PID: ${process?.pid()}")
+        process?.destroy()
+        process = null
         connection?.close()
         connection = null
         coroutineScope.cancel()

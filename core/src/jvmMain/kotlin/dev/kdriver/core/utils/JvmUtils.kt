@@ -1,5 +1,7 @@
 package dev.kdriver.core.utils
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.io.files.FileNotFoundException
 import kotlinx.io.files.Path
 import java.io.File
@@ -9,6 +11,27 @@ import kotlin.io.bufferedReader
 import kotlin.io.path.createTempDirectory
 import kotlin.io.readText
 import kotlin.use
+
+actual typealias Process = java.lang.Process
+
+actual suspend fun startProcess(
+    exe: Path,
+    params: List<String>,
+): Process {
+    val isPosix = isPosix()
+    return withContext(Dispatchers.IO) {
+        val command = listOf(exe.toString()) + params
+
+        val builder = ProcessBuilder(command)
+        builder.redirectInput(ProcessBuilder.Redirect.PIPE)
+        builder.redirectOutput(ProcessBuilder.Redirect.PIPE)
+        builder.redirectError(ProcessBuilder.Redirect.PIPE)
+        if (isPosix) builder.redirectErrorStream(false)
+
+        val process = builder.start()
+        process
+    }
+}
 
 actual fun isPosix(): Boolean {
     val os = System.getProperty("os.name").lowercase()
@@ -27,6 +50,15 @@ actual fun isRoot(): Boolean {
 
 actual fun tempProfileDir(): Path {
     return Path(createTempDirectory(prefix = "kdriver_").toFile().absolutePath)
+}
+
+actual fun exists(path: Path): Boolean {
+    return try {
+        val file = File(path.toString())
+        file.exists() && file.canRead()
+    } catch (_: Exception) {
+        false
+    }
 }
 
 actual fun findChromeExecutable(): Path? {

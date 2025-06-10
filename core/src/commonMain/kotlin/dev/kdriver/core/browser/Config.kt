@@ -4,8 +4,8 @@ import dev.kdriver.core.utils.findChromeExecutable
 import dev.kdriver.core.utils.isPosix
 import dev.kdriver.core.utils.isRoot
 import dev.kdriver.core.utils.tempProfileDir
+import io.ktor.util.logging.*
 import kotlinx.io.files.Path
-import org.slf4j.LoggerFactory
 
 class Config(
     userDataDir: Path? = null,
@@ -23,7 +23,7 @@ class Config(
     val autoDiscoverTargets: Boolean = true,
 ) {
 
-    private val logger = LoggerFactory.getLogger("Config")
+    private val logger = KtorSimpleLogger("Config")
 
     private var _userDataDir: Path? = null
     private var _customDataDir: Boolean = false

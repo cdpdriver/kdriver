@@ -8,11 +8,11 @@ import dev.kdriver.core.browser.BrowserTarget
 import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.dom.Element
 import dev.kdriver.core.utils.filterRecurse
+import io.ktor.util.logging.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.decodeFromJsonElement
-import org.slf4j.LoggerFactory
 
 class Tab(
     websocketUrl: String,
@@ -22,7 +22,7 @@ class Tab(
     owner: Browser? = null,
 ) : Connection(websocketUrl, messageListeningScope, eventsBufferSize, targetInfo, owner), BrowserTarget {
 
-    private val logger = LoggerFactory.getLogger("Tab")
+    private val logger = KtorSimpleLogger("Tab")
 
     suspend fun get(
         url: String = "about:blank",

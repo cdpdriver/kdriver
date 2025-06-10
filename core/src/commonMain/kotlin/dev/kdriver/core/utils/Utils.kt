@@ -2,8 +2,6 @@ package dev.kdriver.core.utils
 
 import dev.kdriver.core.browser.WebSocketInfo
 import io.ktor.http.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.io.files.Path
 
 fun <T> filterRecurse(
@@ -49,29 +47,16 @@ fun parseWebSocketUrl(url: String): WebSocketInfo {
     return WebSocketInfo(host, port, path)
 }
 
-suspend fun startProcess(
-    exe: Path,
-    params: List<String>,
-): Process {
-    val isPosix = isPosix()
-    return withContext(Dispatchers.IO) {
-        val command = listOf(exe.toString()) + params
-        val builder = ProcessBuilder(command)
-        builder.redirectInput(ProcessBuilder.Redirect.PIPE)
-        builder.redirectOutput(ProcessBuilder.Redirect.PIPE)
-        builder.redirectError(ProcessBuilder.Redirect.PIPE)
-
-        if (isPosix) {
-            builder.redirectErrorStream(false)
-        }
-
-        val process = builder.start()
-        process
-    }
+expect abstract class Process {
+    fun isAlive(): Boolean
+    fun pid(): Long
+    abstract fun destroy()
 }
 
+expect suspend fun startProcess(exe: Path, params: List<String>): Process
 expect fun isPosix(): Boolean
 expect fun isRoot(): Boolean
 expect fun tempProfileDir(): Path
+expect fun exists(path: Path): Boolean
 expect fun findChromeExecutable(): Path?
 expect fun freePort(): Int?
