@@ -59,6 +59,26 @@ class Browser private constructor(
         get() = process?.isAlive()?.not() ?: true
 
     companion object {
+
+        /**
+         * The entry point for creating a new Browser instance.
+         *
+         * This function initializes a new Browser instance with the provided configuration.
+         * It sets up the necessary parameters such as user data directory, headless mode, browser executable path, and more.
+         * It also handles the creation of a coroutine scope for the browser instance and sets up a shutdown hook to clean up resources when the application exits.
+         *
+         * @param coroutineScope The parent CoroutineScope, in which the browser will run.
+         * @param config Optional configuration for the browser. If not provided, a default configuration will be used.
+         * @param userDataDir Optional path to the user data directory. If not provided, a temporary profile will be created.
+         * @param headless If true, the browser will run in headless mode. Defaults to false.
+         * @param browserExecutablePath Optional path to the browser executable. If not provided, the default browser will be used.
+         * @param browserArgs Optional list of additional arguments to pass to the browser executable.
+         * @param sandbox If true, the browser will run in a sandboxed environment. Defaults to true.
+         * @param host Optional host address for the browser connection. If not provided, defaults to "127.0.0.1".
+         * @param port Optional port for the browser connection. If not provided, a free port will be assigned.
+         *
+         * @return A new instance of the Browser class.
+         */
         suspend fun create(
             coroutineScope: CoroutineScope,
             config: Config? = null,
@@ -96,13 +116,36 @@ class Browser private constructor(
 
             return instance
         }
+
     }
 
+    /**
+     * Waits for the specified time in seconds.
+     *
+     * This function suspends the coroutine for the given number of seconds.
+     * It can be used to introduce delays in the execution flow, similar to `delay()`.
+     *
+     * @param timeSeconds The number of seconds to wait. Defaults to 1.0 second.
+     *
+     * @return The current Browser instance for chaining.
+     */
     suspend fun wait(timeSeconds: Double = 1.0): Browser {
         delay((timeSeconds * 1000).toLong())
         return this
     }
 
+    /**
+     * Top level get. Uses the first tab to retrieve given url.
+     *
+     * Convenience function known from selenium.
+     * This function handles waits/sleeps and detects when DOM events fired, so it's the safest way of navigating.
+     *
+     * @param url The URL to navigate to. Defaults to "about:blank".
+     * @param newTab If true, opens the URL in a new tab. Defaults to false.
+     * @param newWindow If true, opens the URL in a new window. Defaults to false.
+     *
+     * @return The Tab object representing the opened tab.
+     */
     suspend fun get(url: String = "about:blank", newTab: Boolean = false, newWindow: Boolean = false): Tab {
         val connection = connection ?: throw IllegalStateException("Browser not yet started. Call start() first")
 
@@ -142,6 +185,9 @@ class Browser private constructor(
         return connectionTab
     }
 
+    /**
+     * Launches the actual browser
+     */
     suspend fun start(): Browser {
         process?.let {
             if (process?.isAlive() == false) return create(coroutineScope, config)
@@ -246,11 +292,25 @@ class Browser private constructor(
         return this
     }
 
+    /**
+     * This is an internal handler that updates the targets when chrome emits the corresponding event.
+     *
+     * It handles the following events:
+     * - TargetInfoChangedParameter: Updates the target info of an existing tab.
+     * - TargetCreatedParameter: Creates a new tab when a target is created.
+     * - TargetDestroyedParameter: Removes a tab when a target is destroyed.
+     * - TargetCrashedParameter: Logs a warning when a target crashes.
+     *
+     * @param event The event emitted by the Target domain.
+     */
     private fun handleTargetUpdate(event: Any) {
         when (event) {
             is Target.TargetInfoChangedParameter -> {
                 val targetInfo = event.targetInfo
-                val currentTab = targets.first { it.targetId == targetInfo.targetId }
+                val currentTab = targets.firstOrNull { it.targetId == targetInfo.targetId } ?: run {
+                    logger.warn("TargetInfoChangedParameter: Target with ID ${targetInfo.targetId} not found in current targets.")
+                    return
+                }
                 val currentTarget = currentTab.targetInfo
 
                 logger.debug("target #${targets.indexOf(currentTab)} has changed")
@@ -269,11 +329,7 @@ class Browser private constructor(
 
             is Target.TargetCreatedParameter -> {
                 val targetInfo = event.targetInfo
-                val wsUrl = buildString {
-                    append("ws://${config.host}:${config.port}")
-                    append("/devtools/${targetInfo.type ?: "page"}")
-                    append("/${targetInfo.targetId}")
-                }
+                val wsUrl = "ws://${config.host}:${config.port}/devtools/${targetInfo.type}/${targetInfo.targetId}"
 
                 val newTarget = Tab(
                     wsUrl,
@@ -287,7 +343,10 @@ class Browser private constructor(
             }
 
             is Target.TargetDestroyedParameter -> {
-                val currentTab = targets.first { it.targetId == event.targetId }
+                val currentTab = targets.firstOrNull { it.targetId == event.targetId } ?: run {
+                    logger.warn("TargetDestroyedParameter: Target with ID ${event.targetId} not found in current targets.")
+                    return
+                }
                 logger.debug("target removed. id #{} => {}", targets.indexOf(currentTab), currentTab)
                 targets.remove(currentTab)
             }
@@ -309,8 +368,13 @@ class Browser private constructor(
         }
     }
 
+    /**
+     * Stops the browser process and cleans up resources.
+     *
+     * This method will close the connection, cancel the coroutine scope, and destroy the process.
+     * It should be called when the browser is no longer needed to free up resources.
+     */
     suspend fun stop() {
-        // implement stopping the browser process and cleaning up resources
         logger.info("Stopping browser process with PID: ${process?.pid()}")
         process?.destroy()
         process = null
