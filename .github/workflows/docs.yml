@@ -23,10 +23,11 @@ jobs:
           mkdir -p build/docs/api
           cp -r build/dokka/htmlMultiModule/* build/docs/api
           cp -r docs/* build/docs
-          echo 'kdriver.dev' > build/docs/CNAME
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: build/docs
           publish_branch: gh-pages
+          cname: kdriver.dev
+          enable_jekyll: true
