@@ -4,6 +4,9 @@ import dev.kdriver.cdp.domain.Target
 import dev.kdriver.cdp.domain.page
 import dev.kdriver.cdp.domain.target
 import dev.kdriver.core.connection.Connection
+import dev.kdriver.core.exceptions.BrowserExecutableNotFoundException
+import dev.kdriver.core.exceptions.FailedToConnectToBrowserException
+import dev.kdriver.core.exceptions.NoBrowserExecutablePathException
 import dev.kdriver.core.tab.Tab
 import dev.kdriver.core.utils.Process
 import dev.kdriver.core.utils.exists
@@ -12,9 +15,14 @@ import dev.kdriver.core.utils.startProcess
 import io.ktor.util.logging.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.io.files.FileNotFoundException
 import kotlinx.io.files.Path
 
+/**
+ * Represents a browser instance that can be controlled programmatically.
+ *
+ * This class provides methods to start the browser, navigate to URLs, manage tabs,
+ * and handle browser events.
+ */
 class Browser private constructor(
     val coroutineScope: CoroutineScope,
     val config: Config = Config(),
@@ -208,21 +216,10 @@ class Browser private constructor(
         }
 
         if (!connectExisting) {
-            val exe = config.browserExecutablePath ?: throw IllegalStateException(
-                """
-                    Browser executable path is not set and findChromeExecutable is not supported on this platform.
-                    Please specify browserExecutablePath parameter.
-                    """.trimIndent()
-            )
+            val exe = config.browserExecutablePath ?: throw NoBrowserExecutablePathException()
 
             logger.info("BROWSER EXECUTABLE PATH: $exe")
-            if (!exists(exe)) throw FileNotFoundException(
-                """
-                Could not determine browser executable.
-                Make sure your browser is installed in the default location (path).
-                Or specify browserExecutablePath parameter.
-                """.trimIndent()
-            )
+            if (!exists(exe)) throw BrowserExecutableNotFoundException()
 
             val params = config().toMutableList()
             params.add("about:blank")
@@ -253,12 +250,7 @@ class Browser private constructor(
             }
              */
             stop()
-            throw Exception(
-                """
-                Failed to connect to browser.
-                Possible cause: running as root. Use no_sandbox = true in that case.
-                """.trimIndent()
-            )
+            throw FailedToConnectToBrowserException()
         }
 
         logger.info("Connected to browser at ${info.webSocketDebuggerUrl}")
@@ -389,7 +381,8 @@ class Browser private constructor(
     }
 
     private suspend fun getTargets(): List<Target.TargetInfo> {
-        val connection = this.connection ?: error("Browser not yet started. Use browser.start() first.")
+        val connection = this.connection
+            ?: throw IllegalStateException("Browser not yet started. Use browser.start() first.")
         val info = connection.target.getTargets()
         return info.targetInfos
     }

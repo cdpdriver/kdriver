@@ -1,6 +1,7 @@
 package dev.kdriver.core.tab
 
 import dev.kdriver.core.browser.Browser
+import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.sampleFile
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -106,10 +107,10 @@ class TabTest {
         val browser = Browser.create(this, headless = true, sandbox = false)
         val tab = browser.get(sampleFile("groceries.html"))
 
-        tab.waitForReadyState("complete")
+        tab.waitForReadyState(ReadyState.COMPLETE)
 
-        val readyState = tab.evaluate<String>("document.readyState")
-        assertEquals("complete", readyState)
+        val readyState = tab.evaluate<ReadyState>("document.readyState")
+        assertEquals(ReadyState.COMPLETE, readyState)
         browser.stop()
     }
 

@@ -7,6 +7,12 @@ import io.ktor.util.logging.*
 import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
 
+/**
+ * Represents a DOM element in the browser.
+ *
+ * This class provides methods to interact with the DOM element, such as clicking, sending keys, and applying JavaScript functions.
+ * It also provides properties to access the element's tag name, text content, and position in the viewport.
+ */
 data class Element(
     val node: DOM.Node,
     val tab: Tab,
