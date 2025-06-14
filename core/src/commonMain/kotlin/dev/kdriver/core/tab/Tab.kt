@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Represents a browser tab, which is a connection to a specific target in the browser.
@@ -270,18 +271,19 @@ class Tab(
      */
     suspend fun scrollDown(amount: Int = 25, speed: Int = 800) {
         val (_, bounds) = getWindow()
-        val yDistance = bounds.height?.times((amount / 100.0))?.unaryMinus()
+        val yDistance = bounds.height?.times(amount / 100.0) ?: return
 
         input.synthesizeScrollGesture(
             x = 0.0,
             y = 0.0,
-            yDistance = yDistance,
+            yDistance = yDistance.unaryMinus(),
             yOverscroll = 0.0,
             xOverscroll = 0.0,
             preventFling = true,
             repeatDelayMs = 0,
             speed = speed
         )
+        delay((yDistance / speed).seconds)
     }
 
     /**
@@ -294,7 +296,7 @@ class Tab(
      */
     suspend fun scrollUp(amount: Int = 25, speed: Int = 800) {
         val (_, bounds) = getWindow()
-        val yDistance = bounds.height?.times((amount / 100.0))
+        val yDistance = bounds.height?.times(amount / 100.0) ?: return
 
         input.synthesizeScrollGesture(
             x = 0.0,
@@ -306,6 +308,7 @@ class Tab(
             repeatDelayMs = 0,
             speed = speed
         )
+        delay((yDistance / speed).seconds)
     }
 
     /**
