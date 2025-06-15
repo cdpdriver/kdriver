@@ -23,20 +23,22 @@ sealed class Message {
     ) : Message() {
 
         /**
-         * Representation of the error returns from the broswe.
+         * Representation of the error returns from the browser.
          */
         @Serializable
         class ResponseError(
             val code: Int,
             val message: String,
-            val data: String?,
+            val data: String? = null,
         ) {
+
             /**
              * Throw this error as [CDPErrorException].
              */
             fun throwAsException() {
                 throw CDPErrorException(code, message, data)
             }
+
         }
     }
 
@@ -46,7 +48,7 @@ sealed class Message {
     @Serializable
     class Event(
         val method: String,
-        val params: JsonElement?,
+        val params: JsonElement? = null,
     ) : Message()
 
 }
