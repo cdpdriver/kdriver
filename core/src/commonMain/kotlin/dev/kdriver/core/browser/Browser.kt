@@ -3,6 +3,7 @@ package dev.kdriver.core.browser
 import dev.kdriver.cdp.domain.Target
 import dev.kdriver.cdp.domain.page
 import dev.kdriver.cdp.domain.target
+import dev.kdriver.core.browser.Browser.Companion.create
 import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.exceptions.BrowserExecutableNotFoundException
 import dev.kdriver.core.exceptions.FailedToConnectToBrowserException
@@ -15,6 +16,7 @@ import dev.kdriver.core.utils.startProcess
 import io.ktor.util.logging.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.io.files.Path
 
 /**
@@ -22,6 +24,15 @@ import kotlinx.io.files.Path
  *
  * This class provides methods to start the browser, navigate to URLs, manage tabs,
  * and handle browser events.
+ *
+ * You can create a new instance of this class using the [create] method:
+ * ```kotlin
+ * fun main() = runBlocking {
+ *     val browser = Browser.create(this)
+ *     // Use the browser instance to do things...
+ *     browser.stop()
+ * }
+ * ```
  */
 class Browser private constructor(
     val coroutineScope: CoroutineScope,
@@ -29,27 +40,49 @@ class Browser private constructor(
 ) {
 
     private val logger = KtorSimpleLogger("Browser")
+    private val updateTargetInfoMutex = Mutex()
 
     private var process: Process? = null
     private var http: HTTPApi? = null
     //private var _cookies: CookieJar? = null
 
+    /**
+     * The connection to the browser's WebSocket debugger.
+     *
+     * This connection is established when the browser is started and is used to communicate with the browser.
+     * It allows sending commands and receiving events from the browser.
+     */
     var connection: Connection? = null
         private set
 
     var info: ContraDict? = null
         private set
 
-    private val _isUpdating = Mutex()
-
+    /**
+     * A list of targets currently open in the browser.
+     *
+     * If you want to tabs, consider using [tabs] property instead.
+     */
     val targets: MutableList<Connection> = mutableListOf()
 
+    /**
+     * The WebSocket URL for the browser's debugger.
+     *
+     * This URL is used to connect to the browser's debugging protocol.
+     * It is available after the browser has been started and the connection has been established.
+     */
     val websocketUrl: String
         get() = info?.webSocketDebuggerUrl ?: throw IllegalStateException("Browser not yet started. Call start() first")
 
+    /**
+     * The main tab of the browser.
+     */
     val mainTab: Tab?
         get() = targets.filterIsInstance<Tab>().maxByOrNull { it.type == "page" }
 
+    /**
+     * A list of all tabs in the browser.
+     */
     val tabs: List<Tab>
         get() = targets.filterIsInstance<Tab>().filter { it.type == "page" }
 
@@ -63,6 +96,9 @@ class Browser private constructor(
         }
      */
 
+    /**
+     * Checks if the browser process has stopped.
+     */
     val stopped: Boolean
         get() = process?.isAlive()?.not() ?: true
 
@@ -115,9 +151,7 @@ class Browser private constructor(
 
             Runtime.getRuntime().addShutdownHook(Thread {
                 runBlocking {
-                    if (!instance.stopped) {
-                        instance.stop()
-                    }
+                    if (!instance.stopped) instance.stop()
                     instance.cleanupTemporaryProfile()
                 }
             })
@@ -295,7 +329,7 @@ class Browser private constructor(
      *
      * @param event The event emitted by the Target domain.
      */
-    private fun handleTargetUpdate(event: Any) {
+    private suspend fun handleTargetUpdate(event: Any) = updateTargetInfoMutex.withLock {
         when (event) {
             is Target.TargetInfoChangedParameter -> {
                 val targetInfo = event.targetInfo
@@ -349,6 +383,14 @@ class Browser private constructor(
         }
     }
 
+    /**
+     * Tests the connection to the browser by sending a request to the "version" endpoint.
+     *
+     * This method checks if the browser is running and responds to requests.
+     * If the connection is successful, it updates the `info` property with the version information.
+     *
+     * @return True if the connection was successful, false otherwise.
+     */
     suspend fun testConnection(): Boolean {
         val http = http ?: throw IllegalStateException("HTTPApi not initialized")
         return try {
@@ -377,7 +419,7 @@ class Browser private constructor(
     }
 
     suspend fun cleanupTemporaryProfile() {
-        // implement cleanup of temporary profile files
+        // TODO: Implement cleanup of temporary profile files (nothing on JVM but maybe for other platforms)
     }
 
     private suspend fun getTargets(): List<Target.TargetInfo> {
@@ -387,6 +429,14 @@ class Browser private constructor(
         return info.targetInfos
     }
 
+    /**
+     * Updates the list of targets in the browser.
+     *
+     * This method retrieves the current targets from the browser and updates the internal list of targets.
+     * It adds new targets if they do not already exist in the list, or updates existing targets with new information.
+     *
+     * @throws IllegalStateException if the browser has not been started yet.
+     */
     suspend fun updateTargets() {
         getTargets().forEach { t ->
             val existingTab = this.targets.firstOrNull { it.targetInfo?.targetId == t.targetId }
