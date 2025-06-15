@@ -148,6 +148,16 @@ data class Element(
     }
 
     /**
+     * Focuses the element, making it the active element in the document.
+     *
+     * This method applies a JavaScript function to focus the element.
+     * It is useful for input fields or elements that require user interaction.
+     */
+    suspend fun focus() {
+        apply("(elem) => elem.focus()")
+    }
+
+    /**
      * Sends a sequence of keys to the element, simulating user input.
      *
      * This method focuses the element and dispatches key events for each character in the provided text.
@@ -158,11 +168,24 @@ data class Element(
      * @param text The text to send to the element.
      */
     suspend fun sendKeys(text: String) {
-        apply("(elem) => elem.focus()")
+        focus()
         for (char in text) tab.input.dispatchKeyEvent(
             type = "char",
             text = char.toString()
         )
+    }
+
+    /**
+     * Inserts text into the element, simulating user input.
+     *
+     * This method focuses the element and uses the input API to insert the provided text.
+     * It is useful for filling out input fields or text areas. It acts like a paste operation.
+     *
+     * @param text The text to insert into the element.
+     */
+    suspend fun insertText(text: String) {
+        focus()
+        tab.input.insertText(text)
     }
 
     /**
@@ -172,12 +195,22 @@ data class Element(
      *
      * @param paths A list of file paths to send to the element.
      */
-    suspend fun sendFiles(paths: List<Path>) {
+    suspend fun sendFile(paths: List<Path>) {
         tab.dom.setFileInputFiles(
             files = paths.map { it.toString() },
             backendNodeId = backendNodeId,
             objectId = objectId,
         )
+    }
+
+    /**
+     * Clears the input of the element by setting its value to an empty string.
+     *
+     * This method applies a JavaScript function to the element to clear its value.
+     * It is useful for input fields or text areas that need to be reset.
+     */
+    suspend fun clearInput() {
+        apply("function (element) { element.value = \"\" }")
     }
 
     /**
@@ -241,6 +274,48 @@ data class Element(
             logger.debug("no content quads for $this. mostly caused by element which is not 'in plain sight'")
             null
         }
+    }
+
+    /**
+     * Returns a string representation of the element, including its tag name, attributes, and content.
+     *
+     * The string representation is formatted as an HTML-like tag, with attributes in the format `key="value"`.
+     * For example, an element with tag name `div`, class `my-class`, and content `Hello World` would be represented as:
+     *
+     * ```html
+     * <div class="my-class">Hello World</div>
+     * ```
+     */
+    override fun toString(): String {
+        val tagName = node.nodeName.lowercase()
+        var content = ""
+
+        // Collect all text from this leaf
+        val childNodeCount = node.childNodeCount ?: 0
+        if (childNodeCount > 0) {
+            val children = node.children
+            if (childNodeCount == 1 && children != null && children.isNotEmpty()) {
+                content += children[0].toString()
+            } else if (childNodeCount > 1 && children != null) {
+                for (child in children) {
+                    content += child.toString()
+                }
+            }
+        }
+
+        if (node.nodeType == 3) { // text node
+            content += node.nodeValue
+            return content
+        }
+
+        val attrs = node.attributes?.chunked(2)?.joinToString(" ") {
+            val key = it[0]
+            val value = it.getOrNull(1) ?: ""
+            """$key="$value""""
+        } ?: ""
+
+        return if (attrs.isNotBlank()) "<$tagName $attrs>$content</$tagName>"
+        else "<$tagName>$content</$tagName>"
     }
 
 }
