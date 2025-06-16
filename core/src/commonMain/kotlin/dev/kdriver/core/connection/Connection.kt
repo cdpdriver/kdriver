@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlin.reflect.KClass
@@ -66,6 +68,7 @@ open class Connection(
         }
     }
 
+    private val currentIdMutex = Mutex()
     private var currentID = 0
 
     private var allMessages = MutableSharedFlow<Message>(extraBufferCapacity = eventsBufferSize)
@@ -91,7 +94,7 @@ open class Connection(
 
     override suspend fun callCommand(method: String, parameter: JsonElement?): JsonElement? {
         connect()
-        val requestID = currentID++
+        val requestID = currentIdMutex.withLock { currentID++ }
         val jsonString = Json.encodeToString(Request(requestID, method, parameter))
         wsSession?.send(jsonString)
         logger.debug("WS > CDP: ${jsonString.take(debugStringLimit)}")
