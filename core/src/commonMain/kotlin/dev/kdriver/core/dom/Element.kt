@@ -1,11 +1,13 @@
 package dev.kdriver.core.dom
 
+import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.domain.*
+import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.tab.Tab
 import dev.kdriver.core.utils.filterRecurse
 import io.ktor.util.logging.*
 import kotlinx.io.files.Path
-import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
  * Represents a DOM element in the browser.
@@ -68,6 +70,10 @@ data class Element(
             return Element(parentNode, tab = this.tab, tree = this.tree)
         }
 
+    suspend fun updateRemoteObject(): Runtime.RemoteObject? {
+        remoteObject = tab.dom.resolveNode(backendNodeId = backendNodeId).`object`
+        return remoteObject
+    }
 
     suspend fun update() {
         // TODO
@@ -103,7 +109,7 @@ data class Element(
      * @throws IllegalStateException if the remote object cannot be resolved.
      */
     suspend fun click() {
-        remoteObject = tab.dom.resolveNode(backendNodeId = backendNodeId).`object`
+        updateRemoteObject()
         val objectId = remoteObject?.objectId ?: throw IllegalStateException("Could not resolve object id for $this")
 
         val arguments = listOf(Runtime.CallArgument(objectId = objectId))
@@ -154,7 +160,7 @@ data class Element(
      * It is useful for input fields or elements that require user interaction.
      */
     suspend fun focus() {
-        apply("(elem) => elem.focus()")
+        apply<Unit>("(elem) => elem.focus()")
     }
 
     /**
@@ -210,7 +216,7 @@ data class Element(
      * It is useful for input fields or text areas that need to be reset.
      */
     suspend fun clearInput() {
-        apply("function (element) { element.value = \"\" }")
+        apply<Unit>("function (element) { element.value = \"\" }")
     }
 
     /**
@@ -227,12 +233,11 @@ data class Element(
      *
      * @return The result of the function call, or null if the result is not serializable.
      */
-    suspend fun apply(
+    suspend inline fun <reified T> apply(
         jsFunction: String,
         awaitPromise: Boolean = false,
-    ): JsonElement? {
-        remoteObject = tab.dom.resolveNode(backendNodeId = backendNodeId).`object`
-
+    ): T? {
+        val remoteObject = updateRemoteObject()
         val result = tab.runtime.callFunctionOn(
             functionDeclaration = jsFunction,
             objectId = remoteObject?.objectId,
@@ -243,8 +248,10 @@ data class Element(
             userGesture = true,
             awaitPromise = awaitPromise,
         )
-
-        return result.result.value
+        result.exceptionDetails?.let { throw EvaluateException(it) }
+        return result.result.value?.let {
+            Serialization.json.decodeFromJsonElement<T>(it)
+        }
     }
 
     /**
@@ -257,9 +264,7 @@ data class Element(
      * @return The position of the element, or null if it could not be determined.
      */
     suspend fun getPosition(abs: Boolean = false): Position? {
-        if (remoteObject == null || parent == null || objectId == null) {
-            remoteObject = tab.dom.resolveNode(backendNodeId = backendNodeId).`object`
-        }
+        updateRemoteObject()
 
         return try {
             val quads = tab.dom.getContentQuads(objectId = remoteObject!!.objectId).quads
