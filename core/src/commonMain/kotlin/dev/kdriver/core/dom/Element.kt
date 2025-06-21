@@ -220,6 +220,40 @@ data class Element(
     }
 
     /**
+     * Clears the input of the element by simulating a series of delete key presses.
+     *
+     * This method applies a JavaScript function that simulates pressing the delete key
+     * repeatedly until the input is empty. It is useful for clearing input fields or text areas
+     * when [clearInput] does not work (for example, when custom input handling is implemented on the page).
+     */
+    suspend fun clearInputByDeleting() {
+        apply<Unit>(
+            jsFunction = """
+                async function clearByDeleting(n, d = 50) {
+                    n.focus();
+                    n.setSelectionRange(0, 0);
+                    while (n.value.length > 0) {
+                        n.dispatchEvent(
+                            new KeyboardEvent("keydown", {
+                                key: "Delete",
+                                code: "Delete",
+                                keyCode: 46,
+                                which: 46,
+                                bubbles: !0,
+                                cancelable: !0,
+                            })
+                        );
+                        n.value = n.value.slice(1);
+                        await new Promise((r) => setTimeout(r, d));
+                    }
+                    n.dispatchEvent(new Event("input", { bubbles: !0 }));
+                }
+            """.trimIndent(),
+            awaitPromise = true
+        )
+    }
+
+    /**
      * Applies a JavaScript function to the element and returns the result. The given js_function string should accept the js element as parameter,
      * and can be a arrow function, or function declaration.
      *
