@@ -223,9 +223,14 @@ data class Element(
      * - `function myFunction(elem) { alert(elem) }`
      *
      * @param jsFunction The JavaScript function to apply to the element.
+     * @param awaitPromise If true, waits for any promises to resolve before returning the result.
+     *
      * @return The result of the function call, or null if the result is not serializable.
      */
-    suspend fun apply(jsFunction: String): JsonElement? {
+    suspend fun apply(
+        jsFunction: String,
+        awaitPromise: Boolean = false,
+    ): JsonElement? {
         remoteObject = tab.dom.resolveNode(backendNodeId = backendNodeId).`object`
 
         val result = tab.runtime.callFunctionOn(
@@ -235,7 +240,8 @@ data class Element(
                 Runtime.CallArgument(objectId = remoteObject?.objectId)
             ),
             returnByValue = true,
-            userGesture = true
+            userGesture = true,
+            awaitPromise = awaitPromise,
         )
 
         return result.result.value
