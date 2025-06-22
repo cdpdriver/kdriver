@@ -17,7 +17,7 @@ sealed class Message {
      */
     @Serializable
     class Response(
-        val id: Int,
+        val id: Long,
         val result: JsonElement? = null,
         val error: ResponseError? = null,
     ) : Message() {
@@ -33,10 +33,10 @@ sealed class Message {
         ) {
 
             /**
-             * Throw this error as [CDPErrorException].
+             * Throw this error as [CDPException].
              */
-            fun throwAsException() {
-                throw CDPErrorException(code, message, data)
+            fun throwAsException(method: String) {
+                throw CDPException(method, code, message, data)
             }
 
         }

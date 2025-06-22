@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonElement
  */
 @Serializable
 class Request(
-    val id: Int,
+    val id: Long,
     val method: String,
     val params: JsonElement?,
 )

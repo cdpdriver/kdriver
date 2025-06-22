@@ -69,7 +69,7 @@ open class Connection(
     }
 
     private val currentIdMutex = Mutex()
-    private var currentID = 0
+    private var currentId = 0L
 
     private var allMessages = MutableSharedFlow<Message>(extraBufferCapacity = eventsBufferSize)
 
@@ -94,12 +94,12 @@ open class Connection(
 
     override suspend fun callCommand(method: String, parameter: JsonElement?): JsonElement? {
         connect()
-        val requestID = currentIdMutex.withLock { currentID++ }
-        val jsonString = Json.encodeToString(Request(requestID, method, parameter))
+        val requestId = currentIdMutex.withLock { currentId++ }
+        val jsonString = Json.encodeToString(Request(requestId, method, parameter))
         wsSession?.send(jsonString)
         logger.debug("WS > CDP: ${jsonString.take(debugStringLimit)}")
-        val result = responses.first { it.id == requestID }
-        result.error?.throwAsException()
+        val result = responses.first { it.id == requestId }
+        result.error?.throwAsException(method)
         return result.result
     }
 
