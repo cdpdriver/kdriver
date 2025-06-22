@@ -39,7 +39,6 @@ kotlin {
     // jvm & js
     jvmToolchain(21)
     jvm {
-        withJava()
         testRuns.named("test") {
             executionTask.configure {
                 useJUnitPlatform()

@@ -6,7 +6,7 @@ plugins {
 
 allprojects {
     group = "dev.kdriver"
-    version = "0.1.18"
+    version = "0.1.19"
 
     repositories {
         mavenCentral()
