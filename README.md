@@ -2,7 +2,7 @@
 
 > This project is a Kotlin port of [@stephanlensky](https://github.com/stephanlensky)'s awesome Python
 > library [zendriver](https://github.com/stephanlensky/zendriver), built to bring the same simplicity and power of
-> CDP-based automation to the JVM world.
+> CDP-based automation to the Kotlin and Java/JVM world.
 
 kdriver is a blazing fast, coroutine-first, undetectable web scraping / browser automation library for Kotlin. It uses
 the Chrome DevTools Protocol (CDP) under the hood to interact with real Chrome instances, offering a sleek alternative
