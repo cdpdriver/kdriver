@@ -1,6 +1,7 @@
 package dev.kdriver.core.tab
 
 import dev.kaccelero.serializers.Serialization
+import dev.kdriver.cdp.CDPException
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.cdp.domain.Target
 import dev.kdriver.core.browser.Browser
@@ -16,6 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlin.math.abs
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -216,6 +218,15 @@ class Tab(
     }
 
     /**
+     * Restores the tab's window to its normal state.
+     *
+     * This method sets the window state to "normal", which typically restores the browser window to its default size and position.
+     */
+    suspend fun medimize() {
+        setWindowState(state = "normal")
+    }
+
+    /**
      * Sets the tab's window state, including position and size.
      *
      * This method allows you to set the window's position (left, top), size (width, height), and state (normal, minimized, maximized, fullscreen).
@@ -341,6 +352,43 @@ class Tab(
     }
 
     /**
+     * Finds a single element by its text content, optionally waiting for it to appear.
+     *
+     * @param text The text to search for. Note: script contents are also considered text.
+     * @param bestMatch If true (default), returns the element with the most comparable string length.
+     *                  This helps when searching for common terms (e\.g\., "login") to get the most relevant element,
+     *                  such as a login button, instead of unrelated elements containing the text.
+     *                  If false, returns the first match found, which is faster.
+     * @param returnEnclosingElement Since the function often returns text nodes (children of elements like "span", "p", etc\.),
+     *                  this flag (default: true) returns the containing element instead of the text node itself.
+     *                  Set to false if you want the text node or for cases like elements with "placeholder=" property.
+     *                  If the found node is not a text node but a regular element, the flag is ignored and the element is returned.
+     * @param timeoutSeconds The maximum time in seconds to wait for the element to appear before raising a timeout exception.
+     *
+     * @return The found [Element], or null if no matching element is found within the timeout.
+     */
+    suspend fun find(
+        text: String,
+        bestMatch: Boolean = true,
+        returnEnclosingElement: Boolean = true,
+        timeoutSeconds: Int = 10,
+    ): Element? {
+        val startTime = Clock.System.now().toEpochMilliseconds()
+        val trimmedText = text.trim()
+        var item = findElementByText(trimmedText, bestMatch, returnEnclosingElement)
+        while (item == null) {
+            wait()
+            item = findElementByText(trimmedText, bestMatch, returnEnclosingElement)
+            val elapsed = (Clock.System.now().toEpochMilliseconds() - startTime) / 1000
+            if (elapsed > timeoutSeconds) {
+                throw TimeoutWaitingForElementException(trimmedText, timeoutSeconds)
+            }
+            delay(500)
+        }
+        return item
+    }
+
+    /**
      * Selects an element in the DOM using a CSS selector.
      *
      * This method waits for the element to appear in the DOM, retrying every 500 milliseconds until the timeout is reached.
@@ -374,6 +422,135 @@ class Tab(
         return item
     }
 
+    /**
+     * Finds multiple elements by their text content, optionally waiting for them to appear.
+     *
+     * This method searches for all elements containing the specified text. If no elements are found,
+     * it waits and retries until at least one element is found or the timeout is reached.
+     *
+     * @param text The text to search for. Note: script contents are also considered text.
+     * @param timeoutSeconds The maximum time in seconds to wait for elements to appear before raising a timeout exception.
+     *
+     * @return A list of found [Element]s.
+     *
+     * @throws TimeoutWaitingForElementException if no elements are found within the timeout.
+     */
+    suspend fun findAll(
+        text: String,
+        timeoutSeconds: Int = 10,
+    ): List<Element> {
+        val startTime = Clock.System.now().toEpochMilliseconds()
+        val trimmedText = text.trim()
+        var items = findElementsByText(trimmedText)
+        while (items.isEmpty()) {
+            wait()
+            items = findElementsByText(trimmedText)
+            val elapsed = (Clock.System.now().toEpochMilliseconds() - startTime) / 1000
+            if (elapsed > timeoutSeconds) {
+                throw TimeoutWaitingForElementException(trimmedText, timeoutSeconds)
+            }
+            delay(500)
+        }
+        return items
+    }
+
+    /**
+     * Finds multiple elements by CSS selector, optionally waiting for them to appear.
+     *
+     * Can also be used to wait for such elements to appear. Optionally includes results from iframes.
+     *
+     * @param selector CSS selector, e\.g\., `a[href]`, `button[class*=close]`, `a > img[src]`
+     * @param timeoutSeconds Raise timeout exception when after this many seconds nothing is found.
+     * @param includeFrames Whether to include results in iframes.
+     *
+     * @return List of found [Element]s.
+     * @throws TimeoutWaitingForElementException if no elements are found within the timeout.
+     */
+    suspend fun selectAll(
+        selector: String,
+        timeoutSeconds: Int = 10,
+        includeFrames: Boolean = false,
+    ): List<Element> {
+        val startTime = Clock.System.now().toEpochMilliseconds()
+        val trimmedSelector = selector.trim()
+        val items = mutableListOf<Element>()
+
+        if (includeFrames) {
+            val frames = querySelectorAll("iframe")
+            for (fr in frames) {
+                items.addAll(fr.querySelectorAll(trimmedSelector))
+            }
+        }
+
+        items.addAll(querySelectorAll(trimmedSelector))
+        while (items.isEmpty()) {
+            wait()
+            items.addAll(querySelectorAll(trimmedSelector))
+            val elapsed = (Clock.System.now().toEpochMilliseconds() - startTime) / 1000
+            if (elapsed > timeoutSeconds) {
+                throw TimeoutWaitingForElementException(trimmedSelector, timeoutSeconds)
+            }
+            delay(500)
+        }
+        return items
+    }
+
+    /**
+     * Finds elements by XPath string.
+     *
+     * If not immediately found, retries are attempted until [timeoutSeconds] is reached (default 2.5 seconds).
+     * In case nothing is found, it returns an empty list. It will not throw.
+     * This timeout mechanism helps when relying on some element to appear before continuing your script.
+     *
+     * Example usage:
+     *
+     * ```kotlin
+     * // Find all the inline scripts (script elements without src attribute)
+     * tab.xpath("//script[not(@src)]")
+     *
+     * // More complex, case-insensitive text search
+     * tab.xpath("//text()[ contains( translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),'test')]")
+     * ```
+     *
+     * @param xpath The XPath string to search for.
+     * @param timeoutSeconds The maximum time in seconds to wait for elements to appear before returning. Default is 2.5 seconds.
+     *
+     * @return List of found [Element]s, or an empty list if none found within the timeout.
+     */
+    suspend fun xpath(
+        xpath: String,
+        timeoutSeconds: Double = 2.5,
+    ): List<Element> {
+        val items = mutableListOf<Element>()
+        try {
+            dom.enable()
+            items.addAll(findAll(xpath, timeoutSeconds = 0))
+            if (items.isEmpty()) {
+                val startTime = Clock.System.now().toEpochMilliseconds() / 1000.0
+                while (items.isEmpty()) {
+                    items.addAll(findAll(xpath, timeoutSeconds = 0))
+                    delay(100)
+                    val elapsed = (Clock.System.now().toEpochMilliseconds() / 1000.0) - startTime
+                    if (elapsed > timeoutSeconds) break
+                }
+            }
+        } finally {
+            disableDomAgent()
+        }
+        return items
+    }
+
+    /**
+     * Equivalent of JavaScript's `document.querySelectorAll`.
+     * This is considered one of the main methods to use in this package.
+     *
+     * It returns all matching [Element] objects.
+     *
+     * @param selector CSS selector. (first time? See https://www.w3schools.com/cssref/css_selectors.php)
+     * @param node For internal use. The node to start the search from. Defaults to the document root.
+     *
+     * @return List of matching [Element]s.
+     */
     suspend fun querySelectorAll(
         selector: String,
         node: DOM.Node? = null,
@@ -432,6 +609,14 @@ class Tab(
         return items
     }
 
+    /**
+     * Finds a single element based on a CSS selector string.
+     *
+     * @param selector CSS selector(s).
+     * @param node For internal use. The node to start the search from. Defaults to the document root.
+     *
+     * @return The found [Element], or null if no matching element is found.
+     */
     suspend fun querySelector(
         selector: String,
         node: DOM.Node? = null,
@@ -482,16 +667,181 @@ class Tab(
         return foundNode?.let { Element(it, this, doc) }
     }
 
+    /**
+     * Returns elements which match the given text.
+     * Please note: this may (or will) also return any other element (like inline scripts),
+     * which happen to contain that text.
+     *
+     * @param text The text to search for.
+     * @param tagHint When provided, narrows down search to only elements which match given tag (e.g., a, div, script, span).
+     * @return List of matching [Element]s.
+     */
+    suspend fun findElementsByText(
+        text: String,
+        tagHint: String? = null,
+    ): List<Element> {
+        val doc = dom.getDocument(-1, true).root
+        val trimmedText = text.trim()
+        val search = dom.performSearch(trimmedText, true)
+        val searchId = search.searchId
+        val nresult = search.resultCount
+
+        val nodeIds = if (nresult > 0) {
+            dom.getSearchResults(searchId, 0, nresult).nodeIds
+        } else {
+            emptyList()
+        }
+        dom.discardSearchResults(searchId)
+
+        val items = mutableListOf<Element>()
+        for (nid in nodeIds) {
+            val node = filterRecurse(doc, { it.nodeId == nid }, { it.children }, { it.shadowRoots })
+            if (node == null) {
+                // Try to resolve the node if not found in the local tree
+                val resolvedNode = try {
+                    dom.resolveNode(nodeId = nid)
+                } catch (_: Exception) {
+                    null
+                }
+                if (resolvedNode == null) continue
+                // Optionally, you could resolve backendNodeId to nodeId here if needed
+                // val remoteObject = dom.resolveNode(backendNodeId = resolvedNode.backendNodeId)
+                // val resolvedNodeId = dom.requestNode(objectId = remoteObject.objectId)
+                // node = filterRecurse(doc, { it.nodeId == resolvedNodeId }, { it.children }, { it.shadowRoots })
+                continue
+            }
+            try {
+                val elem = Element(node, this, doc)
+                if (elem.nodeType == 3) {
+                    // if found element is a text node (which is plain text, and useless for our purpose),
+                    // we return the parent element of the node (which is often a tag which can have text between their
+                    // opening and closing tags (that is most tags, except for example "img" and "video", "br")
+
+                    elem.update() // check if parent actually has a parent and update it to be absolutely sure
+                    items.add(elem.parent ?: elem) // when it really has no parent, use the text node itself
+                } else {
+                    // just add the element itself
+                    items.add(elem)
+                }
+            } catch (_: Exception) {
+                continue
+            }
+        }
+
+        // since we already fetched the entire doc, including shadow and frames
+        // let's also search through the iframes
+        val iframes = filterRecurse(doc, { it.nodeName == "IFRAME" }, { it.children }, { it.shadowRoots })
+        if (iframes != null) {
+            val iframeElems = listOf(Element(iframes, this, iframes.contentDocument ?: doc))
+            for (iframeElem in iframeElems) {
+                val iframeTextNodes = filterRecurse(
+                    iframeElem.node,
+                    { n -> n.nodeType == 3 && n.nodeValue.contains(trimmedText, ignoreCase = true) },
+                    { it.children },
+                    { it.shadowRoots }
+                )
+                if (iframeTextNodes != null) {
+                    val textElem = Element(iframeTextNodes, this, iframeElem.node)
+                    items.add(textElem.parent ?: textElem)
+                }
+            }
+        }
+
+        return items
+    }
+
+    /**
+     * Finds and returns the first element containing the specified [text], or the best match if [bestMatch] is true.
+     *
+     * @param text The text to search for within elements.
+     * @param bestMatch If true, finds the closest match based on length, which is more expensive and slower.
+     *                  This is useful when searching for common terms (e.g., "login") to get the most relevant element,
+     *                  such as a login button, instead of unrelated elements containing the text.
+     * @param returnEnclosingElement If true, returns the enclosing element of the found text node.
+     *
+     * @return The found [Element], or null if no matching element is found.
+     */
+    suspend fun findElementByText(
+        text: String,
+        bestMatch: Boolean = false,
+        returnEnclosingElement: Boolean = true,
+    ): Element? {
+        val items = findElementsByText(text)
+
+        val trimmedText = text.trim()
+        try {
+            if (items.isEmpty()) return null
+            return if (bestMatch) {
+                items.minByOrNull { abs(trimmedText.length - it.textAll.length) }
+            } else {
+                // naively just return the first result
+                items.firstOrNull()
+            }
+        } finally {
+            disableDomAgent()
+        }
+    }
+
+    /**
+     * Disables the DOM agent to stop receiving DOM-related events.
+     *
+     * This method is useful when you no longer need to interact with the DOM or want to clean up resources.
+     */
     suspend fun disableDomAgent() {
         try {
             dom.disable()
-        } catch (_: Exception) {
+        } catch (_: CDPException) {
+            // The DOM.disable can throw an exception if not enabled,
+            // but if it's already disabled, that's not a "real" error.
             logger.debug("Ignoring DOM.disable exception")
         }
     }
 
+    /**
+     * Gets all elements of tag: link, a, img, script, meta.
+     *
+     * @return List of [Element]s matching the asset tags.
+     */
+    suspend fun getAllLinkedSources(): List<Element> {
+        // get all elements of tag: link, a, img, script, meta
+        val allAssets = querySelectorAll("a,link,img,script,meta")
+        return allAssets
+    }
+
+    /**
+     * Convenience function, which returns all links (a, link, img, script, meta).
+     *
+     * @param absolute If true, tries to build all the links in absolute form instead of "as is" (often relative).
+     * @return List of URLs as [String].
+     */
+    suspend fun getAllUrls(absolute: Boolean = true): List<String> {
+        val res = mutableListOf<String>()
+        val allAssets = querySelectorAll("a,link,img,script,meta")
+        for (asset in allAssets) {
+            if (!absolute) {
+                res.add(asset["src"] ?: asset["href"] ?: continue)
+            } else {
+                for (key in asset.attrs) {
+                    if (key == "src" || key == "href") {
+                        val value = asset[key] ?: continue
+                        if ('#' in value) continue
+                        if (!listOf("http", "//", "/").any { it in value }) continue
+                        val baseUrl = this.targetInfo?.url ?: continue
+                        //val absUrl = java.net.URL(java.net.URL(baseUrl), value).toString()
+                        //val absUrl = Url(baseUrl).resolve(value).toString()
+                        val absUrl = baseUrl + value // TODO: Fix this
+                        if (!absUrl.startsWith("http") && !absUrl.startsWith("//") && !absUrl.startsWith("ws")) continue
+                        res.add(absUrl)
+                    }
+                }
+            }
+        }
+        return res
+    }
+
     override fun toString(): String {
-        return "Tab: ${this@Tab.targetInfo?.toString() ?: "no target"}"
+        val extra = targetInfo?.url?.takeIf { it.isNotEmpty() }?.let { "[url: $it]" } ?: ""
+        return "<${this::class.simpleName} [${targetInfo?.targetId}] [${targetInfo?.type}] $extra>"
     }
 
 }

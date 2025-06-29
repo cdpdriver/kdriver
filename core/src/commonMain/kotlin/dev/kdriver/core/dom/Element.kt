@@ -45,12 +45,36 @@ data class Element(
             getShadowRoots = { it.shadowRoots }
         )?.nodeValue ?: ""
 
+    /**
+     * Gets the text contents of this element, and it's children in a concatenated string
+     * NOTE: this includes text in the form of script content, as those are also just 'text nodes'
+     */
+    val textAll: String
+        get() = filterRecurse(
+            node,
+            predicate = { it.nodeType == 3 },
+            getChildren = { it.children },
+            getShadowRoots = { it.shadowRoots }
+        )?.let { textNode ->
+            buildString {
+                fun collectText(n: DOM.Node?) {
+                    if (n == null) return
+                    if (n.nodeType == 3) append(n.nodeValue)
+                    n.children?.forEach { collectText(it) }
+                    n.shadowRoots?.forEach { collectText(it) }
+                }
+                collectText(node)
+            }
+        } ?: ""
 
     /**
      * The internal node ID of the element in the DOM tree.
      */
     val backendNodeId: Int
         get() = node.backendNodeId
+
+    val nodeType: Int
+        get() = node.nodeType
 
     val objectId: String?
         get() = remoteObject?.objectId
@@ -69,6 +93,53 @@ data class Element(
             ) ?: return null
             return Element(parentNode, tab = this.tab, tree = this.tree)
         }
+
+    /**
+     * Returns the elements' children. Those children also have a children property
+     * so you can browse through the entire tree as well.
+     */
+    val children: List<Element>
+        get() {
+            // Handle iframe special case
+            if (node.nodeName == "IFRAME") {
+                val frame = node.contentDocument
+                if (frame == null || frame.childNodeCount == null) return emptyList()
+                val frameChildren = frame.children ?: return emptyList()
+                return frameChildren.mapNotNull { child ->
+                    try {
+                        Element(child, tab, frame)
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+            }
+            // Normal children
+            if (node.childNodeCount == null || node.childNodeCount == 0) {
+                return emptyList()
+            }
+            return node.children?.mapNotNull { child ->
+                try {
+                    Element(child, tab, tree)
+                } catch (_: Exception) {
+                    null
+                }
+            } ?: emptyList()
+        }
+
+    /**
+     * Returns a list of attributes of the element.
+     *
+     * Each attribute is represented by its name, and the value can be accessed using the `get` operator.
+     *
+     * For example, if an element has attributes `class="my-class"` and `id="my-id"`, the list will contain:
+     * ```kotlin
+     * val attrs = element.attrs // ["class", "id"]
+     * val classValue = element["class"] // "my-class"
+     * val idValue = element["id"] // "my-id"
+     * ```
+     */
+    val attrs: List<String>
+        get() = node.attributes?.chunked(2)?.map { it.first() } ?: emptyList()
 
     suspend fun updateRemoteObject(): Runtime.RemoteObject? {
         remoteObject = tab.dom.resolveNode(backendNodeId = backendNodeId).`object`
@@ -289,6 +360,28 @@ data class Element(
     }
 
     /**
+     * Finds all descendant elements matching the given CSS selector, similar to JavaScript's querySelectorAll().
+     *
+     * @param selector The CSS selector to match.
+     * @return A list of matching [Element]s.
+     */
+    suspend fun querySelectorAll(selector: String): List<Element> {
+        update()
+        return tab.querySelectorAll(selector, node = this.node)
+    }
+
+    /**
+     * Finds the first descendant element matching the given CSS selector, similar to JavaScript's querySelector().
+     *
+     * @param selector The CSS selector to match.
+     * @return The first matching [Element], or null if none found.
+     */
+    suspend fun querySelector(selector: String): Element? {
+        update()
+        return tab.querySelector(selector, node = this.node)
+    }
+
+    /**
      * Retrieves the position of the element in the viewport.
      *
      * This method calculates the position of the element based on its content quads.
@@ -332,23 +425,22 @@ data class Element(
      * ```
      */
     override fun toString(): String {
-        val tagName = node.nodeName.lowercase()
         var content = ""
 
         // Collect all text from this leaf
         val childNodeCount = node.childNodeCount ?: 0
         if (childNodeCount > 0) {
-            val children = node.children
-            if (childNodeCount == 1 && children != null && children.isNotEmpty()) {
+            val children = this.children
+            if (childNodeCount == 1 && children.isNotEmpty()) {
                 content += children[0].toString()
-            } else if (childNodeCount > 1 && children != null) {
+            } else if (childNodeCount > 1) {
                 for (child in children) {
                     content += child.toString()
                 }
             }
         }
 
-        if (node.nodeType == 3) { // text node
+        if (nodeType == 3) { // text node
             content += node.nodeValue
             return content
         }
@@ -359,8 +451,8 @@ data class Element(
             """$key="$value""""
         } ?: ""
 
-        return if (attrs.isNotBlank()) "<$tagName $attrs>$content</$tagName>"
-        else "<$tagName>$content</$tagName>"
+        return if (attrs.isNotBlank()) "<$tag $attrs>$content</$tag>"
+        else "<$tag>$content</$tag>"
     }
 
 }

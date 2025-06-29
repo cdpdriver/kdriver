@@ -2,6 +2,7 @@ package dev.kdriver.core.tab
 
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.exceptions.EvaluateException
+import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.sampleFile
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -90,11 +91,52 @@ class TabTest {
     }
 
     @Test
+    fun testFindFindsElementByText() = runBlocking {
+        val browser = Browser.create(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val result = tab.find("Apples")
+
+        assertNotNull(result)
+        assertEquals("li", result.tag)
+        assertEquals("Apples", result.text)
+        browser.stop()
+    }
+
+    @Test
+    fun testFindTimesOutIfElementNotFound() = runBlocking {
+        val browser = Browser.create(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val exception = assertFailsWith<TimeoutWaitingForElementException> {
+            tab.find("Clothes", timeoutSeconds = 1)
+        }
+        assertEquals("Clothes", exception.selector)
+        browser.stop()
+    }
+
+    @Test
     fun testSelect() = runBlocking {
         val browser = Browser.create(this, headless = true, sandbox = false)
         val tab = browser.get(sampleFile("groceries.html"))
 
         val result = tab.select("li[aria-label^='Apples']")
+
+        assertNotNull(result)
+        assertEquals("li", result.tag)
+        assertEquals("Apples", result.text)
+        browser.stop()
+    }
+
+    @Test
+    fun testXpath() = runBlocking {
+        val browser = Browser.create(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val results = tab.xpath("//li[@aria-label=\"Apples (42)\"]")
+
+        assertEquals(1, results.size)
+        val result = results[0]
 
         assertNotNull(result)
         assertEquals("li", result.tag)
