@@ -5,10 +5,8 @@ import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.sampleFile
 import kotlinx.coroutines.runBlocking
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNotNull
+import kotlinx.coroutines.withTimeout
+import kotlin.test.*
 
 class TabTest {
 
@@ -154,6 +152,24 @@ class TabTest {
         val readyState = tab.evaluate<ReadyState>("document.readyState")
         assertEquals(ReadyState.COMPLETE, readyState)
         browser.stop()
+    }
+
+    @Test
+    fun testExpect() = runBlocking {
+        val browser = Browser.create(this, headless = true, sandbox = false)
+        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+
+        tab.expect(Regex("groceries.html")) {
+            tab.get(sampleFile("groceries.html"))
+
+            val request = withTimeout(3000L) { this@expect.getRequest() }
+            val response = withTimeout(3000L) { this@expect.getResponse() }
+            val responseBody = withTimeout(3000L) { this@expect.getResponseBody() }
+
+            assertEquals(request.url, response.url)
+            assertEquals(200, response.status)
+            assertTrue(responseBody.body.isNotEmpty())
+        }
     }
 
 }

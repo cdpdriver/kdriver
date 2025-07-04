@@ -3,7 +3,6 @@ package dev.kdriver.core.tab
 import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.CDPException
 import dev.kdriver.cdp.domain.*
-import dev.kdriver.cdp.domain.Target
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.BrowserTarget
 import dev.kdriver.core.connection.Connection
@@ -795,6 +794,24 @@ class Tab(
             // but if it's already disabled, that's not a "real" error.
             logger.debug("Ignoring DOM.disable exception")
         }
+    }
+
+    /**
+     * Expects a request to match the given [urlPattern].
+     *
+     * For example, capturing the response body of a specific API call can be done like this:
+     * ```kotlin
+     * val responseBody = tab.expect(Regex("https://api.example.com/data")) {
+     *     tab.get("https://example.com")
+     *     getResponseBody()
+     * }
+     * ```
+     *
+     * @param urlPattern The regex pattern to match the request URL.
+     * @param block The block to execute during which the expectation is active.
+     */
+    suspend fun <T> expect(urlPattern: Regex, block: suspend BaseRequestExpectation.() -> T): T {
+        return BaseRequestExpectation(this, urlPattern).use(block)
     }
 
     /**
