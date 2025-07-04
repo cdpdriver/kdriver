@@ -45,14 +45,12 @@ kotlin {
             }
         }
     }
-    /*
     js {
         generateTypeScriptDefinitions()
         binaries.library()
         nodejs()
         browser()
     }
-    */
 
     applyDefaultHierarchyTemplate()
     sourceSets {
@@ -75,13 +73,11 @@ kotlin {
                 api(libs.ktor.client.cio)
             }
         }
-        /*
         val jsMain by getting {
             dependencies {
                 api(libs.ktor.client.js)
             }
         }
-        */
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))

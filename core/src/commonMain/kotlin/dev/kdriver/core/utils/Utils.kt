@@ -54,6 +54,7 @@ expect abstract class Process {
 }
 
 expect suspend fun startProcess(exe: Path, params: List<String>): Process
+expect fun addShutdownHook(hook: suspend () -> Unit)
 expect fun isPosix(): Boolean
 expect fun isRoot(): Boolean
 expect fun tempProfileDir(): Path
