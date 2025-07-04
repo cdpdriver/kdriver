@@ -9,10 +9,7 @@ import dev.kdriver.core.exceptions.BrowserExecutableNotFoundException
 import dev.kdriver.core.exceptions.FailedToConnectToBrowserException
 import dev.kdriver.core.exceptions.NoBrowserExecutablePathException
 import dev.kdriver.core.tab.Tab
-import dev.kdriver.core.utils.Process
-import dev.kdriver.core.utils.exists
-import dev.kdriver.core.utils.freePort
-import dev.kdriver.core.utils.startProcess
+import dev.kdriver.core.utils.*
 import io.ktor.util.logging.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -149,12 +146,10 @@ class Browser private constructor(
             val instance = Browser(browserScope, cfg)
             instance.start()
 
-            Runtime.getRuntime().addShutdownHook(Thread {
-                runBlocking {
-                    if (!instance.stopped) instance.stop()
-                    instance.cleanupTemporaryProfile()
-                }
-            })
+            addShutdownHook {
+                if (!instance.stopped) instance.stop()
+                instance.cleanupTemporaryProfile()
+            }
 
             return instance
         }
@@ -365,7 +360,7 @@ class Browser private constructor(
                     owner = this
                 )
                 targets.add(newTarget)
-                logger.debug("target #{} created => {}", targets.size - 1, newTarget)
+                logger.debug("target ${targets.size - 1} created => $newTarget")
             }
 
             is Target.TargetDestroyedParameter -> {
@@ -373,7 +368,7 @@ class Browser private constructor(
                     logger.warn("TargetDestroyedParameter: Target with ID ${event.targetId} not found in current targets.")
                     return
                 }
-                logger.debug("target removed. id #{} => {}", targets.indexOf(currentTab), currentTab)
+                logger.debug("target removed. id ${targets.indexOf(currentTab)} => $currentTab")
                 targets.remove(currentTab)
             }
 

@@ -1,6 +1,7 @@
 package dev.kdriver.core.utils
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.io.files.FileNotFoundException
 import kotlinx.io.files.Path
@@ -31,6 +32,14 @@ actual suspend fun startProcess(
         val process = builder.start()
         process
     }
+}
+
+actual fun addShutdownHook(hook: suspend () -> Unit) {
+    Runtime.getRuntime().addShutdownHook(Thread {
+        runBlocking {
+            hook()
+        }
+    })
 }
 
 actual fun isPosix(): Boolean {

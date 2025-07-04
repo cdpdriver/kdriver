@@ -9,9 +9,9 @@ import dev.kdriver.cdp.domain.Target
 import dev.kdriver.cdp.domain.target
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.BrowserTarget
+import dev.kdriver.core.utils.getWebSocketClientEngine
 import dev.kdriver.core.utils.parseWebSocketUrl
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.http.*
 import io.ktor.util.logging.*
@@ -38,7 +38,7 @@ open class Connection(
     private val logger = KtorSimpleLogger("Connection")
     private val debugStringLimit = 64
 
-    private val client = HttpClient(CIO) {
+    private val client = HttpClient(getWebSocketClientEngine()) {
         install(WebSockets)
     }
 
@@ -58,7 +58,7 @@ open class Connection(
                         val received = Serialization.json.decodeFromString<Message>(text)
                         allMessages.emit(received)
                     } catch (e: Exception) {
-                        logger.debug("WebSocket exception while receiving message: {}", e.message)
+                        logger.debug("WebSocket exception while receiving message: {}", e)
                     }
                 }
             } catch (e: Exception) {
