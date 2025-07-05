@@ -50,3 +50,6 @@ helm/*/charts
 
 ### JS ###
 yarn.lock
+
+### Docs ###
+docs/_site

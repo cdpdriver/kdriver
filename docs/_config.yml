@@ -1,0 +1,15 @@
+# Site settings
+# These are used to personalize your new site. If you look in the HTML files,
+# you will see them accessed via {{ site.title }}, {{ site.github_repo }}, and so on.
+# You can create any custom variable you would like, and they will be accessible
+# in the templates via {{ site.myvariable }}.
+title: kdriver documentation
+repository: guimauvedigital/kdriver
+
+theme: just-the-docs
+color_scheme: dark
+
+nav_enabled: true
+nav_external_links:
+  - title: API reference
+    url: https://kdriver.dev/api
