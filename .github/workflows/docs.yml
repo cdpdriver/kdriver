@@ -3,9 +3,17 @@ on:
   push:
     branches: [ main ]
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 jobs:
   docs:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -15,25 +23,36 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 21
+      - name: Set up Ruby for Jekyll
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
       - name: Build Dokka HTML
         run: ./gradlew dokkaHtmlMultiModule
       - name: Setup docs folder
         run: |
           mkdir -p build/docs
           mkdir -p build/docs/api
+          echo "kdriver.dev" > build/docs/CNAME
           cp -r build/dokka/htmlMultiModule/* build/docs/api
           cp -r docs/* build/docs
       - name: Generate sitemap
         uses: guimauvedigital/generate-sitemap@v1
         with:
-          base_url: "https://kdriver.dev"
-          output_path: "build/docs/sitemap.xml"
-          input_dir: "build/docs"
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+          base_url: https://kdriver.dev
+          output_path: build/docs/sitemap.xml
+          input_dir: build/docs
+      - name: Build with Jekyll
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd build/docs
+          bundle install
+          bundle exec jekyll build --source . --destination _site
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: build/docs
-          publish_branch: gh-pages
-          cname: kdriver.dev
-          enable_jekyll: true
+          path: build/docs/_site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
