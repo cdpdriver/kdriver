@@ -66,21 +66,31 @@ class BaseRequestExpectation(
     }
 
     /**
+     * Returns the request event once it has been received.
+     */
+    suspend fun getRequestEvent(): Network.RequestWillBeSentParameter = requestDeferred.await()
+
+    /**
+     * Returns the response event once it has been received.
+     */
+    suspend fun getResponseEvent(): Network.ResponseReceivedParameter = responseDeferred.await()
+
+    /**
      * Returns the request once it has been received.
      */
-    suspend fun getRequest(): Network.Request = requestDeferred.await().request
+    suspend fun getRequest(): Network.Request = getRequestEvent().request
 
     /**
      * Returns the response once it has been received.
      */
-    suspend fun getResponse(): Network.Response = responseDeferred.await().response
+    suspend fun getResponse(): Network.Response = getResponseEvent().response
 
     /**
      * Fetches the response body once it has been received.
      */
     suspend fun getResponseBody(): Network.GetResponseBodyReturn {
-        val reqId = requestDeferred.await().requestId
-        return tab.network.getResponseBody(reqId)
+        val requestId = getResponseEvent().requestId
+        return tab.network.getResponseBody(requestId)
     }
 
 }

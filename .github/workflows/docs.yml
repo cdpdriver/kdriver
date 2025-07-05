@@ -36,6 +36,7 @@ jobs:
           echo "kdriver.dev" > build/docs/CNAME
           cp -r build/dokka/htmlMultiModule/* build/docs/api
           cp -r docs/* build/docs
+          cat README.md >> build/docs/index.md
       - name: Generate sitemap
         uses: guimauvedigital/generate-sitemap@v1
         with:
