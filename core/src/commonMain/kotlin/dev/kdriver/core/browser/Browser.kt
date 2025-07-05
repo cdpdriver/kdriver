@@ -115,6 +115,7 @@ class Browser private constructor(
          * @param browserExecutablePath Optional path to the browser executable. If not provided, the default browser will be used.
          * @param browserArgs Optional list of additional arguments to pass to the browser executable.
          * @param sandbox If true, the browser will run in a sandboxed environment. Defaults to true.
+         * @param lang The language to use for the browser.
          * @param host Optional host address for the browser connection. If not provided, defaults to "127.0.0.1".
          * @param port Optional port for the browser connection. If not provided, a free port will be assigned.
          *
@@ -128,6 +129,7 @@ class Browser private constructor(
             browserExecutablePath: Path? = null,
             browserArgs: List<String>? = null,
             sandbox: Boolean = true,
+            lang: String? = null,
             host: String? = null,
             port: Int? = null,
         ): Browser {
@@ -139,6 +141,7 @@ class Browser private constructor(
                 browserExecutablePath = browserExecutablePath,
                 browserArgs = browserArgs ?: emptyList(),
                 sandbox = sandbox,
+                lang = lang,
                 host = host,
                 port = port,
             )
@@ -242,6 +245,10 @@ class Browser private constructor(
         // handle extensions if any
         config.extensions.takeIf { it.isNotEmpty() }?.let {
             config.addArgument("--load-extension=${it.joinToString(",")}")
+        }
+
+        config.lang?.let {
+            config.addArgument("--lang=$it")
         }
 
         if (!connectExisting) {
