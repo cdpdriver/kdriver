@@ -58,8 +58,8 @@ Visit a website and do something on it:
 ```kotlin
 fun main() = runBlocking {
     val browser = Browser.create(this)
-    val tab = browser.get("https://www.browserscan.net/bot-detection")
-    // Use tab to interact with the page
+    val page = browser.get("https://www.browserscan.net/bot-detection")
+    page.saveScreenshot(Path("browserscan.png"))
     browser.stop()
 }
 ```

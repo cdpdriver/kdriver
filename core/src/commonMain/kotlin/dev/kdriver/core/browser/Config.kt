@@ -13,7 +13,7 @@ class Config(
     browserExecutablePath: Path? = null,
     browserArgs: List<String>? = null,
     sandbox: Boolean = true,
-    val lang: String = "en-US",
+    val lang: String? = null,
     var host: String? = null,
     var port: Int? = null,
     val expert: Boolean = false,

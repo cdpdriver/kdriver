@@ -11,12 +11,21 @@ import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.exceptions.TimeoutWaitingForReadyStateException
 import dev.kdriver.core.utils.filterRecurse
+import io.ktor.http.*
 import io.ktor.util.logging.*
+import io.ktor.utils.io.core.writeFully
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlin.String
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.abs
+import kotlin.text.String
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -812,6 +821,71 @@ class Tab(
      */
     suspend fun <T> expect(urlPattern: Regex, block: suspend BaseRequestExpectation.() -> T): T {
         return BaseRequestExpectation(this, urlPattern).use(block)
+    }
+
+    /**
+     * Takes a screenshot of the page and returns the result as a base64 encoded string.
+     * This is not the same as [Element.screenshotB64], which takes a screenshot of a single element only.
+     *
+     * @param format "jpeg" or "png" (defaults to "jpeg").
+     * @param fullPage When false (default), captures the current viewport. When true, captures the entire page.
+     * @return Screenshot data as a base64 encoded string.
+     */
+    suspend fun screenshotB64(
+        format: ScreenshotFormat = ScreenshotFormat.JPEG,
+        fullPage: Boolean = false,
+    ): String {
+        if (targetInfo == null) throw IllegalStateException("target is null")
+
+        wait() // update the target's url
+
+        val fmt = when (format) {
+            ScreenshotFormat.JPEG -> "jpeg"
+            ScreenshotFormat.PNG -> "png"
+        }
+
+        return page.captureScreenshot(
+            format = fmt,
+            captureBeyondViewport = fullPage
+        ).data
+    }
+
+    /**
+     * Saves a screenshot of the page.
+     * This is not the same as [Element.saveScreenshot], which saves a screenshot of a single element only.
+     *
+     * @param filename Uses this as the save path. If "auto" or null, generates a filename based on the page URL and timestamp.
+     * @param format "jpeg" or "png" (defaults to "jpeg").
+     * @param fullPage When false (default), captures the current viewport. When true, captures the entire page.
+     * @return The path/filename of the saved screenshot.
+     */
+    @OptIn(ExperimentalEncodingApi::class)
+    suspend fun saveScreenshot(
+        filename: Path? = null,
+        format: ScreenshotFormat = ScreenshotFormat.JPEG,
+        fullPage: Boolean = false,
+    ): String {
+        val ext = when (format) {
+            ScreenshotFormat.JPEG -> ".jpg"
+            ScreenshotFormat.PNG -> ".png"
+        }
+
+        val path = if (filename == null) {
+            val url = targetInfo?.url ?: throw IllegalStateException("target is null")
+            val uri = Url(url)
+            val lastPart = uri.fullPath.substringAfterLast('/').substringBefore('?')
+            val dtStr = Clock.System.now().toString().replace(":", "-").replace("T", "_").substringBefore('.')
+            val candidate = "${uri.host}__${lastPart}_$dtStr"
+            Path(candidate + ext)
+        } else filename
+        //Files.createDirectories(path.parent) // No KMP equivalent for now
+
+        val data = screenshotB64(format = format, fullPage = fullPage)
+        val dataBytes = Base64.decode(data)
+        SystemFileSystem.sink(path).buffered().use { sink ->
+            sink.writeFully(dataBytes)
+        }
+        return path.toString()
     }
 
     /**
