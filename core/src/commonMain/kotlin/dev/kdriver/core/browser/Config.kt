@@ -10,6 +10,7 @@ import kotlinx.io.files.Path
 class Config(
     userDataDir: Path? = null,
     val headless: Boolean = false,
+    val userAgent: String? = null,
     browserExecutablePath: Path? = null,
     browserArgs: List<String>? = null,
     sandbox: Boolean = true,
@@ -96,12 +97,9 @@ class Config(
             args.addAll(listOf("--disable-web-security", "--disable-site-isolation-trials"))
         }
         args.addAll(_browserArgs.filter { it !in args })
-        if (headless) {
-            args.add("--headless=new")
-        }
-        if (!sandbox) {
-            args.add("--no-sandbox")
-        }
+        if (headless) args.add("--headless=new")
+        if (!sandbox) args.add("--no-sandbox")
+        userAgent?.let { args.add("--user-agent=$it") }
         host?.let { args.add("--remote-debugging-host=$it") }
         port?.let { args.add("--remote-debugging-port=$it") }
         return args

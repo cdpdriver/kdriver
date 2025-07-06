@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  * Exception thrown when a timeout occurs while waiting for a specific ready state in the browser tab.
  *
  * @property until The expected ready state to wait for.
- * @property timeoutSeconds The maximum time in seconds to wait for the ready state.
+ * @property timeout The maximum time in milliseconds to wait for the ready state.
  * @property lastKnownReadyState The last known ready state before the timeout occurred, if available.
  */
 @Serializable
@@ -17,9 +17,9 @@ data class TimeoutWaitingForReadyStateException(
      */
     val until: ReadyState,
     /**
-     * The maximum time in seconds to wait for the ready state.
+     * The maximum time in milliseconds to wait for the ready state.
      */
-    val timeoutSeconds: Int,
+    val timeout: Long,
     /**
      * The last known ready state before the timeout occurred, if available.
      */

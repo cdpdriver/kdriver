@@ -107,7 +107,7 @@ class TabTest {
         val tab = browser.get(sampleFile("groceries.html"))
 
         val exception = assertFailsWith<TimeoutWaitingForElementException> {
-            tab.find("Clothes", timeoutSeconds = 1)
+            tab.find("Clothes", timeout = 1000)
         }
         assertEquals("Clothes", exception.selector)
         browser.stop()

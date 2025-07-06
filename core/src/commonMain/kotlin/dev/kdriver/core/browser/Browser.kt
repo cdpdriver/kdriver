@@ -112,6 +112,7 @@ class Browser private constructor(
          * @param config Optional configuration for the browser. If not provided, a default configuration will be used.
          * @param userDataDir Optional path to the user data directory. If not provided, a temporary profile will be created.
          * @param headless If true, the browser will run in headless mode. Defaults to false.
+         * @param userAgent Optional user agent string to use for the browser. If not provided, the default user agent will be used.
          * @param browserExecutablePath Optional path to the browser executable. If not provided, the default browser will be used.
          * @param browserArgs Optional list of additional arguments to pass to the browser executable.
          * @param sandbox If true, the browser will run in a sandboxed environment. Defaults to true.
@@ -126,6 +127,7 @@ class Browser private constructor(
             config: Config? = null,
             userDataDir: Path? = null,
             headless: Boolean = false,
+            userAgent: String? = null,
             browserExecutablePath: Path? = null,
             browserArgs: List<String>? = null,
             sandbox: Boolean = true,
@@ -138,6 +140,7 @@ class Browser private constructor(
             val cfg = config ?: Config(
                 userDataDir = userDataDir,
                 headless = headless,
+                userAgent = userAgent,
                 browserExecutablePath = browserExecutablePath,
                 browserArgs = browserArgs ?: emptyList(),
                 sandbox = sandbox,

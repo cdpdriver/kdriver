@@ -7,6 +7,7 @@ import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.BrowserTarget
 import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.dom.Element
+import dev.kdriver.core.dom.NodeOrElement
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.exceptions.TimeoutWaitingForReadyStateException
@@ -335,15 +336,15 @@ class Tab(
      *
      * This method continuously checks the document's ready state until it matches the specified state or a timeout occurs.
      *
-     * @param until The desired ready state to wait for. Can be "loading", "interactive", or "complete". Defaults to "interactive".
+     * @param until The desired ready state to wait for. Can be LOADING, INTERACTIVE, or COMPLETE. Defaults to INTERACTIVE.
      *
      * @throws TimeoutWaitingForReadyStateException if the timeout is reached before the ready state matches.
      *
      * @return True if the ready state matches the specified state before the timeout, false otherwise.
      */
     suspend fun waitForReadyState(
-        until: ReadyState = ReadyState.INTERACTIVE, // "loading", "interactive", or "complete"
-        timeoutSeconds: Int = 10,
+        until: ReadyState = ReadyState.INTERACTIVE,
+        timeout: Long = 10_000,
     ): Boolean {
         val startTime = Clock.System.now().toEpochMilliseconds()
 
@@ -351,9 +352,8 @@ class Tab(
             val readyState = evaluate<ReadyState>("document.readyState")
             if (readyState == until) return true
 
-            val elapsed = (Clock.System.now().toEpochMilliseconds() - startTime) / 1000
-            if (elapsed > timeoutSeconds)
-                throw TimeoutWaitingForReadyStateException(until, timeoutSeconds, readyState)
+            val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
+            if (elapsed > timeout) throw TimeoutWaitingForReadyStateException(until, timeout, readyState)
 
             delay(100) // wait 100 ms
         }
@@ -371,7 +371,7 @@ class Tab(
      *                  this flag (default: true) returns the containing element instead of the text node itself.
      *                  Set to false if you want the text node or for cases like elements with "placeholder=" property.
      *                  If the found node is not a text node but a regular element, the flag is ignored and the element is returned.
-     * @param timeoutSeconds The maximum time in seconds to wait for the element to appear before raising a timeout exception.
+     * @param timeout The maximum time in milliseconds to wait for the element to appear before raising a timeout exception.
      *
      * @return The found [Element], or null if no matching element is found within the timeout.
      */
@@ -379,21 +379,17 @@ class Tab(
         text: String,
         bestMatch: Boolean = true,
         returnEnclosingElement: Boolean = true,
-        timeoutSeconds: Int = 10,
+        timeout: Long = 10_000,
     ): Element? {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val trimmedText = text.trim()
-        var item = findElementByText(trimmedText, bestMatch, returnEnclosingElement)
-        while (item == null) {
+        while (true) {
             wait()
-            item = findElementByText(trimmedText, bestMatch, returnEnclosingElement)
-            val elapsed = (Clock.System.now().toEpochMilliseconds() - startTime) / 1000
-            if (elapsed > timeoutSeconds) {
-                throw TimeoutWaitingForElementException(trimmedText, timeoutSeconds)
-            }
+            findElementByText(trimmedText, bestMatch, returnEnclosingElement)?.let { return it }
+            val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
+            if (elapsed > timeout) throw TimeoutWaitingForElementException(trimmedText, timeout)
             delay(500)
         }
-        return item
     }
 
     /**
@@ -402,7 +398,7 @@ class Tab(
      * This method waits for the element to appear in the DOM, retrying every 500 milliseconds until the timeout is reached.
      *
      * @param selector The CSS selector of the element to select.
-     * @param timeoutSeconds The maximum time in seconds to wait for the element to appear. Defaults to 10 seconds.
+     * @param timeout The maximum time in milliseconds to wait for the element to appear. Defaults to 10 seconds.
      *
      * @throws TimeoutWaitingForElementException if the element is not found before the timeout.
      *
@@ -410,24 +406,18 @@ class Tab(
      */
     suspend fun select(
         selector: String,
-        timeoutSeconds: Int = 10,
+        timeout: Long = 10_000,
     ): Element {
         val trimmedSelector = selector.trim()
         val startTime = Clock.System.now().toEpochMilliseconds()
 
-        var item = querySelector(trimmedSelector)
-        while (item == null) {
+        while (true) {
             wait()
-
-            item = querySelector(trimmedSelector)
-
-            val elapsed = (Clock.System.now().toEpochMilliseconds() - startTime) / 1000
-            if (elapsed > timeoutSeconds)
-                throw TimeoutWaitingForElementException(selector, timeoutSeconds)
-
+            querySelector(trimmedSelector)?.let { return it }
+            val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
+            if (elapsed > timeout) throw TimeoutWaitingForElementException(selector, timeout)
             delay(500) // sleep for 0.5 seconds
         }
-        return item
     }
 
     /**
@@ -437,7 +427,7 @@ class Tab(
      * it waits and retries until at least one element is found or the timeout is reached.
      *
      * @param text The text to search for. Note: script contents are also considered text.
-     * @param timeoutSeconds The maximum time in seconds to wait for elements to appear before raising a timeout exception.
+     * @param timeout The maximum time in milliseconds to wait for elements to appear before raising a timeout exception.
      *
      * @return A list of found [Element]s.
      *
@@ -445,21 +435,17 @@ class Tab(
      */
     suspend fun findAll(
         text: String,
-        timeoutSeconds: Int = 10,
+        timeout: Long = 10_000,
     ): List<Element> {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val trimmedText = text.trim()
-        var items = findElementsByText(trimmedText)
-        while (items.isEmpty()) {
+        while (true) {
             wait()
-            items = findElementsByText(trimmedText)
-            val elapsed = (Clock.System.now().toEpochMilliseconds() - startTime) / 1000
-            if (elapsed > timeoutSeconds) {
-                throw TimeoutWaitingForElementException(trimmedText, timeoutSeconds)
-            }
+            findElementsByText(trimmedText).takeIf { it.isNotEmpty() }?.let { return it }
+            val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
+            if (elapsed > timeout) throw TimeoutWaitingForElementException(trimmedText, timeout)
             delay(500)
         }
-        return items
     }
 
     /**
@@ -468,7 +454,7 @@ class Tab(
      * Can also be used to wait for such elements to appear. Optionally includes results from iframes.
      *
      * @param selector CSS selector, e\.g\., `a[href]`, `button[class*=close]`, `a > img[src]`
-     * @param timeoutSeconds Raise timeout exception when after this many seconds nothing is found.
+     * @param timeout Raise timeout exception when after this many milliseconds nothing is found.
      * @param includeFrames Whether to include results in iframes.
      *
      * @return List of found [Element]s.
@@ -476,37 +462,31 @@ class Tab(
      */
     suspend fun selectAll(
         selector: String,
-        timeoutSeconds: Int = 10,
+        timeout: Long = 10_000,
         includeFrames: Boolean = false,
     ): List<Element> {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val trimmedSelector = selector.trim()
-        val items = mutableListOf<Element>()
 
-        if (includeFrames) {
-            val frames = querySelectorAll("iframe")
-            for (fr in frames) {
-                items.addAll(fr.querySelectorAll(trimmedSelector))
+        while (true) {
+            val items = mutableListOf<Element>()
+            if (includeFrames) {
+                val frames = querySelectorAll("iframe")
+                for (fr in frames) items.addAll(fr.querySelectorAll(trimmedSelector))
             }
-        }
-
-        items.addAll(querySelectorAll(trimmedSelector))
-        while (items.isEmpty()) {
-            wait()
             items.addAll(querySelectorAll(trimmedSelector))
-            val elapsed = (Clock.System.now().toEpochMilliseconds() - startTime) / 1000
-            if (elapsed > timeoutSeconds) {
-                throw TimeoutWaitingForElementException(trimmedSelector, timeoutSeconds)
-            }
+            items.takeIf { it.isNotEmpty() }?.let { return it }
+
+            val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
+            if (elapsed > timeout) throw TimeoutWaitingForElementException(trimmedSelector, timeout)
             delay(500)
         }
-        return items
     }
 
     /**
      * Finds elements by XPath string.
      *
-     * If not immediately found, retries are attempted until [timeoutSeconds] is reached (default 2.5 seconds).
+     * If not immediately found, retries are attempted until [timeout] is reached (default 10 seconds).
      * In case nothing is found, it returns an empty list. It will not throw.
      * This timeout mechanism helps when relying on some element to appear before continuing your script.
      *
@@ -521,25 +501,25 @@ class Tab(
      * ```
      *
      * @param xpath The XPath string to search for.
-     * @param timeoutSeconds The maximum time in seconds to wait for elements to appear before returning. Default is 2.5 seconds.
+     * @param timeout The maximum time in milliseconds to wait for elements to appear before returning. Default is 10 seconds.
      *
      * @return List of found [Element]s, or an empty list if none found within the timeout.
      */
     suspend fun xpath(
         xpath: String,
-        timeoutSeconds: Double = 2.5,
+        timeout: Long = 10_000,
     ): List<Element> {
         val items = mutableListOf<Element>()
         try {
             dom.enable()
-            items.addAll(findAll(xpath, timeoutSeconds = 0))
+            items.addAll(findAll(xpath, timeout = 0))
             if (items.isEmpty()) {
-                val startTime = Clock.System.now().toEpochMilliseconds() / 1000.0
+                val startTime = Clock.System.now().toEpochMilliseconds()
                 while (items.isEmpty()) {
-                    items.addAll(findAll(xpath, timeoutSeconds = 0))
+                    items.addAll(findAll(xpath, timeout = 0))
                     delay(100)
-                    val elapsed = (Clock.System.now().toEpochMilliseconds() / 1000.0) - startTime
-                    if (elapsed > timeoutSeconds) break
+                    val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
+                    if (elapsed > timeout) break
                 }
             }
         } finally {
@@ -561,36 +541,33 @@ class Tab(
      */
     suspend fun querySelectorAll(
         selector: String,
-        node: DOM.Node? = null,
+        node: NodeOrElement? = null,
     ): List<Element> {
         val lastMap = mutableMapOf<Int, Boolean>()
 
         val doc = if (node == null) {
             dom.getDocument(-1, true).root
         } else {
-            var docNode = node
-            if (node.nodeName == "IFRAME") {
-                docNode = node.contentDocument ?: node
-            }
-            docNode
+            if (node.node.nodeName == "IFRAME") node.node.contentDocument ?: node.node
+            else node.node
         }
 
         val nodeIds = try {
             dom.querySelectorAll(doc.nodeId, selector)
         } catch (e: Exception) {
             if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
-                val last = lastMap[node.nodeId]
+                val last = lastMap[node.node.nodeId]
 
                 if (last == true) {
                     // Remove the marker to avoid infinite recursion
-                    lastMap.remove(node.nodeId)
+                    lastMap.remove(node.node.nodeId)
                     return emptyList()
                 }
 
-                if (node is Element) node.update()
+                if (node is NodeOrElement.WrappedElement) node.element.update()
 
                 // Mark as retried once
-                lastMap[node.nodeId] = true
+                lastMap[node.node.nodeId] = true
 
                 return querySelectorAll(selector, node)
             } else {
@@ -627,7 +604,7 @@ class Tab(
      */
     suspend fun querySelector(
         selector: String,
-        node: DOM.Node? = null,
+        node: NodeOrElement? = null,
     ): Element? {
         val lastMap = mutableMapOf<Int, Boolean>()
 
@@ -636,28 +613,30 @@ class Tab(
         val doc = if (node == null) {
             dom.getDocument(-1, true).root
         } else {
-            if (node.nodeName == "IFRAME") node.contentDocument ?: node
-            else node
+            if (node.node.nodeName == "IFRAME") node.node.contentDocument ?: node.node
+            else node.node
         }
 
         val nodeId = try {
             dom.querySelector(doc.nodeId, trimmedSelector)
         } catch (e: Exception) {
             if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
-                val last = lastMap[node.nodeId]
+                val last = lastMap[node.node.nodeId]
 
                 if (last == true) {
                     // Remove the marker to avoid infinite recursion
-                    lastMap.remove(node.nodeId)
+                    lastMap.remove(node.node.nodeId)
                     return null
                 }
 
-                if (node is Element) node.update()
+                if (node is NodeOrElement.WrappedElement) node.element.update()
 
                 // Mark as retried once
-                lastMap[node.nodeId] = true
+                lastMap[node.node.nodeId] = true
 
                 return querySelector(trimmedSelector, node)
+            } else if (e.message?.contains("could not find node", ignoreCase = true) == true) {
+                return null
             } else {
                 disableDomAgent()
                 throw e
@@ -803,6 +782,73 @@ class Tab(
             // but if it's already disabled, that's not a "real" error.
             logger.debug("Ignoring DOM.disable exception")
         }
+    }
+
+    /**
+     * Moves the mouse cursor to the specified \[x, y\] coordinates, optionally in multiple steps and with a flash effect.
+     *
+     * @param x The target x coordinate.
+     * @param y The target y coordinate.
+     * @param steps The number of steps to move the mouse (default: 10). If less than 1, moves in a single step.
+     * @param flash If true, flashes the point at each step.
+     */
+    suspend fun mouseMove(x: Double, y: Double, steps: Int = 10, flash: Boolean = false) {
+        // Probably the worst way of calculating this, but couldn't think of a better solution today.
+        val actualSteps = if (steps < 1) 1 else steps
+        if (actualSteps > 1) {
+            val stepSizeX = x / actualSteps
+            val stepSizeY = y / actualSteps
+            val pathway = (0..actualSteps).map { i -> Pair(stepSizeX * i, stepSizeY * i) }
+            for ((px, py) in pathway) {
+                if (flash) flashPoint(px, py)
+                input.dispatchMouseEvent("mouseMoved", px, py)
+            }
+        } else input.dispatchMouseEvent("mouseMoved", x, y)
+        if (flash) flashPoint(x, y)
+        else delay(50)
+        input.dispatchMouseEvent("mouseReleased", x, y)
+        if (flash) flashPoint(x, y)
+    }
+
+    /**
+     * Performs a native mouse click at the specified \[x, y\] coordinates.
+     *
+     * @param x The x coordinate.
+     * @param y The y coordinate.
+     * @param button The mouse button (LEFT, RIGHT, MIDDLE). Default is LEFT.
+     * @param buttons Which button (default 1 = left).
+     * @param modifiers Bit field for pressed modifier keys. Alt=1, Ctrl=2, Meta/Command=4, Shift=8 (default: 0).
+     */
+    suspend fun mouseClick(
+        x: Double,
+        y: Double,
+        button: Input.MouseButton = Input.MouseButton.LEFT,
+        buttons: Int = 1,
+        modifiers: Int = 0,
+    ) {
+        input.dispatchMouseEvent(
+            type = "mousePressed",
+            x = x,
+            y = y,
+            modifiers = modifiers,
+            button = button,
+            buttons = buttons,
+            clickCount = 1
+        )
+        input.dispatchMouseEvent(
+            type = "mouseReleased",
+            x = x,
+            y = y,
+            modifiers = modifiers,
+            button = button,
+            buttons = buttons,
+            clickCount = 1
+        )
+    }
+
+    private suspend fun flashPoint(x: Double, y: Double, duration: Long = 250) {
+        // TODO: Do we really need this?
+        // displays for a short time a red dot on the element
     }
 
     /**
