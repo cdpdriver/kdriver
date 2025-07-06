@@ -39,7 +39,7 @@ To use kdriver, add the following to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("dev.kdriver:core:0.2.0")
+    implementation("dev.kdriver:core:0.2.1")
 }
 ```
 
