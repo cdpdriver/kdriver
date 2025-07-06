@@ -24,26 +24,38 @@ class BaseRequestExpectation(
 
     private var requestJob: Job? = null
     private var responseJob: Job? = null
+    private var loadingFinishedJob: Job? = null
 
     private val requestDeferred = CompletableDeferred<Network.RequestWillBeSentParameter>()
     private val responseDeferred = CompletableDeferred<Network.ResponseReceivedParameter>()
+    private val loadingFinishedDeferred = CompletableDeferred<Network.LoadingFinishedParameter>()
 
     private var requestId: String? = null
 
-    private val requestHandler: suspend (Network.RequestWillBeSentParameter) -> Unit = requestHandler@{ event ->
-        if (!urlPattern.containsMatchIn(event.request.url)) return@requestHandler
-        requestId = event.requestId
-        requestDeferred.complete(event)
-        requestJob?.cancel()
-        requestJob = null
-    }
+    private val requestHandler: suspend (Network.RequestWillBeSentParameter) -> Unit =
+        requestHandler@{ event ->
+            if (!urlPattern.containsMatchIn(event.request.url)) return@requestHandler
+            requestId = event.requestId
+            requestDeferred.complete(event)
+            requestJob?.cancel()
+            requestJob = null
+        }
 
-    private val responseHandler: suspend (Network.ResponseReceivedParameter) -> Unit = responseHandler@{ event ->
-        if (event.requestId != requestId) return@responseHandler
-        responseDeferred.complete(event)
-        responseJob?.cancel()
-        responseJob = null
-    }
+    private val responseHandler: suspend (Network.ResponseReceivedParameter) -> Unit =
+        responseHandler@{ event ->
+            if (event.requestId != requestId) return@responseHandler
+            responseDeferred.complete(event)
+            responseJob?.cancel()
+            responseJob = null
+        }
+
+    private val loadingFinishedHandler: suspend (Network.LoadingFinishedParameter) -> Unit =
+        loadingFinishedHandler@{ event ->
+            if (event.requestId != requestId) return@loadingFinishedHandler
+            loadingFinishedDeferred.complete(event)
+            loadingFinishedJob?.cancel()
+            loadingFinishedJob = null
+        }
 
     /**
      * Expect a request/response that matches the given [urlPattern].
@@ -57,11 +69,15 @@ class BaseRequestExpectation(
         responseJob = coroutineScope.launch {
             tab.network.responseReceived.collect { responseHandler(it) }
         }
+        loadingFinishedJob = coroutineScope.launch {
+            tab.network.loadingFinished.collect { loadingFinishedHandler(it) }
+        }
         try {
             return block()
         } finally {
             requestJob?.cancel()
             responseJob?.cancel()
+            loadingFinishedJob?.cancel()
         }
     }
 
@@ -90,6 +106,7 @@ class BaseRequestExpectation(
      */
     suspend fun getResponseBody(): Network.GetResponseBodyReturn {
         val requestId = getResponseEvent().requestId
+        loadingFinishedDeferred.await() // Ensure the loading is finished before fetching the body
         return tab.network.getResponseBody(requestId)
     }
 
