@@ -13,7 +13,7 @@ class ApiResponsesTest {
 
     @Test
     fun testResponse() = runBlocking {
-        val browser = Browser.create(this, headless = true)
+        val browser = Browser.create(this, headless = true, sandbox = false)
 
         val page = browser.mainTab ?: return@runBlocking
         val response = page.expect(Regex(".*/user-data.json")) {
@@ -32,7 +32,7 @@ class ApiResponsesTest {
 
     @Test
     fun testResponseBody() = runBlocking {
-        val browser = Browser.create(this, headless = true)
+        val browser = Browser.create(this, headless = true, sandbox = false)
 
         val page = browser.mainTab ?: return@runBlocking
         val body = page.expect(Regex(".*/user-data.json")) {
