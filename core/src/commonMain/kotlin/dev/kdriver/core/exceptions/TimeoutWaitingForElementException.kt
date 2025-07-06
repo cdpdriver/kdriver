@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
  * Exception thrown when a timeout occurs while waiting for a specific element in the browser context.
  *
  * @property selector The CSS selector of the element that was being waited for.
- * @property timeoutSeconds The maximum time in seconds to wait for the element.
+ * @property timeout The maximum time in milliseconds to wait for the element.
  */
 @Serializable
 data class TimeoutWaitingForElementException(
@@ -15,9 +15,9 @@ data class TimeoutWaitingForElementException(
      */
     val selector: String,
     /**
-     * The maximum time in seconds to wait for the element.
+     * The maximum time in milliseconds to wait for the element.
      */
-    val timeoutSeconds: Int,
+    val timeout: Long,
 ) : IllegalStateException(
     "time ran out while waiting for: $selector"
 )

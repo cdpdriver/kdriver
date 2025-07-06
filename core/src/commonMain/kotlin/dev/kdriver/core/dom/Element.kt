@@ -150,9 +150,10 @@ data class Element(
         // TODO
     }
 
-    private suspend fun flash(durationSeconds: Double) {
+    private suspend fun flash(duration: Long = 250) {
         // TODO: Do we really need this?
         // displays for a short time a red dot on the element (only if the element itself is visible)
+        // could be linked to Tab.flashPoint
     }
 
     /**
@@ -185,7 +186,7 @@ data class Element(
 
         val arguments = listOf(Runtime.CallArgument(objectId = objectId))
 
-        flash(0.25)
+        flash()
         tab.runtime.callFunctionOn(
             functionDeclaration = "(el) => el.click()",
             objectId = objectId,
@@ -367,7 +368,7 @@ data class Element(
      */
     suspend fun querySelectorAll(selector: String): List<Element> {
         update()
-        return tab.querySelectorAll(selector, node = this.node)
+        return tab.querySelectorAll(selector, node = NodeOrElement.WrappedNode(this.node))
     }
 
     /**
@@ -378,7 +379,7 @@ data class Element(
      */
     suspend fun querySelector(selector: String): Element? {
         update()
-        return tab.querySelector(selector, node = this.node)
+        return tab.querySelector(selector, node = NodeOrElement.WrappedNode(this.node))
     }
 
     /**
