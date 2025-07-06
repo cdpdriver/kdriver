@@ -12,7 +12,3 @@ allprojects {
         mavenCentral()
     }
 }
-
-tasks.dokkaHtmlMultiModule.configure {
-    includes.from("README.md")
-}

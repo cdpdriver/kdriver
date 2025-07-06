@@ -1,34 +1,23 @@
 package dev.kdriver.core.utils
 
+import dev.kdriver.cdp.domain.DOM
 import dev.kdriver.core.browser.WebSocketInfo
 import io.ktor.http.*
 import kotlinx.io.files.Path
 
-fun <T> filterRecurse(
-    node: T,
-    predicate: (T) -> Boolean,
-    getChildren: (T) -> List<T>?,
-    getShadowRoots: (T) -> List<T>?,
-): T? {
-    val children = getChildren(node) ?: return null
-
+fun filterRecurse(node: DOM.Node, predicate: (DOM.Node) -> Boolean): DOM.Node? {
+    val children = node.children ?: return null
     for (child in children) {
-        if (predicate(child)) {
-            return child
-        }
+        if (predicate(child)) return child
 
-        val shadowRoots = getShadowRoots(child)
+        val shadowRoots = child.shadowRoots
         if (shadowRoots != null && shadowRoots.isNotEmpty()) {
-            val shadowResult = filterRecurse(shadowRoots[0], predicate, getChildren, getShadowRoots)
-            if (shadowResult != null) {
-                return shadowResult
-            }
+            val shadowResult = filterRecurse(shadowRoots[0], predicate)
+            if (shadowResult != null) return shadowResult
         }
 
-        val recursiveResult = filterRecurse(child, predicate, getChildren, getShadowRoots)
-        if (recursiveResult != null) {
-            return recursiveResult
-        }
+        val recursiveResult = filterRecurse(child, predicate)
+        if (recursiveResult != null) return recursiveResult
     }
     return null
 }

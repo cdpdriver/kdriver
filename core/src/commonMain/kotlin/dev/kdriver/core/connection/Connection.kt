@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlin.reflect.KClass
@@ -115,10 +116,37 @@ open class Connection(
         this.targetInfo = targetInfo.targetInfo
     }
 
+    /**
+     * Waits until the event listener reports idle (no new events received in a certain timespan).
+     * When \`t\` is provided, ensures waiting for \`t\` milliseconds, no matter what.
+     *
+     * @param t Time in milliseconds to wait, or null to wait until idle.
+     */
     suspend fun wait(t: Long? = null) {
         updateTarget()
+        val idleEvent: suspend () -> Boolean = {
+            withTimeoutOrNull(100) { events.first() } == null
+        }
 
-        // TODO
+        if (t != null) {
+            val start = Clock.System.now().toEpochMilliseconds()
+            withTimeoutOrNull(t) {
+                // Wait for idle event or timeout
+                while (true) {
+                    if (idleEvent()) break
+                    delay(50)
+                }
+            }
+            // Ensure total wait time is at least t milliseconds
+            val elapsed = Clock.System.now().toEpochMilliseconds() - start
+            if (elapsed < t) delay(t - elapsed)
+        } else {
+            // Wait indefinitely for idle event
+            while (true) {
+                if (idleEvent()) break
+                delay(50)
+            }
+        }
     }
 
     suspend fun sleep(t: Long) {

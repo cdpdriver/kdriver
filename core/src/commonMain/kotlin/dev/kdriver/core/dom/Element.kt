@@ -15,15 +15,27 @@ import kotlinx.serialization.json.decodeFromJsonElement
  * This class provides methods to interact with the DOM element, such as clicking, sending keys, and applying JavaScript functions.
  * It also provides properties to access the element's tag name, text content, and position in the viewport.
  */
-data class Element(
-    val node: DOM.Node,
+class Element internal constructor(
     val tab: Tab,
-    val tree: DOM.Node? = null,
+    node: DOM.Node,
+    tree: DOM.Node? = null,
 ) {
 
     private val logger = KtorSimpleLogger("Element")
 
     private var remoteObject: Runtime.RemoteObject? = null
+
+    /**
+     * The underlying DOM node representing this element.
+     */
+    var node: DOM.Node = node
+        private set
+
+    /**
+     * The DOM tree in which this element resides.
+     */
+    var tree: DOM.Node? = tree
+        private set
 
     /**
      * The name of the tag of the element, in lowercase.
@@ -38,24 +50,14 @@ data class Element(
      * within the element, excluding any HTML tags.
      */
     val text: String
-        get() = filterRecurse(
-            node,
-            predicate = { it.nodeType == 3 },
-            getChildren = { it.children },
-            getShadowRoots = { it.shadowRoots }
-        )?.nodeValue ?: ""
+        get() = filterRecurse(node) { it.nodeType == 3 }?.nodeValue ?: ""
 
     /**
      * Gets the text contents of this element, and it's children in a concatenated string
      * NOTE: this includes text in the form of script content, as those are also just 'text nodes'
      */
     val textAll: String
-        get() = filterRecurse(
-            node,
-            predicate = { it.nodeType == 3 },
-            getChildren = { it.children },
-            getShadowRoots = { it.shadowRoots }
-        )?.let { textNode ->
+        get() = filterRecurse(node) { it.nodeType == 3 }?.let { textNode ->
             buildString {
                 fun collectText(n: DOM.Node?) {
                     if (n == null) return
@@ -85,13 +87,10 @@ data class Element(
     val parent: Element?
         get() {
             val tree = this.tree ?: throw RuntimeException("could not get parent since the element has no tree set")
-            val parentNode = filterRecurse(
-                tree,
-                predicate = { node -> node.nodeId == this.parentId },
-                getChildren = { node.children },
-                getShadowRoots = { it.shadowRoots }
-            ) ?: return null
-            return Element(parentNode, tab = this.tab, tree = this.tree)
+            println("getting parent for $this with parentId: $parentId")
+            val parentNode = filterRecurse(tree) { node -> node.nodeId == parentId } ?: return null
+            println("parentNode: $parentNode")
+            return Element(tab, parentNode, tree)
         }
 
     /**
@@ -107,7 +106,7 @@ data class Element(
                 val frameChildren = frame.children ?: return emptyList()
                 return frameChildren.mapNotNull { child ->
                     try {
-                        Element(child, tab, frame)
+                        Element(tab, child, frame)
                     } catch (_: Exception) {
                         null
                     }
@@ -119,7 +118,7 @@ data class Element(
             }
             return node.children?.mapNotNull { child ->
                 try {
-                    Element(child, tab, tree)
+                    Element(tab, child, tree)
                 } catch (_: Exception) {
                     null
                 }
@@ -146,8 +145,34 @@ data class Element(
         return remoteObject
     }
 
-    suspend fun update() {
-        // TODO
+    /**
+     * Updates the element to retrieve more properties, such as enabling the `children` and `parent` attributes.
+     *
+     * Also resolves the JavaScript object which is stored in [remoteObject].
+     *
+     * Usually, elements are obtained via [Tab.querySelectorAll] or [Tab.findElementsByText], and those elements are already updated.
+     * The reason for a separate call instead of doing it at initialization is because retrieving many elements can be expensive.
+     * Therefore, it is not advised to call this method on a large number of elements at the same time.
+     */
+    suspend fun update(nodeOverride: DOM.Node? = null): Element {
+        val doc = nodeOverride ?: tab.dom.getDocument(depth = -1, pierce = true).root
+        val updatedNode = filterRecurse(doc) { it.backendNodeId == node.backendNodeId }
+        if (updatedNode != null) {
+            logger.debug("node seems changed, and has now been updated.")
+            this.node = updatedNode
+        }
+        this.tree = doc
+
+        remoteObject = tab.dom.resolveNode(backendNodeId = node.backendNodeId).`object`
+
+        if (node.nodeName != "IFRAME") {
+            val parentNode = filterRecurse(doc) { it.nodeId == node.parentId }
+            if (parentNode != null) {
+                // What's the point of this? (object is never used)
+                val _parent = Element(tab, parentNode, tree)
+            }
+        }
+        return this
     }
 
     private suspend fun flash(duration: Long = 250) {
