@@ -380,7 +380,7 @@ class Tab(
         bestMatch: Boolean = true,
         returnEnclosingElement: Boolean = true,
         timeout: Long = 10_000,
-    ): Element? {
+    ): Element {
         val startTime = Clock.System.now().toEpochMilliseconds()
         val trimmedText = text.trim()
         while (true) {
@@ -580,14 +580,9 @@ class Tab(
 
         val items = mutableListOf<Element>()
         for (nid in nodeIds) {
-            val innerNode = filterRecurse(
-                doc,
-                predicate = { it.nodeId == nid },
-                getChildren = { it.children },
-                getShadowRoots = { it.shadowRoots }
-            )
+            val innerNode = filterRecurse(doc) { it.nodeId == nid }
             if (innerNode != null) {
-                val elem = Element(innerNode, this, doc)
+                val elem = Element(this, innerNode, doc)
                 items.add(elem)
             }
         }
@@ -645,13 +640,8 @@ class Tab(
 
         if (nodeId == null) return null
 
-        val foundNode = filterRecurse(
-            doc,
-            predicate = { it.nodeId == nodeId },
-            getChildren = { it.children },
-            getShadowRoots = { it.shadowRoots }
-        )
-        return foundNode?.let { Element(it, this, doc) }
+        val foundNode = filterRecurse(doc) { it.nodeId == nodeId }
+        return foundNode?.let { Element(this, it, doc) }
     }
 
     /**
@@ -667,22 +657,17 @@ class Tab(
         text: String,
         tagHint: String? = null,
     ): List<Element> {
-        val doc = dom.getDocument(-1, true).root
         val trimmedText = text.trim()
+        val doc = dom.getDocument(-1, true).root
         val search = dom.performSearch(trimmedText, true)
-        val searchId = search.searchId
-        val nresult = search.resultCount
-
-        val nodeIds = if (nresult > 0) {
-            dom.getSearchResults(searchId, 0, nresult).nodeIds
-        } else {
-            emptyList()
-        }
-        dom.discardSearchResults(searchId)
+        val nodeIds =
+            if (search.resultCount > 0) dom.getSearchResults(search.searchId, 0, search.resultCount).nodeIds
+            else emptyList()
+        dom.discardSearchResults(search.searchId)
 
         val items = mutableListOf<Element>()
         for (nid in nodeIds) {
-            val node = filterRecurse(doc, { it.nodeId == nid }, { it.children }, { it.shadowRoots })
+            val node = filterRecurse(doc) { it.nodeId == nid }
             if (node == null) {
                 // Try to resolve the node if not found in the local tree
                 val resolvedNode = try {
@@ -694,11 +679,11 @@ class Tab(
                 // Optionally, you could resolve backendNodeId to nodeId here if needed
                 // val remoteObject = dom.resolveNode(backendNodeId = resolvedNode.backendNodeId)
                 // val resolvedNodeId = dom.requestNode(objectId = remoteObject.objectId)
-                // node = filterRecurse(doc, { it.nodeId == resolvedNodeId }, { it.children }, { it.shadowRoots })
+                // node = filterRecurse(doc, { it.nodeId == resolvedNodeId })
                 continue
             }
             try {
-                val elem = Element(node, this, doc)
+                val elem = Element(this, node, doc)
                 if (elem.nodeType == 3) {
                     // if found element is a text node (which is plain text, and useless for our purpose),
                     // we return the parent element of the node (which is often a tag which can have text between their
@@ -717,18 +702,15 @@ class Tab(
 
         // since we already fetched the entire doc, including shadow and frames
         // let's also search through the iframes
-        val iframes = filterRecurse(doc, { it.nodeName == "IFRAME" }, { it.children }, { it.shadowRoots })
+        val iframes = filterRecurse(doc) { it.nodeName == "IFRAME" }
         if (iframes != null) {
-            val iframeElems = listOf(Element(iframes, this, iframes.contentDocument ?: doc))
+            val iframeElems = listOf(Element(this, iframes, iframes.contentDocument ?: doc))
             for (iframeElem in iframeElems) {
-                val iframeTextNodes = filterRecurse(
-                    iframeElem.node,
-                    { n -> n.nodeType == 3 && n.nodeValue.contains(trimmedText, ignoreCase = true) },
-                    { it.children },
-                    { it.shadowRoots }
-                )
+                val iframeTextNodes = filterRecurse(iframeElem.node) { n ->
+                    n.nodeType == 3 && n.nodeValue.contains(trimmedText, ignoreCase = true)
+                }
                 if (iframeTextNodes != null) {
-                    val textElem = Element(iframeTextNodes, this, iframeElem.node)
+                    val textElem = Element(this, iframeTextNodes, iframeElem.node)
                     items.add(textElem.parent ?: textElem)
                 }
             }
@@ -759,7 +741,7 @@ class Tab(
         try {
             if (items.isEmpty()) return null
             return if (bestMatch) {
-                items.minByOrNull { abs(trimmedText.length - it.textAll.length) }
+                items.minByOrNull { abs(trimmedText.length - it.textAll.length) } ?: items.firstOrNull()
             } else {
                 // naively just return the first result
                 items.firstOrNull()

@@ -122,10 +122,10 @@ fun main() = runBlocking {
     // matching elements containing "consent" and takes the
     // one having most similar text length
     val consent = tab.find("Consent", bestMatch = true)
-    consent!!.click()
+    consent.click()
 
     // Shortcut
-    tab.find("new post", bestMatch = true)!!.click()
+    tab.find("new post", bestMatch = true).click()
 
     val fileInput = tab.select("input[type=file]")
     fileInput.sendFile(listOf(savePath))
@@ -142,12 +142,12 @@ fun main() = runBlocking {
     // So for this one, we use the flag return_enclosing_element and set it to False
     val titleField = tab.find("give your post a unique title", bestMatch = true)
     println(titleField)
-    titleField!!.sendKeys("kdriver")
+    titleField.sendKeys("kdriver")
 
     // There is a delay for the link sharing popup.
     // Let's pause for a sec
     val grabLink = tab.find("grab link", bestMatch = true)
-    grabLink!!.click()
+    grabLink.click()
 
     tab.wait(DELAY)
 
