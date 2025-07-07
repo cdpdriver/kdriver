@@ -173,6 +173,8 @@ class TabTest {
             assertEquals(200, response.status)
             assertTrue(responseBody.body.isNotEmpty())
         }
+
+        browser.stop()
     }
 
     @Test
@@ -191,6 +193,7 @@ class TabTest {
         assertEquals(1, todoItem.userId)
         assertEquals("delectus aut autem", todoItem.title)
         assertFalse(todoItem.completed)
+        browser.stop()
     }
 
 }

@@ -84,7 +84,9 @@ class BaseFetchInterception(
     @OptIn(ExperimentalEncodingApi::class)
     suspend inline fun <reified T> getResponseBody(): T {
         val rawBody = getRawResponseBody()
+        println("Raw body: $rawBody")
         val body = if (rawBody.base64Encoded) Base64.decode(rawBody.body).decodeToString() else rawBody.body
+        println("Decoded body: $body")
         return Serialization.json.decodeFromString<T>(body)
     }
 
