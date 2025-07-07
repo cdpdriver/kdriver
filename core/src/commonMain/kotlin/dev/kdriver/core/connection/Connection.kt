@@ -218,7 +218,7 @@ open class Connection(
      * That would be equivalent to this with zendriver:
      * ```python
      * # add a handler for the consoleAPICalled event with zendriver
-     * tab.add_handler(cdp.runtime.consoleAPICalled, lambda event: print(event))
+     * tab.add_handler(cdp.runtime.ConsoleAPICalled, lambda event: print(event))
      * ```
      *
      * Although you can directly collect the events from the tab (recommended way of doing it):
