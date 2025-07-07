@@ -1,2 +1,2 @@
 ignore:
-  - "cdp/src/commonMain/kotlin/dev/kdriver/cdp/domain"
+  - "cdp" # automatically generated code by cdp-generate
