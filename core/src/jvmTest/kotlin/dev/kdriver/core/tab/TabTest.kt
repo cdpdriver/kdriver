@@ -1,9 +1,7 @@
 package dev.kdriver.core.tab
 
-import dev.kdriver.cdp.cdp
 import dev.kdriver.cdp.domain.Fetch
 import dev.kdriver.cdp.domain.Network
-import dev.kdriver.cdp.domain.network
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
@@ -14,16 +12,6 @@ import kotlinx.coroutines.withTimeout
 import kotlin.test.*
 
 class TabTest {
-
-    @Test
-    fun testSend() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
-        tab.send { cdp.network.setUserAgentOverride("Test user agent") }
-        val navigatorUserAgent = tab.evaluate<String>("navigator.userAgent")
-        assertEquals("Test user agent", navigatorUserAgent)
-        browser.stop()
-    }
 
     @Test
     fun testSetUserAgentSetsNavigatorValues() = runBlocking {

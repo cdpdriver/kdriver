@@ -1,10 +1,7 @@
 package dev.kdriver.core.connection
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Message
-import dev.kdriver.cdp.Request
+import dev.kdriver.cdp.*
 import dev.kdriver.cdp.domain.Target
 import dev.kdriver.cdp.domain.target
 import dev.kdriver.core.browser.Browser
@@ -47,6 +44,34 @@ open class Connection(
 
     private var socketSubscription: Job? = null
 
+    private val currentIdMutex = Mutex()
+    private var currentId = 0L
+
+    private var allMessages = MutableSharedFlow<Message>(extraBufferCapacity = eventsBufferSize)
+
+    @InternalCdpApi
+    override val events: Flow<Message.Event> = allMessages.filterIsInstance()
+
+    @InternalCdpApi
+    override val responses: Flow<Message.Response> = allMessages.filterIsInstance()
+
+    @InternalCdpApi
+    override val generatedDomains: MutableMap<KClass<out Domain>, Domain> = mutableMapOf()
+
+    private suspend fun connect() {
+        if (wsSession != null && wsSession?.isActive == true) return
+        wsSession = client.webSocketSession {
+            url {
+                val parsed = parseWebSocketUrl(websocketUrl)
+                this.protocol = URLProtocol.WS
+                this.host = parsed.host
+                this.port = parsed.port
+                this.path(parsed.path)
+            }
+        }
+        startListening()
+    }
+
     private fun startListening() {
         socketSubscription?.cancel()
         socketSubscription = messageListeningScope.launch {
@@ -69,30 +94,12 @@ open class Connection(
         }
     }
 
-    private val currentIdMutex = Mutex()
-    private var currentId = 0L
-
-    private var allMessages = MutableSharedFlow<Message>(extraBufferCapacity = eventsBufferSize)
-
-    override val events: Flow<Message.Event> = allMessages.filterIsInstance()
-    override val responses: Flow<Message.Response> = allMessages.filterIsInstance()
-
-    override val generatedDomains: MutableMap<KClass<out Domain>, Domain> = mutableMapOf()
-
-    private suspend fun connect() {
-        if (wsSession != null && wsSession?.isActive == true) return
-        wsSession = client.webSocketSession {
-            url {
-                val parsed = parseWebSocketUrl(websocketUrl)
-                this.protocol = URLProtocol.WS
-                this.host = parsed.host
-                this.port = parsed.port
-                this.path(parsed.path)
-            }
-        }
-        startListening()
-    }
-
+    /**
+     * Internal method to call a CDP command.
+     *
+     * This should not be called directly, but rather through typed methods (like `cdp.network.enable()`).
+     */
+    @InternalCdpApi
     override suspend fun callCommand(method: String, parameter: JsonElement?): JsonElement? {
         connect()
         val requestId = currentIdMutex.withLock { currentId++ }
@@ -104,6 +111,10 @@ open class Connection(
         return result.result
     }
 
+    /**
+     * Closes the websocket connection. Should not be called manually by users.
+     */
+    @InternalCdpApi
     suspend fun close() {
         wsSession?.close()
         wsSession = null
@@ -111,6 +122,11 @@ open class Connection(
         socketSubscription = null
     }
 
+    /**
+     * Updates the target information by fetching it from the CDP.
+     *
+     * This is useful to refresh the target info after some operations that might change it.
+     */
     suspend fun updateTarget() {
         val targetInfo = target.getTargetInfo(targetId)
         this.targetInfo = targetInfo.targetInfo
@@ -149,9 +165,86 @@ open class Connection(
         }
     }
 
+    /**
+     * Suspends the coroutine for a specified time in milliseconds.
+     *
+     * This is a convenience method to ensure that the target information is updated before sleeping.
+     *
+     * @param t Time in milliseconds to sleep.
+     */
     suspend fun sleep(t: Long) {
         updateTarget()
         delay(t)
+    }
+
+    /**
+     * Sends a CDP command and waits for the response.
+     *
+     * This is an alias so that you can use cdp the same way as zendriver does:
+     * ```kotlin
+     * // send a network.enable command with kdriver
+     * tab.send { cdp.network.enable() }
+     * ```
+     * That would be equivalent to this with zendriver:
+     * ```python
+     * # send a network.enable command with zendriver
+     * tab.send(cdp.network.enable())
+     * ```
+     *
+     * Although you can directly call the CDP methods on the tab (recommended way of doing it):
+     * ```kotlin
+     * // send a network.enable command with kdriver, directly
+     * tab.network.enable()
+     * ```
+     *
+     * @param command The command to send. This is a suspending function that can call any CDP method.
+     *
+     * @return The result of the command, deserialized to type T.
+     */
+    inline fun <T> send(command: CDP.() -> T): T {
+        return this.command()
+    }
+
+    /**
+     * Adds a handler for a specific CDP event.
+     *
+     * This is an alias so that you can use cdp the same way as zendriver does:
+     * ```kotlin
+     * // add a handler for the consoleAPICalled event with kdriver
+     * tab.addHandler(this, { cdp.runtime.consoleAPICalled }) { event ->
+     *     println(event)
+     * }
+     * ```
+     * That would be equivalent to this with zendriver:
+     * ```python
+     * # add a handler for the consoleAPICalled event with zendriver
+     * tab.add_handler(cdp.runtime.consoleAPICalled, lambda event: print(event))
+     * ```
+     *
+     * Although you can directly collect the events from the tab (recommended way of doing it):
+     * ```kotlin
+     * // add a handler for the consoleAPICalled event with kdriver, directly
+     * launch {
+     *     tab.runtime.consoleAPICalled.collect { event ->
+     *         println(event)
+     *     }
+     * }
+     * ```
+     *
+     * @param coroutineScope The coroutine scope in which the handler will run.
+     * @param event A lambda that returns a Flow of the event type to listen to.
+     * @param handler A suspend function that will be called with each event of the specified type.
+     *
+     * @return A Job that can be used to cancel the handler.
+     */
+    inline fun <T> addHandler(
+        coroutineScope: CoroutineScope,
+        crossinline event: CDP.() -> Flow<T>,
+        crossinline handler: suspend (T) -> Unit,
+    ): Job {
+        return coroutineScope.launch {
+            event().collect { handler(it) }
+        }
     }
 
     override fun toString(): String {

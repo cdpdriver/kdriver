@@ -1,7 +1,6 @@
 package dev.kdriver.core.tab
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
 import dev.kdriver.cdp.CDPException
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.browser.Browser
@@ -849,34 +848,6 @@ class Tab(
     private suspend fun flashPoint(x: Double, y: Double, duration: Long = 250) {
         // TODO: Do we really need this?
         // displays for a short time a red dot on the element
-    }
-
-    /**
-     * Sends a CDP command and waits for the response.
-     *
-     * This is an alias so that you can use cdp the same way as zendriver does:
-     * ```kotlin
-     * // send a network.enable command with kdriver
-     * tab.send { network.enable() }
-     * ```
-     * That would be equivalent to this with zendriver:
-     * ```python
-     * # send a network.enable command with zendriver
-     * tab.send(network.enable())
-     * ```
-     *
-     * Although you can directly call the CDP methods on the tab (recommended way of doing it):
-     * ```kotlin
-     * // send a network.enable command with kdriver, directly
-     * tab.network.enable()
-     * ```
-     *
-     * @param command The command to send. This is a suspending function that can call any CDP method.
-     *
-     * @return The result of the command, deserialized to type T.
-     */
-    inline fun <T> send(command: CDP.() -> T): T {
-        return this.command()
     }
 
     /**

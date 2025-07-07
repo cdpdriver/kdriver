@@ -80,6 +80,7 @@ kotlin {
     sourceSets {
         all {
             languageSettings.apply {
+                optIn("dev.kdriver.cdp.InternalCdpApi")
                 optIn("kotlin.js.ExperimentalJsExport")
             }
         }

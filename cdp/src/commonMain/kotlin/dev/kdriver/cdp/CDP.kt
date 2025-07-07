@@ -9,11 +9,16 @@ import kotlin.reflect.KClass
  */
 interface CDP {
 
+    @InternalCdpApi
     val events: Flow<Message.Event>
+
+    @InternalCdpApi
     val responses: Flow<Message.Response>
 
+    @InternalCdpApi
     val generatedDomains: MutableMap<KClass<out Domain>, Domain>
 
+    @InternalCdpApi
     suspend fun callCommand(method: String, parameter: JsonElement?): JsonElement?
 
 }
