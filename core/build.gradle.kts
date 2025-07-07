@@ -71,6 +71,7 @@ kotlin {
             dependencies {
                 api(libs.ktor.client.apache)
                 api(libs.ktor.client.cio)
+                api(libs.zstd)
             }
         }
         val jsMain by getting {

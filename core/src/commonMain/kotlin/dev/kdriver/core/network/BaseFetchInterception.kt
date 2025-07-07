@@ -1,16 +1,16 @@
-package dev.kdriver.core.tab
+package dev.kdriver.core.network
 
 import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.domain.Fetch
 import dev.kdriver.cdp.domain.Fetch.HeaderEntry
 import dev.kdriver.cdp.domain.Network
 import dev.kdriver.cdp.domain.fetch
+import dev.kdriver.core.tab.Tab
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.coroutines.coroutineContext
-import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
@@ -73,9 +73,9 @@ class BaseFetchInterception(
     /**
      * Fetches the raw response body once it has been received.
      */
-    suspend fun getRawResponseBody(): Fetch.GetResponseBodyReturn {
+    suspend fun getRawResponseBody(): EncodedBody {
         val requestId = getRequestEvent().requestId
-        return tab.fetch.getResponseBody(requestId)
+        return EncodedBody(tab.fetch.getResponseBody(requestId))
     }
 
     /**
@@ -83,11 +83,7 @@ class BaseFetchInterception(
      */
     @OptIn(ExperimentalEncodingApi::class)
     suspend inline fun <reified T> getResponseBody(): T {
-        val rawBody = getRawResponseBody()
-        println("Raw body: $rawBody")
-        val body = if (rawBody.base64Encoded) Base64.decode(rawBody.body).decodeToString() else rawBody.body
-        println("Decoded body: $body")
-        return Serialization.json.decodeFromString<T>(body)
+        return Serialization.json.decodeFromString<T>(getRawResponseBody().decodedBody)
     }
 
     /**

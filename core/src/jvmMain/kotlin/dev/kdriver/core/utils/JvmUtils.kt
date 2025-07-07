@@ -1,14 +1,19 @@
 package dev.kdriver.core.utils
 
+import com.github.luben.zstd.ZstdInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.io.files.FileNotFoundException
 import kotlinx.io.files.Path
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.InetAddress
 import java.net.ServerSocket
+import java.util.zip.GZIPInputStream
 import kotlin.io.bufferedReader
+import kotlin.io.copyTo
 import kotlin.io.path.createTempDirectory
 import kotlin.io.readText
 import kotlin.use
@@ -130,5 +135,25 @@ actual fun findChromeExecutable(): Path? {
 actual fun freePort(): Int? {
     ServerSocket(0, 5, InetAddress.getByName("127.0.0.1")).use { socket ->
         return socket.localPort
+    }
+}
+
+actual fun decompressIfNeeded(data: ByteArray): ByteArray {
+    return when {
+        isZstdCompressed(data) -> {
+            val input = ByteArrayInputStream(data)
+            val output = ByteArrayOutputStream()
+            ZstdInputStream(input).use { it.copyTo(output) }
+            output.toByteArray()
+        }
+
+        isGzipCompressed(data) -> {
+            val input = ByteArrayInputStream(data)
+            val output = ByteArrayOutputStream()
+            GZIPInputStream(input).use { it.copyTo(output) }
+            output.toByteArray()
+        }
+
+        else -> data
     }
 }

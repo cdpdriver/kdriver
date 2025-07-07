@@ -1,14 +1,14 @@
-package dev.kdriver.core.tab
+package dev.kdriver.core.network
 
 import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.domain.Network
 import dev.kdriver.cdp.domain.network
+import dev.kdriver.core.tab.Tab
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.coroutines.coroutineContext
-import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
@@ -107,10 +107,10 @@ class BaseRequestExpectation(
     /**
      * Fetches the raw response body once it has been received.
      */
-    suspend fun getRawResponseBody(): Network.GetResponseBodyReturn {
+    suspend fun getRawResponseBody(): EncodedBody {
         val requestId = getResponseEvent().requestId
         loadingFinishedDeferred.await() // Ensure the loading is finished before fetching the body
-        return tab.network.getResponseBody(requestId)
+        return EncodedBody(tab.network.getResponseBody(requestId))
     }
 
     /**
@@ -118,9 +118,7 @@ class BaseRequestExpectation(
      */
     @OptIn(ExperimentalEncodingApi::class)
     suspend inline fun <reified T> getResponseBody(): T {
-        val rawBody = getRawResponseBody()
-        val body = if (rawBody.base64Encoded) Base64.decode(rawBody.body).decodeToString() else rawBody.body
-        return Serialization.json.decodeFromString<T>(body)
+        return Serialization.json.decodeFromString<T>(getRawResponseBody().decodedBody)
     }
 
 }

@@ -182,23 +182,17 @@ class TabTest {
         val browser = Browser.create(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
-        try {
-            val todoItem = tab.intercept("*/todos/1", Fetch.RequestStage.RESPONSE, Network.ResourceType.XHR) {
-                tab.get(sampleFile("todolist.html"))
-                val originalResponse = withTimeout(3000L) { getResponseBody<TodoItem>() }
-                withTimeout(3000L) { continueRequest() }
-                originalResponse
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        val todoItem = tab.intercept("*/todos/1", Fetch.RequestStage.RESPONSE, Network.ResourceType.XHR) {
+            tab.get(sampleFile("todolist.html"))
+            val originalResponse = withTimeout(3000L) { getResponseBody<TodoItem>() }
+            withTimeout(3000L) { continueRequest() }
+            originalResponse
         }
 
-        /*
         assertEquals(1, todoItem.id)
         assertEquals(1, todoItem.userId)
         assertEquals("delectus aut autem", todoItem.title)
         assertFalse(todoItem.completed)
-         */
         browser.stop()
     }
 

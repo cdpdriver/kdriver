@@ -11,6 +11,8 @@ import dev.kdriver.core.dom.NodeOrElement
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.exceptions.TimeoutWaitingForReadyStateException
+import dev.kdriver.core.network.BaseFetchInterception
+import dev.kdriver.core.network.BaseRequestExpectation
 import dev.kdriver.core.utils.filterRecurse
 import io.ktor.http.*
 import io.ktor.util.logging.*
