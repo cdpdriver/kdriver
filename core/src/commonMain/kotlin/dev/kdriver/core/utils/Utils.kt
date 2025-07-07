@@ -37,13 +37,13 @@ fun parseWebSocketUrl(url: String): WebSocketInfo {
 }
 
 fun isZstdCompressed(data: ByteArray): Boolean {
-    // Zstandard magic number: 0x28 B5 2F FD
-    return data.take(4) == listOf(0x28, 0xB5, 0x2F, 0xFD)
+    val header = data.take(4).map { it.toUByte().toInt() }
+    return header == listOf(0x28, 0xB5, 0x2F, 0xFD)
 }
 
 fun isGzipCompressed(data: ByteArray): Boolean {
-    // GZIP magic number: 0x1F 0x8B
-    return data.size > 2 && data[0] == 0x1F.toByte() && data[1] == 0x8B.toByte()
+    val header = data.take(2).map { it.toUByte().toInt() }
+    return header == listOf(0x1F, 0x8B)
 }
 
 expect abstract class Process {
