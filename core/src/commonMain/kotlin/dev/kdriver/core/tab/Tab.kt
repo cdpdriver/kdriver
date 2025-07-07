@@ -875,7 +875,7 @@ class Tab(
      *
      * @return The result of the command, deserialized to type T.
      */
-    suspend fun <T> send(command: suspend CDP.() -> T): T {
+    inline fun <T> send(command: CDP.() -> T): T {
         return this.command()
     }
 
