@@ -72,7 +72,7 @@ fun main() = runBlocking {
 }
 ```
 
-More examples coming soon!
+More examples can be found on the [tutorial section of the documentation](https://kdriver.dev/tutorials/).
 
 ## Acknowledgments
 
