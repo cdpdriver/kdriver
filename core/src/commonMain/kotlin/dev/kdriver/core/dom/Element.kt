@@ -88,9 +88,7 @@ class Element internal constructor(
     val parent: Element?
         get() {
             val tree = this.tree ?: throw RuntimeException("could not get parent since the element has no tree set")
-            println("getting parent for $this with parentId: $parentId")
             val parentNode = filterRecurse(tree) { node -> node.nodeId == parentId } ?: return null
-            println("parentNode: $parentNode")
             return Element(tab, parentNode, tree)
         }
 
