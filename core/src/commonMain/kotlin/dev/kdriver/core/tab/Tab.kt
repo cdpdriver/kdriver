@@ -21,6 +21,7 @@ import kotlinx.datetime.Clock
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.String
 import kotlin.io.encoding.Base64
@@ -112,10 +113,10 @@ class Tab(
      *
      * @return The result of the evaluation, deserialized to type T, or null if no result is returned.
      */
-    suspend inline fun <reified T> evaluate(
+    suspend fun rawEvaluate(
         expression: String,
         awaitPromise: Boolean = false,
-    ): T? {
+    ): JsonElement? {
         val result = runtime.evaluate(
             expression = expression,
             returnByValue = true,
@@ -124,9 +125,23 @@ class Tab(
             allowUnsafeEvalBlockedByCSP = true,
         )
         result.exceptionDetails?.let { throw EvaluateException(it) }
-        return result.result.value?.let {
-            Serialization.json.decodeFromJsonElement<T>(it)
-        }
+        return result.result.value
+    }
+
+    /**
+     * Evaluates a JavaScript expression in the context of the tab.
+     *
+     * @param expression The JavaScript expression to evaluate.
+     * @param awaitPromise If true, waits for any promises to resolve before returning the result.
+     *
+     * @return The result of the evaluation, deserialized to type T, or null if no result is returned.
+     */
+    suspend inline fun <reified T> evaluate(
+        expression: String,
+        awaitPromise: Boolean = false,
+    ): T? {
+        val raw = rawEvaluate(expression, awaitPromise) ?: return null
+        return Serialization.json.decodeFromJsonElement<T>(raw)
     }
 
     /**

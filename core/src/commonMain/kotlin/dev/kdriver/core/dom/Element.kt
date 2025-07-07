@@ -7,6 +7,7 @@ import dev.kdriver.core.tab.Tab
 import dev.kdriver.core.utils.filterRecurse
 import io.ktor.util.logging.*
 import kotlinx.io.files.Path
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
@@ -364,10 +365,10 @@ class Element internal constructor(
      *
      * @return The result of the function call, or null if the result is not serializable.
      */
-    suspend inline fun <reified T> apply(
+    suspend fun rawApply(
         jsFunction: String,
         awaitPromise: Boolean = false,
-    ): T? {
+    ): JsonElement? {
         val remoteObject = updateRemoteObject()
         val result = tab.runtime.callFunctionOn(
             functionDeclaration = jsFunction,
@@ -380,9 +381,29 @@ class Element internal constructor(
             awaitPromise = awaitPromise,
         )
         result.exceptionDetails?.let { throw EvaluateException(it) }
-        return result.result.value?.let {
-            Serialization.json.decodeFromJsonElement<T>(it)
-        }
+        return result.result.value
+    }
+
+    /**
+     * Applies a JavaScript function to the element and returns the result. The given js_function string should accept the js element as parameter,
+     * and can be a arrow function, or function declaration.
+     *
+     * Examples of valid JavaScript functions:
+     * - `(elem) => { elem.value = "blabla"; console.log(elem); alert(JSON.stringify(elem)); }`
+     * - `elem => elem.play()`
+     * - `function myFunction(elem) { alert(elem) }`
+     *
+     * @param jsFunction The JavaScript function to apply to the element.
+     * @param awaitPromise If true, waits for any promises to resolve before returning the result.
+     *
+     * @return The result of the function call, or null if the result is not serializable.
+     */
+    suspend inline fun <reified T> apply(
+        jsFunction: String,
+        awaitPromise: Boolean = false,
+    ): T? {
+        val raw = rawApply(jsFunction, awaitPromise) ?: return null
+        return Serialization.json.decodeFromJsonElement<T>(raw)
     }
 
     /**

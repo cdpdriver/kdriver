@@ -29,6 +29,21 @@ fun main() = runBlocking {
 }
 ```
 
+We'll also need a data class to represent the user data we expect to receive from the API:
+
+```kotlin
+@Serializable
+data class UserData(
+    val name: String,
+    val title: String,
+    val email: String,
+    val location: String,
+    val avatar: String,
+    val bio: String,
+    val skills: List<String>,
+)
+```
+
 ## Reading the API response
 
 ```kotlin
@@ -36,36 +51,12 @@ fun main() = runBlocking {
     val browser = Browser.create(this)
 
     val page = browser.mainTab ?: return@runBlocking
-    val response = page.expect(Regex(".*/user-data.json")) {
+    val userData = page.expect(Regex(".*/user-data.json")) {
         page.get("https://slensky.com/zendriver-examples/api-request.html")
-        getResponseEvent()
+        getResponseBody<UserData>() // Wait and decode the response body from the matching expectation
     }
 
-    val requestId = response.requestId
-    val body = page.network.getResponseBody(requestId).body
-    val userData = Serialization.json.parseToJsonElement(body)
-
-    println("Successfully read user data response for user: " + userData.jsonObject["name"]?.jsonPrimitive?.content)
-    println(Serialization.json.encodeToString(userData))
-
-    browser.stop()
-}
-```
-
-Or in a simpler way, if you only need the response body:
-
-```kotlin
-fun main() = runBlocking {
-    val browser = Browser.create(this)
-
-    val page = browser.mainTab ?: return@runBlocking
-    val body = page.expect(Regex(".*/user-data.json")) {
-        page.get("https://slensky.com/zendriver-examples/api-request.html")
-        getResponseBody().body
-    }
-    val userData = Serialization.json.parseToJsonElement(body)
-
-    println("Successfully read user data response for user: " + userData.jsonObject["name"]?.jsonPrimitive?.content)
+    println("Successfully read user data response for user: " + userData.name)
     println(Serialization.json.encodeToString(userData))
 
     browser.stop()

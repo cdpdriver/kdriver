@@ -164,7 +164,7 @@ class TabTest {
 
             val request = withTimeout(3000L) { this@expect.getRequest() }
             val response = withTimeout(3000L) { this@expect.getResponse() }
-            val responseBody = withTimeout(3000L) { this@expect.getResponseBody() }
+            val responseBody = withTimeout(3000L) { this@expect.getRawResponseBody() }
 
             assertEquals(request.url, response.url)
             assertEquals(200, response.status)
