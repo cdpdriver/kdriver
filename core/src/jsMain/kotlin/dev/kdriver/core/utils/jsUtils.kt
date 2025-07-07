@@ -49,3 +49,7 @@ actual fun findChromeExecutable(): Path? {
 actual fun freePort(): Int? {
     throw UnsupportedOperationException()
 }
+
+actual fun decompressIfNeeded(data: ByteArray): ByteArray {
+    throw UnsupportedOperationException()
+}

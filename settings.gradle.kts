@@ -41,6 +41,7 @@ dependencyResolutionManagement {
 
             // Others
             library("kotlinx-io", "org.jetbrains.kotlinx:kotlinx-io-core:0.7.0")
+            library("zstd", "com.github.luben:zstd-jni:1.5.7-4")
         }
     }
 }

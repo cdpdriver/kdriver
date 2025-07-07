@@ -11,6 +11,8 @@ import dev.kdriver.core.dom.NodeOrElement
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.exceptions.TimeoutWaitingForReadyStateException
+import dev.kdriver.core.network.BaseFetchInterception
+import dev.kdriver.core.network.BaseRequestExpectation
 import dev.kdriver.core.utils.filterRecurse
 import io.ktor.http.*
 import io.ktor.util.logging.*
@@ -21,6 +23,7 @@ import kotlinx.datetime.Clock
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.String
 import kotlin.io.encoding.Base64
@@ -112,10 +115,10 @@ class Tab(
      *
      * @return The result of the evaluation, deserialized to type T, or null if no result is returned.
      */
-    suspend inline fun <reified T> evaluate(
+    suspend fun rawEvaluate(
         expression: String,
         awaitPromise: Boolean = false,
-    ): T? {
+    ): JsonElement? {
         val result = runtime.evaluate(
             expression = expression,
             returnByValue = true,
@@ -124,9 +127,23 @@ class Tab(
             allowUnsafeEvalBlockedByCSP = true,
         )
         result.exceptionDetails?.let { throw EvaluateException(it) }
-        return result.result.value?.let {
-            Serialization.json.decodeFromJsonElement<T>(it)
-        }
+        return result.result.value
+    }
+
+    /**
+     * Evaluates a JavaScript expression in the context of the tab.
+     *
+     * @param expression The JavaScript expression to evaluate.
+     * @param awaitPromise If true, waits for any promises to resolve before returning the result.
+     *
+     * @return The result of the evaluation, deserialized to type T, or null if no result is returned.
+     */
+    suspend inline fun <reified T> evaluate(
+        expression: String,
+        awaitPromise: Boolean = false,
+    ): T? {
+        val raw = rawEvaluate(expression, awaitPromise) ?: return null
+        return Serialization.json.decodeFromJsonElement<T>(raw)
     }
 
     /**
@@ -840,7 +857,7 @@ class Tab(
      * ```kotlin
      * val responseBody = tab.expect(Regex("https://api.example.com/data")) {
      *     tab.get("https://example.com")
-     *     getResponseBody()
+     *     getResponseBody<UserData>()
      * }
      * ```
      *
@@ -849,6 +866,29 @@ class Tab(
      */
     suspend fun <T> expect(urlPattern: Regex, block: suspend BaseRequestExpectation.() -> T): T {
         return BaseRequestExpectation(this, urlPattern).use(block)
+    }
+
+    /**
+     * Intercepts network requests matching the given [urlPattern] and [requestStage].
+     * This allows you to modify requests, responses, or block them entirely.
+     *
+     * Example usage:
+     * ```kotlin
+     * tab.intercept("https://api.example.com/data", Fetch.RequestStage.RESPONSE, Network.ResourceType.XHR) {
+     *     tab.get("https://example.com")
+     *
+     *     // Can modify the request or response here, or intercept the body before it gets unavailable
+     *     val originalResponse = getResponseBody<UserData>()
+     *     continueRequest()
+     * }
+     */
+    suspend fun <T> intercept(
+        urlPattern: String,
+        requestStage: Fetch.RequestStage,
+        resourceType: Network.ResourceType,
+        block: suspend BaseFetchInterception.() -> T,
+    ): T {
+        return BaseFetchInterception(this, urlPattern, requestStage, resourceType).use(block)
     }
 
     /**

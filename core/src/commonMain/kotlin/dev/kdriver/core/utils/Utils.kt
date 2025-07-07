@@ -36,6 +36,16 @@ fun parseWebSocketUrl(url: String): WebSocketInfo {
     return WebSocketInfo(host, port, path)
 }
 
+fun isZstdCompressed(data: ByteArray): Boolean {
+    val header = data.take(4).map { it.toUByte().toInt() }
+    return header == listOf(0x28, 0xB5, 0x2F, 0xFD)
+}
+
+fun isGzipCompressed(data: ByteArray): Boolean {
+    val header = data.take(2).map { it.toUByte().toInt() }
+    return header == listOf(0x1F, 0x8B)
+}
+
 expect abstract class Process {
     fun isAlive(): Boolean
     fun pid(): Long
@@ -50,3 +60,4 @@ expect fun tempProfileDir(): Path
 expect fun exists(path: Path): Boolean
 expect fun findChromeExecutable(): Path?
 expect fun freePort(): Int?
+expect fun decompressIfNeeded(data: ByteArray): ByteArray

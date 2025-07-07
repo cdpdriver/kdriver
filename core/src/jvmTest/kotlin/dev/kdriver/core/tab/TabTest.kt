@@ -1,9 +1,12 @@
 package dev.kdriver.core.tab
 
+import dev.kdriver.cdp.domain.Fetch
+import dev.kdriver.cdp.domain.Network
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.sampleFile
+import dev.kdriver.models.TodoItem
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlin.test.*
@@ -164,12 +167,33 @@ class TabTest {
 
             val request = withTimeout(3000L) { this@expect.getRequest() }
             val response = withTimeout(3000L) { this@expect.getResponse() }
-            val responseBody = withTimeout(3000L) { this@expect.getResponseBody() }
+            val responseBody = withTimeout(3000L) { this@expect.getRawResponseBody() }
 
             assertEquals(request.url, response.url)
             assertEquals(200, response.status)
             assertTrue(responseBody.body.isNotEmpty())
         }
+
+        browser.stop()
+    }
+
+    @Test
+    fun testIntercept() = runBlocking {
+        val browser = Browser.create(this, headless = true, sandbox = false)
+        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+
+        val todoItem = tab.intercept("*/todos/1", Fetch.RequestStage.RESPONSE, Network.ResourceType.XHR) {
+            tab.get(sampleFile("todolist.html"))
+            val originalResponse = withTimeout(3000L) { getResponseBody<TodoItem>() }
+            withTimeout(3000L) { continueRequest() }
+            originalResponse
+        }
+
+        assertEquals(1, todoItem.id)
+        assertEquals(1, todoItem.userId)
+        assertEquals("delectus aut autem", todoItem.title)
+        assertFalse(todoItem.completed)
+        browser.stop()
     }
 
 }
