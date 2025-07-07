@@ -855,7 +855,7 @@ class Tab(
      * ```kotlin
      * val responseBody = tab.expect(Regex("https://api.example.com/data")) {
      *     tab.get("https://example.com")
-     *     getResponseBody()
+     *     getResponseBody<UserData>()
      * }
      * ```
      *
@@ -864,6 +864,29 @@ class Tab(
      */
     suspend fun <T> expect(urlPattern: Regex, block: suspend BaseRequestExpectation.() -> T): T {
         return BaseRequestExpectation(this, urlPattern).use(block)
+    }
+
+    /**
+     * Intercepts network requests matching the given [urlPattern] and [requestStage].
+     * This allows you to modify requests, responses, or block them entirely.
+     *
+     * Example usage:
+     * ```kotlin
+     * tab.intercept("https://api.example.com/data", Fetch.RequestStage.RESPONSE, Network.ResourceType.XHR) {
+     *     tab.get("https://example.com")
+     *
+     *     // Can modify the request or response here, or intercept the body before it gets unavailable
+     *     val originalResponse = getResponseBody<UserData>()
+     *     continueRequest()
+     * }
+     */
+    suspend fun <T> intercept(
+        urlPattern: String,
+        requestStage: Fetch.RequestStage,
+        resourceType: Network.ResourceType,
+        block: suspend BaseFetchInterception.() -> T,
+    ): T {
+        return BaseFetchInterception(this, urlPattern, requestStage, resourceType).use(block)
     }
 
     /**

@@ -1,23 +1,12 @@
 package dev.kdriver.tutorials
 
 import dev.kdriver.core.browser.Browser
+import dev.kdriver.models.UserData
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.Serializable
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ApiResponsesTest {
-
-    @Serializable
-    data class UserData(
-        val name: String,
-        val title: String,
-        val email: String,
-        val location: String,
-        val avatar: String,
-        val bio: String,
-        val skills: List<String>,
-    )
 
     @Test
     fun testResponseBody() = runBlocking {
