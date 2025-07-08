@@ -14,7 +14,7 @@ mavenPublishing {
     pom {
         name.set("cdp")
         description.set("cdp models for kdriver.")
-        url.set("https://github.com/guimauvedigital/kdriver")
+        url.set("https://github.com/cdpdriver/kdriver")
 
         licenses {
             license {
@@ -31,7 +31,7 @@ mavenPublishing {
             }
         }
         scm {
-            url.set("https://github.com/guimauvedigital/kdriver.git")
+            url.set("https://github.com/cdpdriver/kdriver.git")
         }
     }
 }

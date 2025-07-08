@@ -1,12 +1,12 @@
 # kdriver
 
-[![License](https://img.shields.io/github/license/guimauvedigital/kdriver)](LICENSE)
-[![Maven Central Version](https://img.shields.io/maven-central/v/dev.kdriver/core)](https://klibs.io/project/guimauvedigital/kdriver)
-[![Issues](https://img.shields.io/github/issues/guimauvedigital/kdriver)]()
-[![Pull Requests](https://img.shields.io/github/issues-pr/guimauvedigital/kdriver)]()
-[![codecov](https://codecov.io/github/guimauvedigital/kdriver/branch/main/graph/badge.svg?token=F7K641TYFZ)](https://codecov.io/github/guimauvedigital/kdriver)
-[![CodeFactor](https://www.codefactor.io/repository/github/guimauvedigital/kdriver/badge)](https://www.codefactor.io/repository/github/guimauvedigital/kdriver)
-[![Open Source Helpers](https://www.codetriage.com/guimauvedigital/kdriver/badges/users.svg)](https://www.codetriage.com/guimauvedigital/kdriver)
+[![License](https://img.shields.io/github/license/cdpdriver/kdriver)](LICENSE)
+[![Maven Central Version](https://img.shields.io/maven-central/v/dev.kdriver/core)](https://klibs.io/project/cdpdriver/kdriver)
+[![Issues](https://img.shields.io/github/issues/cdpdriver/kdriver)]()
+[![Pull Requests](https://img.shields.io/github/issues-pr/cdpdriver/kdriver)]()
+[![codecov](https://codecov.io/github/cdpdriver/kdriver/branch/main/graph/badge.svg?token=F7K641TYFZ)](https://codecov.io/github/cdpdriver/kdriver)
+[![CodeFactor](https://www.codefactor.io/repository/github/cdpdriver/kdriver/badge)](https://www.codefactor.io/repository/github/cdpdriver/kdriver)
+[![Open Source Helpers](https://www.codetriage.com/cdpdriver/kdriver/badges/users.svg)](https://www.codetriage.com/cdpdriver/kdriver)
 
 > This project is a Kotlin port of [@stephanlensky](https://github.com/stephanlensky)'s awesome Python
 > library [zendriver](https://github.com/stephanlensky/zendriver), built to bring the same simplicity and power of
@@ -17,8 +17,8 @@ the Chrome DevTools Protocol (CDP) under the hood to interact with real Chrome i
 to heavy tools like Selenium or Puppeteer — all without relying on WebDriver.
 
 * **Documentation:** [kdriver.dev](https://kdriver.dev)
-* **Repository:** [github.com/guimauvedigital/kdriver](https://github.com/guimauvedigital/kdriver)
-* **Code coverage:** [codecov.io/github/guimauvedigital/kdriver](https://codecov.io/github/guimauvedigital/kdriver)
+* **Repository:** [github.com/cdpdriver/kdriver](https://github.com/cdpdriver/kdriver)
+* **Code coverage:** [codecov.io/github/cdpdriver/kdriver](https://codecov.io/github/cdpdriver/kdriver)
 
 ## Features
 

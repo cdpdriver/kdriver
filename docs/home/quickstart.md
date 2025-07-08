@@ -42,7 +42,7 @@ fun main() = runBlocking {
 fun main() = runBlocking {
     val browser = Browser.create(this)
     val page2 = browser.get("https://twitter.com", newTab = true)
-    val page3 = browser.get("https://github.com/guimauvedigital/kdriver", newWindow = true)
+    val page3 = browser.get("https://github.com/cdpdriver/kdriver", newWindow = true)
 
     listOf(page2, page3).forEach { page ->
         page.bringToFront()
@@ -108,7 +108,7 @@ fun main() = runBlocking {
 
     // Now we first need an image to upload, lets make a screenshot of the project page
     val savePath = Path("screenshot.jpg")
-    val tempTab = browser.get("https://github.com/guimauvedigital/kdriver", newTab = true)
+    val tempTab = browser.get("https://github.com/cdpdriver/kdriver", newTab = true)
 
     // Wait page to load
     tempTab.wait()
