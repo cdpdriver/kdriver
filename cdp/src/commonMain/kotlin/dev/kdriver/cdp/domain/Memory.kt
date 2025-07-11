@@ -16,12 +16,28 @@ public val CDP.memory: Memory
 public class Memory(
     private val cdp: CDP,
 ) : Domain {
+    /**
+     * Retruns current DOM object counters.
+     */
     public suspend fun getDOMCounters(): GetDOMCountersReturn {
         val parameter = null
         val result = cdp.callCommand("Memory.getDOMCounters", parameter)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
+    /**
+     * Retruns DOM object counters after preparing renderer for leak detection.
+     */
+    public suspend fun getDOMCountersForLeakDetection(): GetDOMCountersForLeakDetectionReturn {
+        val parameter = null
+        val result = cdp.callCommand("Memory.getDOMCountersForLeakDetection", parameter)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Prepares for leak detection by terminating workers, stopping spellcheckers,
+     * dropping non-essential internal caches, running garbage collections, etc.
+     */
     public suspend fun prepareForLeakDetection() {
         val parameter = null
         cdp.callCommand("Memory.prepareForLeakDetection", parameter)
@@ -193,11 +209,35 @@ public class Memory(
         public val size: Double,
     )
 
+    /**
+     * DOM object counter data.
+     */
+    @Serializable
+    public data class DOMCounter(
+        /**
+         * Object name. Note: object names should be presumed volatile and clients should not expect
+         * the returned names to be consistent across runs.
+         */
+        public val name: String,
+        /**
+         * Object count.
+         */
+        public val count: Int,
+    )
+
     @Serializable
     public data class GetDOMCountersReturn(
         public val documents: Int,
         public val nodes: Int,
         public val jsEventListeners: Int,
+    )
+
+    @Serializable
+    public data class GetDOMCountersForLeakDetectionReturn(
+        /**
+         * DOM object counters.
+         */
+        public val counters: List<DOMCounter>,
     )
 
     @Serializable

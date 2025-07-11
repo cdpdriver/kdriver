@@ -36,6 +36,7 @@ public class Emulation(
     /**
      * Tells whether emulation is supported.
      */
+    @Deprecated(message = "")
     public suspend fun canEmulate(): CanEmulateReturn {
         val parameter = null
         val result = cdp.callCommand("Emulation.canEmulate", parameter)
@@ -143,6 +144,26 @@ public class Emulation(
     }
 
     /**
+     * Overrides the values for env(safe-area-inset-*) and env(safe-area-max-inset-*). Unset values will cause the
+     * respective variables to be undefined, even if previously overridden.
+     */
+    public suspend fun setSafeAreaInsetsOverride(args: SetSafeAreaInsetsOverrideParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.setSafeAreaInsetsOverride", parameter)
+    }
+
+    /**
+     * Overrides the values for env(safe-area-inset-*) and env(safe-area-max-inset-*). Unset values will cause the
+     * respective variables to be undefined, even if previously overridden.
+     *
+     * @param insets No description
+     */
+    public suspend fun setSafeAreaInsetsOverride(insets: SafeAreaInsets) {
+        val parameter = SetSafeAreaInsetsOverrideParameter(insets = insets)
+        setSafeAreaInsetsOverride(parameter)
+    }
+
+    /**
      * Overrides the values of device screen dimensions (window.screen.width, window.screen.height,
      * window.innerWidth, window.innerHeight, and "device-width"/"device-height"-related CSS media
      * query results).
@@ -173,8 +194,10 @@ public class Emulation(
      * change is not observed by the page, e.g. viewport-relative elements do not change positions.
      * @param displayFeature If set, the display feature of a multi-segment screen. If not set, multi-segment support
      * is turned-off.
+     * Deprecated, use Emulation.setDisplayFeaturesOverride.
      * @param devicePosture If set, the posture of a foldable device. If not set the posture is set
      * to continuous.
+     * Deprecated, use Emulation.setDevicePostureOverride.
      */
     public suspend fun setDeviceMetricsOverride(
         width: Int,
@@ -209,6 +232,68 @@ public class Emulation(
             devicePosture = devicePosture
         )
         setDeviceMetricsOverride(parameter)
+    }
+
+    /**
+     * Start reporting the given posture value to the Device Posture API.
+     * This override can also be set in setDeviceMetricsOverride().
+     */
+    public suspend fun setDevicePostureOverride(args: SetDevicePostureOverrideParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.setDevicePostureOverride", parameter)
+    }
+
+    /**
+     * Start reporting the given posture value to the Device Posture API.
+     * This override can also be set in setDeviceMetricsOverride().
+     *
+     * @param posture No description
+     */
+    public suspend fun setDevicePostureOverride(posture: DevicePosture) {
+        val parameter = SetDevicePostureOverrideParameter(posture = posture)
+        setDevicePostureOverride(parameter)
+    }
+
+    /**
+     * Clears a device posture override set with either setDeviceMetricsOverride()
+     * or setDevicePostureOverride() and starts using posture information from the
+     * platform again.
+     * Does nothing if no override is set.
+     */
+    public suspend fun clearDevicePostureOverride() {
+        val parameter = null
+        cdp.callCommand("Emulation.clearDevicePostureOverride", parameter)
+    }
+
+    /**
+     * Start using the given display features to pupulate the Viewport Segments API.
+     * This override can also be set in setDeviceMetricsOverride().
+     */
+    public suspend fun setDisplayFeaturesOverride(args: SetDisplayFeaturesOverrideParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.setDisplayFeaturesOverride", parameter)
+    }
+
+    /**
+     * Start using the given display features to pupulate the Viewport Segments API.
+     * This override can also be set in setDeviceMetricsOverride().
+     *
+     * @param features No description
+     */
+    public suspend fun setDisplayFeaturesOverride(features: List<DisplayFeature>) {
+        val parameter = SetDisplayFeaturesOverrideParameter(features = features)
+        setDisplayFeaturesOverride(parameter)
+    }
+
+    /**
+     * Clears the display features override set with either setDeviceMetricsOverride()
+     * or setDisplayFeaturesOverride() and starts using display features from the
+     * platform again.
+     * Does nothing if no override is set.
+     */
+    public suspend fun clearDisplayFeaturesOverride() {
+        val parameter = null
+        cdp.callCommand("Emulation.clearDisplayFeaturesOverride", parameter)
     }
 
     public suspend fun setScrollbarsHidden(args: SetScrollbarsHiddenParameter) {
@@ -296,8 +381,26 @@ public class Emulation(
     }
 
     /**
-     * Overrides the Geolocation Position or Error. Omitting any of the parameters emulates position
-     * unavailable.
+     * Emulates the given OS text scale.
+     */
+    public suspend fun setEmulatedOSTextScale(args: SetEmulatedOSTextScaleParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.setEmulatedOSTextScale", parameter)
+    }
+
+    /**
+     * Emulates the given OS text scale.
+     *
+     * @param scale No description
+     */
+    public suspend fun setEmulatedOSTextScale(scale: Double? = null) {
+        val parameter = SetEmulatedOSTextScaleParameter(scale = scale)
+        setEmulatedOSTextScale(parameter)
+    }
+
+    /**
+     * Overrides the Geolocation Position or Error. Omitting latitude, longitude or
+     * accuracy emulates position unavailable.
      */
     public suspend fun setGeolocationOverride(args: SetGeolocationOverrideParameter) {
         val parameter = Serialization.json.encodeToJsonElement(args)
@@ -305,19 +408,35 @@ public class Emulation(
     }
 
     /**
-     * Overrides the Geolocation Position or Error. Omitting any of the parameters emulates position
-     * unavailable.
+     * Overrides the Geolocation Position or Error. Omitting latitude, longitude or
+     * accuracy emulates position unavailable.
      *
      * @param latitude Mock latitude
      * @param longitude Mock longitude
      * @param accuracy Mock accuracy
+     * @param altitude Mock altitude
+     * @param altitudeAccuracy Mock altitudeAccuracy
+     * @param heading Mock heading
+     * @param speed Mock speed
      */
     public suspend fun setGeolocationOverride(
         latitude: Double? = null,
         longitude: Double? = null,
         accuracy: Double? = null,
+        altitude: Double? = null,
+        altitudeAccuracy: Double? = null,
+        heading: Double? = null,
+        speed: Double? = null,
     ) {
-        val parameter = SetGeolocationOverrideParameter(latitude = latitude, longitude = longitude, accuracy = accuracy)
+        val parameter = SetGeolocationOverrideParameter(
+            latitude = latitude,
+            longitude = longitude,
+            accuracy = accuracy,
+            altitude = altitude,
+            altitudeAccuracy = altitudeAccuracy,
+            heading = heading,
+            speed = speed
+        )
         setGeolocationOverride(parameter)
     }
 
@@ -370,7 +489,7 @@ public class Emulation(
     }
 
     /**
-     * Updates the sensor readings reported by a sensor type previously overriden
+     * Updates the sensor readings reported by a sensor type previously overridden
      * by setSensorOverrideEnabled.
      */
     public suspend fun setSensorOverrideReadings(args: SetSensorOverrideReadingsParameter) {
@@ -379,7 +498,7 @@ public class Emulation(
     }
 
     /**
-     * Updates the sensor readings reported by a sensor type previously overriden
+     * Updates the sensor readings reported by a sensor type previously overridden
      * by setSensorOverrideEnabled.
      *
      * @param type No description
@@ -388,6 +507,94 @@ public class Emulation(
     public suspend fun setSensorOverrideReadings(type: SensorType, reading: SensorReading) {
         val parameter = SetSensorOverrideReadingsParameter(type = type, reading = reading)
         setSensorOverrideReadings(parameter)
+    }
+
+    /**
+     * Overrides a pressure source of a given type, as used by the Compute
+     * Pressure API, so that updates to PressureObserver.observe() are provided
+     * via setPressureStateOverride instead of being retrieved from
+     * platform-provided telemetry data.
+     */
+    public suspend fun setPressureSourceOverrideEnabled(args: SetPressureSourceOverrideEnabledParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.setPressureSourceOverrideEnabled", parameter)
+    }
+
+    /**
+     * Overrides a pressure source of a given type, as used by the Compute
+     * Pressure API, so that updates to PressureObserver.observe() are provided
+     * via setPressureStateOverride instead of being retrieved from
+     * platform-provided telemetry data.
+     *
+     * @param enabled No description
+     * @param source No description
+     * @param metadata No description
+     */
+    public suspend fun setPressureSourceOverrideEnabled(
+        enabled: Boolean,
+        source: PressureSource,
+        metadata: PressureMetadata? = null,
+    ) {
+        val parameter =
+            SetPressureSourceOverrideEnabledParameter(enabled = enabled, source = source, metadata = metadata)
+        setPressureSourceOverrideEnabled(parameter)
+    }
+
+    /**
+     * TODO: OBSOLETE: To remove when setPressureDataOverride is merged.
+     * Provides a given pressure state that will be processed and eventually be
+     * delivered to PressureObserver users. |source| must have been previously
+     * overridden by setPressureSourceOverrideEnabled.
+     */
+    public suspend fun setPressureStateOverride(args: SetPressureStateOverrideParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.setPressureStateOverride", parameter)
+    }
+
+    /**
+     * TODO: OBSOLETE: To remove when setPressureDataOverride is merged.
+     * Provides a given pressure state that will be processed and eventually be
+     * delivered to PressureObserver users. |source| must have been previously
+     * overridden by setPressureSourceOverrideEnabled.
+     *
+     * @param source No description
+     * @param state No description
+     */
+    public suspend fun setPressureStateOverride(source: PressureSource, state: PressureState) {
+        val parameter = SetPressureStateOverrideParameter(source = source, state = state)
+        setPressureStateOverride(parameter)
+    }
+
+    /**
+     * Provides a given pressure data set that will be processed and eventually be
+     * delivered to PressureObserver users. |source| must have been previously
+     * overridden by setPressureSourceOverrideEnabled.
+     */
+    public suspend fun setPressureDataOverride(args: SetPressureDataOverrideParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.setPressureDataOverride", parameter)
+    }
+
+    /**
+     * Provides a given pressure data set that will be processed and eventually be
+     * delivered to PressureObserver users. |source| must have been previously
+     * overridden by setPressureSourceOverrideEnabled.
+     *
+     * @param source No description
+     * @param state No description
+     * @param ownContributionEstimate No description
+     */
+    public suspend fun setPressureDataOverride(
+        source: PressureSource,
+        state: PressureState,
+        ownContributionEstimate: Double? = null,
+    ) {
+        val parameter = SetPressureDataOverrideParameter(
+            source = source,
+            state = state,
+            ownContributionEstimate = ownContributionEstimate
+        )
+        setPressureDataOverride(parameter)
     }
 
     /**
@@ -558,8 +765,9 @@ public class Emulation(
     /**
      * Overrides default host system timezone with the specified one.
      *
-     * @param timezoneId The timezone identifier. If empty, disables the override and
-     * restores default host system timezone.
+     * @param timezoneId The timezone identifier. List of supported timezones:
+     * https://source.chromium.org/chromium/chromium/deps/icu.git/+/faee8bc70570192d82d2978a71e2a615788597d1:source/data/misc/metaZones.txt
+     * If empty, disables the override and restores default host system timezone.
      */
     public suspend fun setTimezoneOverride(timezoneId: String) {
         val parameter = SetTimezoneOverrideParameter(timezoneId = timezoneId)
@@ -623,6 +831,7 @@ public class Emulation(
 
     /**
      * Allows overriding user agent with the given string.
+     * `userAgentMetadata` must be set for Client Hint headers to be sent.
      */
     public suspend fun setUserAgentOverride(args: SetUserAgentOverrideParameter) {
         val parameter = Serialization.json.encodeToJsonElement(args)
@@ -631,6 +840,7 @@ public class Emulation(
 
     /**
      * Allows overriding user agent with the given string.
+     * `userAgentMetadata` must be set for Client Hint headers to be sent.
      *
      * @param userAgent User agent to use.
      * @param acceptLanguage Browser language to emulate.
@@ -669,6 +879,63 @@ public class Emulation(
         val parameter = SetAutomationOverrideParameter(enabled = enabled)
         setAutomationOverride(parameter)
     }
+
+    /**
+     * Allows overriding the difference between the small and large viewport sizes, which determine the
+     * value of the `svh` and `lvh` unit, respectively. Only supported for top-level frames.
+     */
+    public suspend fun setSmallViewportHeightDifferenceOverride(args: SetSmallViewportHeightDifferenceOverrideParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.setSmallViewportHeightDifferenceOverride", parameter)
+    }
+
+    /**
+     * Allows overriding the difference between the small and large viewport sizes, which determine the
+     * value of the `svh` and `lvh` unit, respectively. Only supported for top-level frames.
+     *
+     * @param difference This will cause an element of size 100svh to be `difference` pixels smaller than an element
+     * of size 100lvh.
+     */
+    public suspend fun setSmallViewportHeightDifferenceOverride(difference: Int) {
+        val parameter = SetSmallViewportHeightDifferenceOverrideParameter(difference = difference)
+        setSmallViewportHeightDifferenceOverride(parameter)
+    }
+
+    @Serializable
+    public data class SafeAreaInsets(
+        /**
+         * Overrides safe-area-inset-top.
+         */
+        public val top: Int? = null,
+        /**
+         * Overrides safe-area-max-inset-top.
+         */
+        public val topMax: Int? = null,
+        /**
+         * Overrides safe-area-inset-left.
+         */
+        public val left: Int? = null,
+        /**
+         * Overrides safe-area-max-inset-left.
+         */
+        public val leftMax: Int? = null,
+        /**
+         * Overrides safe-area-inset-bottom.
+         */
+        public val bottom: Int? = null,
+        /**
+         * Overrides safe-area-max-inset-bottom.
+         */
+        public val bottomMax: Int? = null,
+        /**
+         * Overrides safe-area-inset-right.
+         */
+        public val right: Int? = null,
+        /**
+         * Overrides safe-area-max-inset-right.
+         */
+        public val rightMax: Int? = null,
+    )
 
     /**
      * Screen orientation.
@@ -737,7 +1004,7 @@ public class Emulation(
     }
 
     /**
-     * Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
+     * Used to specify User Agent Client Hints to emulate. See https://wicg.github.io/ua-client-hints
      */
     @Serializable
     public data class UserAgentBrandVersion(
@@ -746,7 +1013,7 @@ public class Emulation(
     )
 
     /**
-     * Used to specify User Agent Cient Hints to emulate. See https://wicg.github.io/ua-client-hints
+     * Used to specify User Agent Client Hints to emulate. See https://wicg.github.io/ua-client-hints
      * Missing optional values will be filled in by the target with what it would normally use.
      */
     @Serializable
@@ -767,6 +1034,11 @@ public class Emulation(
         public val mobile: Boolean,
         public val bitness: String? = null,
         public val wow64: Boolean? = null,
+        /**
+         * Used to specify User Agent form-factor values.
+         * See https://wicg.github.io/ua-client-hints/#sec-ch-ua-form-factors
+         */
+        public val formFactors: List<String>? = null,
     )
 
     /**
@@ -795,9 +1067,6 @@ public class Emulation(
 
         @SerialName("magnetometer")
         MAGNETOMETER,
-
-        @SerialName("proximity")
-        PROXIMITY,
 
         @SerialName("relative-orientation")
         RELATIVE_ORIENTATION,
@@ -835,6 +1104,32 @@ public class Emulation(
         public val single: SensorReadingSingle? = null,
         public val xyz: SensorReadingXYZ? = null,
         public val quaternion: SensorReadingQuaternion? = null,
+    )
+
+    @Serializable
+    public enum class PressureSource {
+        @SerialName("cpu")
+        CPU,
+    }
+
+    @Serializable
+    public enum class PressureState {
+        @SerialName("nominal")
+        NOMINAL,
+
+        @SerialName("fair")
+        FAIR,
+
+        @SerialName("serious")
+        SERIOUS,
+
+        @SerialName("critical")
+        CRITICAL,
+    }
+
+    @Serializable
+    public data class PressureMetadata(
+        public val available: Boolean? = null,
     )
 
     /**
@@ -892,6 +1187,11 @@ public class Emulation(
     )
 
     @Serializable
+    public data class SetSafeAreaInsetsOverrideParameter(
+        public val insets: SafeAreaInsets,
+    )
+
+    @Serializable
     public data class SetDeviceMetricsOverrideParameter(
         /**
          * Overriding width value in pixels (minimum 0, maximum 10000000). 0 disables the override.
@@ -946,13 +1246,25 @@ public class Emulation(
         /**
          * If set, the display feature of a multi-segment screen. If not set, multi-segment support
          * is turned-off.
+         * Deprecated, use Emulation.setDisplayFeaturesOverride.
          */
         public val displayFeature: DisplayFeature? = null,
         /**
          * If set, the posture of a foldable device. If not set the posture is set
          * to continuous.
+         * Deprecated, use Emulation.setDevicePostureOverride.
          */
         public val devicePosture: DevicePosture? = null,
+    )
+
+    @Serializable
+    public data class SetDevicePostureOverrideParameter(
+        public val posture: DevicePosture,
+    )
+
+    @Serializable
+    public data class SetDisplayFeaturesOverrideParameter(
+        public val features: List<DisplayFeature>,
     )
 
     @Serializable
@@ -1005,6 +1317,11 @@ public class Emulation(
     )
 
     @Serializable
+    public data class SetEmulatedOSTextScaleParameter(
+        public val scale: Double? = null,
+    )
+
+    @Serializable
     public data class SetGeolocationOverrideParameter(
         /**
          * Mock latitude
@@ -1018,6 +1335,22 @@ public class Emulation(
          * Mock accuracy
          */
         public val accuracy: Double? = null,
+        /**
+         * Mock altitude
+         */
+        public val altitude: Double? = null,
+        /**
+         * Mock altitudeAccuracy
+         */
+        public val altitudeAccuracy: Double? = null,
+        /**
+         * Mock heading
+         */
+        public val heading: Double? = null,
+        /**
+         * Mock speed
+         */
+        public val speed: Double? = null,
     )
 
     @Serializable
@@ -1041,6 +1374,26 @@ public class Emulation(
     public data class SetSensorOverrideReadingsParameter(
         public val type: SensorType,
         public val reading: SensorReading,
+    )
+
+    @Serializable
+    public data class SetPressureSourceOverrideEnabledParameter(
+        public val enabled: Boolean,
+        public val source: PressureSource,
+        public val metadata: PressureMetadata? = null,
+    )
+
+    @Serializable
+    public data class SetPressureStateOverrideParameter(
+        public val source: PressureSource,
+        public val state: PressureState,
+    )
+
+    @Serializable
+    public data class SetPressureDataOverrideParameter(
+        public val source: PressureSource,
+        public val state: PressureState,
+        public val ownContributionEstimate: Double? = null,
     )
 
     @Serializable
@@ -1130,8 +1483,9 @@ public class Emulation(
     @Serializable
     public data class SetTimezoneOverrideParameter(
         /**
-         * The timezone identifier. If empty, disables the override and
-         * restores default host system timezone.
+         * The timezone identifier. List of supported timezones:
+         * https://source.chromium.org/chromium/chromium/deps/icu.git/+/faee8bc70570192d82d2978a71e2a615788597d1:source/data/misc/metaZones.txt
+         * If empty, disables the override and restores default host system timezone.
          */
         public val timezoneId: String,
     )
@@ -1190,5 +1544,14 @@ public class Emulation(
          * Whether the override should be enabled.
          */
         public val enabled: Boolean,
+    )
+
+    @Serializable
+    public data class SetSmallViewportHeightDifferenceOverrideParameter(
+        /**
+         * This will cause an element of size 100svh to be `difference` pixels smaller than an element
+         * of size 100lvh.
+         */
+        public val difference: Int,
     )
 }

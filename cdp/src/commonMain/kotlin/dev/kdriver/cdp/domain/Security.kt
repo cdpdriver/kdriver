@@ -223,7 +223,7 @@ public class Security(
          */
         public val certificateNetworkError: String? = null,
         /**
-         * True if the certificate uses a weak signature aglorithm.
+         * True if the certificate uses a weak signature algorithm.
          */
         public val certificateHasWeakSignature: Boolean,
         /**

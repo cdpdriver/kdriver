@@ -106,7 +106,7 @@ public class Accessibility(
      * @param depth The maximum depth at which descendants of the root node should be retrieved.
      * If omitted, the full tree is returned.
      * @param frameId The frame for whose document the AX tree should be retrieved.
-     * If omited, the root frame is used.
+     * If omitted, the root frame is used.
      */
     public suspend fun getFullAXTree(depth: Int? = null, frameId: String? = null): GetFullAXTreeReturn {
         val parameter = GetFullAXTreeParameter(depth = depth, frameId = frameId)
@@ -189,7 +189,7 @@ public class Accessibility(
     /**
      * Query a DOM node's accessibility subtree for accessible name and role.
      * This command computes the name and role for all nodes in the subtree, including those that are
-     * ignored for accessibility, and returns those that mactch the specified name and role. If no DOM
+     * ignored for accessibility, and returns those that match the specified name and role. If no DOM
      * node is specified, or the DOM node does not exist, the command returns an error. If neither
      * `accessibleName` or `role` is specified, it returns all the accessibility nodes in the subtree.
      */
@@ -202,7 +202,7 @@ public class Accessibility(
     /**
      * Query a DOM node's accessibility subtree for accessible name and role.
      * This command computes the name and role for all nodes in the subtree, including those that are
-     * ignored for accessibility, and returns those that mactch the specified name and role. If no DOM
+     * ignored for accessibility, and returns those that match the specified name and role. If no DOM
      * node is specified, or the DOM node does not exist, the command returns an error. If neither
      * `accessibleName` or `role` is specified, it returns all the accessibility nodes in the subtree.
      *
@@ -450,6 +450,9 @@ public class Accessibility(
      */
     @Serializable
     public enum class AXPropertyName {
+        @SerialName("actions")
+        ACTIONS,
+
         @SerialName("busy")
         BUSY,
 
@@ -566,6 +569,9 @@ public class Accessibility(
 
         @SerialName("owns")
         OWNS,
+
+        @SerialName("url")
+        URL,
     }
 
     /**
@@ -688,7 +694,7 @@ public class Accessibility(
         public val depth: Int? = null,
         /**
          * The frame for whose document the AX tree should be retrieved.
-         * If omited, the root frame is used.
+         * If omitted, the root frame is used.
          */
         public val frameId: String? = null,
     )

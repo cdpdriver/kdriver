@@ -5,6 +5,15 @@ import dev.kdriver.cdp.CDP
 import dev.kdriver.cdp.Domain
 import dev.kdriver.cdp.cacheGeneratedDomain
 import dev.kdriver.cdp.getGeneratedDomain
+import kotlin.Boolean
+import kotlin.Double
+import kotlin.Int
+import kotlin.String
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -161,10 +170,8 @@ public class SystemInfo(
     public enum class SubsamplingFormat {
         @SerialName("yuv420")
         YUV420,
-
         @SerialName("yuv422")
         YUV422,
-
         @SerialName("yuv444")
         YUV444,
     }
@@ -176,10 +183,8 @@ public class SystemInfo(
     public enum class ImageType {
         @SerialName("jpeg")
         JPEG,
-
         @SerialName("webp")
         WEBP,
-
         @SerialName("unknown")
         UNKNOWN,
     }

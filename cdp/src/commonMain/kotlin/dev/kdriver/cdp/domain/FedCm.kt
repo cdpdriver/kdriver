@@ -95,6 +95,28 @@ public class FedCm(
         clickDialogButton(parameter)
     }
 
+    public suspend fun openUrl(args: OpenUrlParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("FedCm.openUrl", parameter)
+    }
+
+    /**
+     *
+     *
+     * @param dialogId No description
+     * @param accountIndex No description
+     * @param accountUrlType No description
+     */
+    public suspend fun openUrl(
+        dialogId: String,
+        accountIndex: Int,
+        accountUrlType: AccountUrlType,
+    ) {
+        val parameter =
+            OpenUrlParameter(dialogId = dialogId, accountIndex = accountIndex, accountUrlType = accountUrlType)
+        openUrl(parameter)
+    }
+
     public suspend fun dismissDialog(args: DismissDialogParameter) {
         val parameter = Serialization.json.encodeToJsonElement(args)
         cdp.callCommand("FedCm.dismissDialog", parameter)
@@ -167,6 +189,18 @@ public class FedCm(
     }
 
     /**
+     * The URLs that each account has
+     */
+    @Serializable
+    public enum class AccountUrlType {
+        @SerialName("TermsOfService")
+        TERMSOFSERVICE,
+
+        @SerialName("PrivacyPolicy")
+        PRIVACYPOLICY,
+    }
+
+    /**
      * Corresponds to IdentityRequestAccount
      */
     @Serializable
@@ -228,6 +262,13 @@ public class FedCm(
     public data class ClickDialogButtonParameter(
         public val dialogId: String,
         public val dialogButton: DialogButton,
+    )
+
+    @Serializable
+    public data class OpenUrlParameter(
+        public val dialogId: String,
+        public val accountIndex: Int,
+        public val accountUrlType: AccountUrlType,
     )
 
     @Serializable

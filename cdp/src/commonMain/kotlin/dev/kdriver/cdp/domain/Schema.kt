@@ -5,8 +5,14 @@ import dev.kdriver.cdp.CDP
 import dev.kdriver.cdp.Domain
 import dev.kdriver.cdp.cacheGeneratedDomain
 import dev.kdriver.cdp.getGeneratedDomain
+import kotlin.String
+import kotlin.collections.List
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 
 public val CDP.schema: Schema
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Schema(this))

@@ -80,6 +80,13 @@ public class CSS(
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
 
+    public val computedStyleUpdated: Flow<ComputedStyleUpdatedParameter> = cdp
+        .events
+        .filter { it.method == "CSS.computedStyleUpdated" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
     /**
      * Inserts a new rule with the given `ruleText` in a stylesheet with given `styleSheetId`, at the
      * position specified by `location`.
@@ -148,9 +155,13 @@ public class CSS(
      * Creates a new special "via-inspector" stylesheet in the frame with given `frameId`.
      *
      * @param frameId Identifier of the frame where "via-inspector" stylesheet should be created.
+     * @param force If true, creates a new stylesheet for every call. If false,
+     * returns a stylesheet previously created by a call with force=false
+     * for the frame's document if it exists or creates a new stylesheet
+     * (default: false).
      */
-    public suspend fun createStyleSheet(frameId: String): CreateStyleSheetReturn {
-        val parameter = CreateStyleSheetParameter(frameId = frameId)
+    public suspend fun createStyleSheet(frameId: String, force: Boolean? = null): CreateStyleSheetReturn {
+        val parameter = CreateStyleSheetParameter(frameId = frameId, force = force)
         return createStyleSheet(parameter)
     }
 
@@ -192,6 +203,25 @@ public class CSS(
         forcePseudoState(parameter)
     }
 
+    /**
+     * Ensures that the given node is in its starting-style state.
+     */
+    public suspend fun forceStartingStyle(args: ForceStartingStyleParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("CSS.forceStartingStyle", parameter)
+    }
+
+    /**
+     * Ensures that the given node is in its starting-style state.
+     *
+     * @param nodeId The element id for which to force the starting-style state.
+     * @param forced Boolean indicating if this is on or off.
+     */
+    public suspend fun forceStartingStyle(nodeId: Int, forced: Boolean) {
+        val parameter = ForceStartingStyleParameter(nodeId = nodeId, forced = forced)
+        forceStartingStyle(parameter)
+    }
+
     public suspend fun getBackgroundColors(args: GetBackgroundColorsParameter): GetBackgroundColorsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
         val result = cdp.callCommand("CSS.getBackgroundColors", parameter)
@@ -228,6 +258,76 @@ public class CSS(
     }
 
     /**
+     * Resolve the specified values in the context of the provided element.
+     * For example, a value of '1em' is evaluated according to the computed
+     * 'font-size' of the element and a value 'calc(1px + 2px)' will be
+     * resolved to '3px'.
+     * If the `propertyName` was specified the `values` are resolved as if
+     * they were property's declaration. If a value cannot be parsed according
+     * to the provided property syntax, the value is parsed using combined
+     * syntax as if null `propertyName` was provided. If the value cannot be
+     * resolved even then, return the provided value without any changes.
+     */
+    public suspend fun resolveValues(args: ResolveValuesParameter): ResolveValuesReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("CSS.resolveValues", parameter)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Resolve the specified values in the context of the provided element.
+     * For example, a value of '1em' is evaluated according to the computed
+     * 'font-size' of the element and a value 'calc(1px + 2px)' will be
+     * resolved to '3px'.
+     * If the `propertyName` was specified the `values` are resolved as if
+     * they were property's declaration. If a value cannot be parsed according
+     * to the provided property syntax, the value is parsed using combined
+     * syntax as if null `propertyName` was provided. If the value cannot be
+     * resolved even then, return the provided value without any changes.
+     *
+     * @param values Substitution functions (var()/env()/attr()) and cascade-dependent
+     * keywords (revert/revert-layer) do not work.
+     * @param nodeId Id of the node in whose context the expression is evaluated
+     * @param propertyName Only longhands and custom property names are accepted.
+     * @param pseudoType Pseudo element type, only works for pseudo elements that generate
+     * elements in the tree, such as ::before and ::after.
+     * @param pseudoIdentifier Pseudo element custom ident.
+     */
+    public suspend fun resolveValues(
+        values: List<String>,
+        nodeId: Int,
+        propertyName: String? = null,
+        pseudoType: DOM.PseudoType? = null,
+        pseudoIdentifier: String? = null,
+    ): ResolveValuesReturn {
+        val parameter = ResolveValuesParameter(
+            values = values,
+            nodeId = nodeId,
+            propertyName = propertyName,
+            pseudoType = pseudoType,
+            pseudoIdentifier = pseudoIdentifier
+        )
+        return resolveValues(parameter)
+    }
+
+    public suspend fun getLonghandProperties(args: GetLonghandPropertiesParameter): GetLonghandPropertiesReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("CSS.getLonghandProperties", parameter)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     *
+     *
+     * @param shorthandName No description
+     * @param value No description
+     */
+    public suspend fun getLonghandProperties(shorthandName: String, `value`: String): GetLonghandPropertiesReturn {
+        val parameter = GetLonghandPropertiesParameter(shorthandName = shorthandName, value = value)
+        return getLonghandProperties(parameter)
+    }
+
+    /**
      * Returns the styles defined inline (explicitly in the "style" attribute and implicitly, using DOM
      * attributes) for a DOM node identified by `nodeId`.
      */
@@ -246,6 +346,27 @@ public class CSS(
     public suspend fun getInlineStylesForNode(nodeId: Int): GetInlineStylesForNodeReturn {
         val parameter = GetInlineStylesForNodeParameter(nodeId = nodeId)
         return getInlineStylesForNode(parameter)
+    }
+
+    /**
+     * Returns the styles coming from animations & transitions
+     * including the animation & transition styles coming from inheritance chain.
+     */
+    public suspend fun getAnimatedStylesForNode(args: GetAnimatedStylesForNodeParameter): GetAnimatedStylesForNodeReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("CSS.getAnimatedStylesForNode", parameter)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Returns the styles coming from animations & transitions
+     * including the animation & transition styles coming from inheritance chain.
+     *
+     * @param nodeId No description
+     */
+    public suspend fun getAnimatedStylesForNode(nodeId: Int): GetAnimatedStylesForNodeReturn {
+        val parameter = GetAnimatedStylesForNodeParameter(nodeId = nodeId)
+        return getAnimatedStylesForNode(parameter)
     }
 
     /**
@@ -339,6 +460,59 @@ public class CSS(
     public suspend fun getLayersForNode(nodeId: Int): GetLayersForNodeReturn {
         val parameter = GetLayersForNodeParameter(nodeId = nodeId)
         return getLayersForNode(parameter)
+    }
+
+    /**
+     * Given a CSS selector text and a style sheet ID, getLocationForSelector
+     * returns an array of locations of the CSS selector in the style sheet.
+     */
+    public suspend fun getLocationForSelector(args: GetLocationForSelectorParameter): GetLocationForSelectorReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("CSS.getLocationForSelector", parameter)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Given a CSS selector text and a style sheet ID, getLocationForSelector
+     * returns an array of locations of the CSS selector in the style sheet.
+     *
+     * @param styleSheetId No description
+     * @param selectorText No description
+     */
+    public suspend fun getLocationForSelector(
+        styleSheetId: String,
+        selectorText: String,
+    ): GetLocationForSelectorReturn {
+        val parameter = GetLocationForSelectorParameter(styleSheetId = styleSheetId, selectorText = selectorText)
+        return getLocationForSelector(parameter)
+    }
+
+    /**
+     * Starts tracking the given node for the computed style updates
+     * and whenever the computed style is updated for node, it queues
+     * a `computedStyleUpdated` event with throttling.
+     * There can only be 1 node tracked for computed style updates
+     * so passing a new node id removes tracking from the previous node.
+     * Pass `undefined` to disable tracking.
+     */
+    public suspend fun trackComputedStyleUpdatesForNode(args: TrackComputedStyleUpdatesForNodeParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("CSS.trackComputedStyleUpdatesForNode", parameter)
+    }
+
+    /**
+     * Starts tracking the given node for the computed style updates
+     * and whenever the computed style is updated for node, it queues
+     * a `computedStyleUpdated` event with throttling.
+     * There can only be 1 node tracked for computed style updates
+     * so passing a new node id removes tracking from the previous node.
+     * Pass `undefined` to disable tracking.
+     *
+     * @param nodeId No description
+     */
+    public suspend fun trackComputedStyleUpdatesForNode(nodeId: Int? = null) {
+        val parameter = TrackComputedStyleUpdatesForNodeParameter(nodeId = nodeId)
+        trackComputedStyleUpdatesForNode(parameter)
     }
 
     /**
@@ -716,6 +890,21 @@ public class CSS(
     )
 
     /**
+     * CSS style coming from animations with the name of the animation.
+     */
+    @Serializable
+    public data class CSSAnimationStyle(
+        /**
+         * The name of the animation.
+         */
+        public val name: String? = null,
+        /**
+         * The style coming from the animation.
+         */
+        public val style: CSSStyle,
+    )
+
+    /**
      * Inherited CSS rule collection from ancestor node.
      */
     @Serializable
@@ -728,6 +917,21 @@ public class CSS(
          * Matches of CSS rules matching the ancestor node in the style inheritance chain.
          */
         public val matchedCSSRules: List<RuleMatch>,
+    )
+
+    /**
+     * Inherited CSS style collection for animated styles from ancestor node.
+     */
+    @Serializable
+    public data class InheritedAnimatedStyleEntry(
+        /**
+         * Styles coming from the animations of the ancestor, if any, in the style inheritance chain.
+         */
+        public val animationStyles: List<CSSAnimationStyle>? = null,
+        /**
+         * The style coming from the transitions of the ancestor, if any, in the style inheritance chain.
+         */
+        public val transitionsStyle: CSSStyle? = null,
     )
 
     /**
@@ -826,7 +1030,7 @@ public class CSS(
         public val frameId: String,
         /**
          * Stylesheet resource URL. Empty if this is a constructed stylesheet created using
-         * new CSSStyleSheet() (but non-empty if this is a constructed sylesheet imported
+         * new CSSStyleSheet() (but non-empty if this is a constructed stylesheet imported
          * as a CSS module script).
          */
         public val sourceURL: String,
@@ -952,6 +1156,11 @@ public class CSS(
          * The array keeps the types of ancestor CSSRules from the innermost going outwards.
          */
         public val ruleTypes: List<CSSRuleType>? = null,
+        /**
+         * @starting-style CSS at-rule array.
+         * The array enumerates @starting-style at-rules starting with the innermost one, going outwards.
+         */
+        public val startingStyles: List<CSSStartingStyle>? = null,
     )
 
     /**
@@ -977,6 +1186,9 @@ public class CSS(
 
         @SerialName("StyleRule")
         STYLERULE,
+
+        @SerialName("StartingStyleRule")
+        STARTINGSTYLERULE,
     }
 
     /**
@@ -1233,6 +1445,10 @@ public class CSS(
          * Optional logical axes queried for the container.
          */
         public val logicalAxes: DOM.LogicalAxes? = null,
+        /**
+         * true if the query contains scroll-state() queries.
+         */
+        public val queriesScrollState: Boolean? = null,
     )
 
     /**
@@ -1288,6 +1504,22 @@ public class CSS(
          * Layer name.
          */
         public val text: String,
+        /**
+         * The associated rule header range in the enclosing stylesheet (if
+         * available).
+         */
+        public val range: SourceRange? = null,
+        /**
+         * Identifier of the stylesheet containing this object (if exists).
+         */
+        public val styleSheetId: String? = null,
+    )
+
+    /**
+     * CSS Starting Style at-rule descriptor.
+     */
+    @Serializable
+    public data class CSSStartingStyle(
         /**
          * The associated rule header range in the enclosing stylesheet (if
          * available).
@@ -1438,15 +1670,28 @@ public class CSS(
     )
 
     /**
-     * CSS position-fallback rule representation.
+     * CSS @position-try rule representation.
      */
     @Serializable
-    public data class CSSPositionFallbackRule(
+    public data class CSSPositionTryRule(
+        /**
+         * The prelude dashed-ident name
+         */
         public val name: Value,
         /**
-         * List of keyframes.
+         * The css style sheet identifier (absent for user agent stylesheet and user-specified
+         * stylesheet rules) this rule came from.
          */
-        public val tryRules: List<CSSTryRule>,
+        public val styleSheetId: String? = null,
+        /**
+         * Parent stylesheet's origin.
+         */
+        public val origin: StyleSheetOrigin,
+        /**
+         * Associated style declaration.
+         */
+        public val style: CSSStyle,
+        public val active: Boolean,
     )
 
     /**
@@ -1521,6 +1766,91 @@ public class CSS(
          * Associated style declaration.
          */
         public val style: CSSStyle,
+    )
+
+    /**
+     * CSS function argument representation.
+     */
+    @Serializable
+    public data class CSSFunctionParameter(
+        /**
+         * The parameter name.
+         */
+        public val name: String,
+        /**
+         * The parameter type.
+         */
+        public val type: String,
+    )
+
+    /**
+     * CSS function conditional block representation.
+     */
+    @Serializable
+    public data class CSSFunctionConditionNode(
+        /**
+         * Media query for this conditional block. Only one type of condition should be set.
+         */
+        public val media: CSSMedia? = null,
+        /**
+         * Container query for this conditional block. Only one type of condition should be set.
+         */
+        public val containerQueries: CSSContainerQuery? = null,
+        /**
+         * @supports CSS at-rule condition. Only one type of condition should be set.
+         */
+        public val supports: CSSSupports? = null,
+        /**
+         * Block body.
+         */
+        public val children: List<CSSFunctionNode>,
+        /**
+         * The condition text.
+         */
+        public val conditionText: String,
+    )
+
+    /**
+     * Section of the body of a CSS function rule.
+     */
+    @Serializable
+    public data class CSSFunctionNode(
+        /**
+         * A conditional block. If set, style should not be set.
+         */
+        public val condition: CSSFunctionConditionNode? = null,
+        /**
+         * Values set by this node. If set, condition should not be set.
+         */
+        public val style: CSSStyle? = null,
+    )
+
+    /**
+     * CSS function at-rule representation.
+     */
+    @Serializable
+    public data class CSSFunctionRule(
+        /**
+         * Name of the function.
+         */
+        public val name: Value,
+        /**
+         * The css style sheet identifier (absent for user agent stylesheet and user-specified
+         * stylesheet rules) this rule came from.
+         */
+        public val styleSheetId: String? = null,
+        /**
+         * Parent stylesheet's origin.
+         */
+        public val origin: StyleSheetOrigin,
+        /**
+         * List of parameters.
+         */
+        public val parameters: List<CSSFunctionParameter>,
+        /**
+         * Function body.
+         */
+        public val children: List<CSSFunctionNode>,
     )
 
     /**
@@ -1609,6 +1939,14 @@ public class CSS(
     )
 
     @Serializable
+    public data class ComputedStyleUpdatedParameter(
+        /**
+         * The node id that has updated computed styles.
+         */
+        public val nodeId: Int,
+    )
+
+    @Serializable
     public data class AddRuleParameter(
         /**
          * The css style sheet identifier where a new rule should be inserted.
@@ -1657,6 +1995,13 @@ public class CSS(
          * Identifier of the frame where "via-inspector" stylesheet should be created.
          */
         public val frameId: String,
+        /**
+         * If true, creates a new stylesheet for every call. If false,
+         * returns a stylesheet previously created by a call with force=false
+         * for the frame's document if it exists or creates a new stylesheet
+         * (default: false).
+         */
+        public val force: Boolean? = null,
     )
 
     @Serializable
@@ -1677,6 +2022,18 @@ public class CSS(
          * Element pseudo classes to force when computing the element's style.
          */
         public val forcedPseudoClasses: List<String>,
+    )
+
+    @Serializable
+    public data class ForceStartingStyleParameter(
+        /**
+         * The element id for which to force the starting-style state.
+         */
+        public val nodeId: Int,
+        /**
+         * Boolean indicating if this is on or off.
+         */
+        public val forced: Boolean,
     )
 
     @Serializable
@@ -1722,6 +2079,48 @@ public class CSS(
     )
 
     @Serializable
+    public data class ResolveValuesParameter(
+        /**
+         * Substitution functions (var()/env()/attr()) and cascade-dependent
+         * keywords (revert/revert-layer) do not work.
+         */
+        public val values: List<String>,
+        /**
+         * Id of the node in whose context the expression is evaluated
+         */
+        public val nodeId: Int,
+        /**
+         * Only longhands and custom property names are accepted.
+         */
+        public val propertyName: String? = null,
+        /**
+         * Pseudo element type, only works for pseudo elements that generate
+         * elements in the tree, such as ::before and ::after.
+         */
+        public val pseudoType: DOM.PseudoType? = null,
+        /**
+         * Pseudo element custom ident.
+         */
+        public val pseudoIdentifier: String? = null,
+    )
+
+    @Serializable
+    public data class ResolveValuesReturn(
+        public val results: List<String>,
+    )
+
+    @Serializable
+    public data class GetLonghandPropertiesParameter(
+        public val shorthandName: String,
+        public val `value`: String,
+    )
+
+    @Serializable
+    public data class GetLonghandPropertiesReturn(
+        public val longhandProperties: List<CSSProperty>,
+    )
+
+    @Serializable
     public data class GetInlineStylesForNodeParameter(
         public val nodeId: Int,
     )
@@ -1736,6 +2135,28 @@ public class CSS(
          * Attribute-defined element style (e.g. resulting from "width=20 height=100%").
          */
         public val attributesStyle: CSSStyle?,
+    )
+
+    @Serializable
+    public data class GetAnimatedStylesForNodeParameter(
+        public val nodeId: Int,
+    )
+
+    @Serializable
+    public data class GetAnimatedStylesForNodeReturn(
+        /**
+         * Styles coming from animations.
+         */
+        public val animationStyles: List<CSSAnimationStyle>?,
+        /**
+         * Style coming from transitions.
+         */
+        public val transitionsStyle: CSSStyle?,
+        /**
+         * Inherited style entries for animationsStyle and transitionsStyle from
+         * the inheritance chain of the element.
+         */
+        public val inherited: List<InheritedAnimatedStyleEntry>?,
     )
 
     @Serializable
@@ -1774,9 +2195,14 @@ public class CSS(
          */
         public val cssKeyframesRules: List<CSSKeyframesRule>?,
         /**
-         * A list of CSS position fallbacks matching this node.
+         * A list of CSS @position-try rules matching this node, based on the position-try-fallbacks property.
          */
-        public val cssPositionFallbackRules: List<CSSPositionFallbackRule>?,
+        public val cssPositionTryRules: List<CSSPositionTryRule>?,
+        /**
+         * Index of the active fallback in the applied position-try-fallback property,
+         * will not be set if there is no active position-try fallback.
+         */
+        public val activePositionFallbackIndex: Int?,
         /**
          * A list of CSS at-property rules matching this node.
          */
@@ -1793,6 +2219,10 @@ public class CSS(
          * Id of the first parent element that does not have display: contents.
          */
         public val parentLayoutNodeId: Int?,
+        /**
+         * A list of CSS at-function rules referenced by styles of this node.
+         */
+        public val cssFunctionRules: List<CSSFunctionRule>?,
     )
 
     @Serializable
@@ -1834,6 +2264,22 @@ public class CSS(
     @Serializable
     public data class GetLayersForNodeReturn(
         public val rootLayer: CSSLayerData,
+    )
+
+    @Serializable
+    public data class GetLocationForSelectorParameter(
+        public val styleSheetId: String,
+        public val selectorText: String,
+    )
+
+    @Serializable
+    public data class GetLocationForSelectorReturn(
+        public val ranges: List<SourceRange>,
+    )
+
+    @Serializable
+    public data class TrackComputedStyleUpdatesForNodeParameter(
+        public val nodeId: Int? = null,
     )
 
     @Serializable

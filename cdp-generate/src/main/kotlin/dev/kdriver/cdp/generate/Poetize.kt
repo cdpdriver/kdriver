@@ -116,7 +116,7 @@ fun Domain.Type.Property.generateTypeProperty(parentDomain: Domain, domains: Lis
     return PropertySpec.builder(name, typeName)
         .initializer(name)
         .apply {
-            description?.let { addKdoc(it) }
+            description?.let { addKdoc(it.replace("%", "%%")) }
         }
         .build()
 }

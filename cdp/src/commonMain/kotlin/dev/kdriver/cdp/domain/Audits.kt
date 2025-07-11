@@ -132,8 +132,8 @@ public class Audits(
         /**
          * The unique request id.
          */
-        public val requestId: String,
-        public val url: String? = null,
+        public val requestId: String? = null,
+        public val url: String,
     )
 
     /**
@@ -172,6 +172,12 @@ public class Audits(
 
         @SerialName("ExcludeThirdPartyPhaseout")
         EXCLUDETHIRDPARTYPHASEOUT,
+
+        @SerialName("ExcludePortMismatch")
+        EXCLUDEPORTMISMATCH,
+
+        @SerialName("ExcludeSchemeMismatch")
+        EXCLUDESCHEMEMISMATCH,
     }
 
     @Serializable
@@ -211,6 +217,12 @@ public class Audits(
 
         @SerialName("WarnCrossSiteRedirectDowngradeChangesInclusion")
         WARNCROSSSITEREDIRECTDOWNGRADECHANGESINCLUSION,
+
+        @SerialName("WarnDeprecationTrialMetadata")
+        WARNDEPRECATIONTRIALMETADATA,
+
+        @SerialName("WarnThirdPartyCookieHeuristic")
+        WARNTHIRDPARTYCOOKIEHEURISTIC,
     }
 
     @Serializable
@@ -221,6 +233,33 @@ public class Audits(
         @SerialName("ReadCookie")
         READCOOKIE,
     }
+
+    /**
+     * Represents the category of insight that a cookie issue falls under.
+     */
+    @Serializable
+    public enum class InsightType {
+        @SerialName("GitHubResource")
+        GITHUBRESOURCE,
+
+        @SerialName("GracePeriod")
+        GRACEPERIOD,
+
+        @SerialName("Heuristics")
+        HEURISTICS,
+    }
+
+    /**
+     * Information about the suggested solution to a cookie issue.
+     */
+    @Serializable
+    public data class CookieIssueInsight(
+        public val type: InsightType,
+        /**
+         * Link to table entry in third-party cookie migration readiness list.
+         */
+        public val tableEntryUrl: String? = null,
+    )
 
     /**
      * This information is currently necessary, as the front-end has a difficult
@@ -247,6 +286,10 @@ public class Audits(
         public val siteForCookies: String? = null,
         public val cookieUrl: String? = null,
         public val request: AffectedRequest? = null,
+        /**
+         * The recommended solution to the issue.
+         */
+        public val insight: CookieIssueInsight? = null,
     )
 
     @Serializable
@@ -298,6 +341,9 @@ public class Audits(
 
         @SerialName("Import")
         IMPORT,
+
+        @SerialName("JSON")
+        JSON,
 
         @SerialName("Manifest")
         MANIFEST,
@@ -398,8 +444,17 @@ public class Audits(
         @SerialName("CorpNotSameOriginAfterDefaultedToSameOriginByCoep")
         CORPNOTSAMEORIGINAFTERDEFAULTEDTOSAMEORIGINBYCOEP,
 
+        @SerialName("CorpNotSameOriginAfterDefaultedToSameOriginByDip")
+        CORPNOTSAMEORIGINAFTERDEFAULTEDTOSAMEORIGINBYDIP,
+
+        @SerialName("CorpNotSameOriginAfterDefaultedToSameOriginByCoepAndDip")
+        CORPNOTSAMEORIGINAFTERDEFAULTEDTOSAMEORIGINBYCOEPANDDIP,
+
         @SerialName("CorpNotSameSite")
         CORPNOTSAMESITE,
+
+        @SerialName("SRIMessageSignatureMismatch")
+        SRIMESSAGESIGNATUREMISMATCH,
     }
 
     /**
@@ -462,6 +517,9 @@ public class Audits(
 
         @SerialName("kURLViolation")
         KURLVIOLATION,
+
+        @SerialName("kSRIViolation")
+        KSRIVIOLATION,
 
         @SerialName("kTrustedTypesSinkViolation")
         KTRUSTEDTYPESSINKVIOLATION,
@@ -590,6 +648,162 @@ public class Audits(
 
         @SerialName("NavigationRegistrationWithoutTransientUserActivation")
         NAVIGATIONREGISTRATIONWITHOUTTRANSIENTUSERACTIVATION,
+
+        @SerialName("InvalidInfoHeader")
+        INVALIDINFOHEADER,
+
+        @SerialName("NoRegisterSourceHeader")
+        NOREGISTERSOURCEHEADER,
+
+        @SerialName("NoRegisterTriggerHeader")
+        NOREGISTERTRIGGERHEADER,
+
+        @SerialName("NoRegisterOsSourceHeader")
+        NOREGISTEROSSOURCEHEADER,
+
+        @SerialName("NoRegisterOsTriggerHeader")
+        NOREGISTEROSTRIGGERHEADER,
+
+        @SerialName("NavigationRegistrationUniqueScopeAlreadySet")
+        NAVIGATIONREGISTRATIONUNIQUESCOPEALREADYSET,
+    }
+
+    @Serializable
+    public enum class SharedDictionaryError {
+        @SerialName("UseErrorCrossOriginNoCorsRequest")
+        USEERRORCROSSORIGINNOCORSREQUEST,
+
+        @SerialName("UseErrorDictionaryLoadFailure")
+        USEERRORDICTIONARYLOADFAILURE,
+
+        @SerialName("UseErrorMatchingDictionaryNotUsed")
+        USEERRORMATCHINGDICTIONARYNOTUSED,
+
+        @SerialName("UseErrorUnexpectedContentDictionaryHeader")
+        USEERRORUNEXPECTEDCONTENTDICTIONARYHEADER,
+
+        @SerialName("WriteErrorCossOriginNoCorsRequest")
+        WRITEERRORCOSSORIGINNOCORSREQUEST,
+
+        @SerialName("WriteErrorDisallowedBySettings")
+        WRITEERRORDISALLOWEDBYSETTINGS,
+
+        @SerialName("WriteErrorExpiredResponse")
+        WRITEERROREXPIREDRESPONSE,
+
+        @SerialName("WriteErrorFeatureDisabled")
+        WRITEERRORFEATUREDISABLED,
+
+        @SerialName("WriteErrorInsufficientResources")
+        WRITEERRORINSUFFICIENTRESOURCES,
+
+        @SerialName("WriteErrorInvalidMatchField")
+        WRITEERRORINVALIDMATCHFIELD,
+
+        @SerialName("WriteErrorInvalidStructuredHeader")
+        WRITEERRORINVALIDSTRUCTUREDHEADER,
+
+        @SerialName("WriteErrorNavigationRequest")
+        WRITEERRORNAVIGATIONREQUEST,
+
+        @SerialName("WriteErrorNoMatchField")
+        WRITEERRORNOMATCHFIELD,
+
+        @SerialName("WriteErrorNonListMatchDestField")
+        WRITEERRORNONLISTMATCHDESTFIELD,
+
+        @SerialName("WriteErrorNonSecureContext")
+        WRITEERRORNONSECURECONTEXT,
+
+        @SerialName("WriteErrorNonStringIdField")
+        WRITEERRORNONSTRINGIDFIELD,
+
+        @SerialName("WriteErrorNonStringInMatchDestList")
+        WRITEERRORNONSTRINGINMATCHDESTLIST,
+
+        @SerialName("WriteErrorNonStringMatchField")
+        WRITEERRORNONSTRINGMATCHFIELD,
+
+        @SerialName("WriteErrorNonTokenTypeField")
+        WRITEERRORNONTOKENTYPEFIELD,
+
+        @SerialName("WriteErrorRequestAborted")
+        WRITEERRORREQUESTABORTED,
+
+        @SerialName("WriteErrorShuttingDown")
+        WRITEERRORSHUTTINGDOWN,
+
+        @SerialName("WriteErrorTooLongIdField")
+        WRITEERRORTOOLONGIDFIELD,
+
+        @SerialName("WriteErrorUnsupportedType")
+        WRITEERRORUNSUPPORTEDTYPE,
+    }
+
+    @Serializable
+    public enum class SRIMessageSignatureError {
+        @SerialName("MissingSignatureHeader")
+        MISSINGSIGNATUREHEADER,
+
+        @SerialName("MissingSignatureInputHeader")
+        MISSINGSIGNATUREINPUTHEADER,
+
+        @SerialName("InvalidSignatureHeader")
+        INVALIDSIGNATUREHEADER,
+
+        @SerialName("InvalidSignatureInputHeader")
+        INVALIDSIGNATUREINPUTHEADER,
+
+        @SerialName("SignatureHeaderValueIsNotByteSequence")
+        SIGNATUREHEADERVALUEISNOTBYTESEQUENCE,
+
+        @SerialName("SignatureHeaderValueIsParameterized")
+        SIGNATUREHEADERVALUEISPARAMETERIZED,
+
+        @SerialName("SignatureHeaderValueIsIncorrectLength")
+        SIGNATUREHEADERVALUEISINCORRECTLENGTH,
+
+        @SerialName("SignatureInputHeaderMissingLabel")
+        SIGNATUREINPUTHEADERMISSINGLABEL,
+
+        @SerialName("SignatureInputHeaderValueNotInnerList")
+        SIGNATUREINPUTHEADERVALUENOTINNERLIST,
+
+        @SerialName("SignatureInputHeaderValueMissingComponents")
+        SIGNATUREINPUTHEADERVALUEMISSINGCOMPONENTS,
+
+        @SerialName("SignatureInputHeaderInvalidComponentType")
+        SIGNATUREINPUTHEADERINVALIDCOMPONENTTYPE,
+
+        @SerialName("SignatureInputHeaderInvalidComponentName")
+        SIGNATUREINPUTHEADERINVALIDCOMPONENTNAME,
+
+        @SerialName("SignatureInputHeaderInvalidHeaderComponentParameter")
+        SIGNATUREINPUTHEADERINVALIDHEADERCOMPONENTPARAMETER,
+
+        @SerialName("SignatureInputHeaderInvalidDerivedComponentParameter")
+        SIGNATUREINPUTHEADERINVALIDDERIVEDCOMPONENTPARAMETER,
+
+        @SerialName("SignatureInputHeaderKeyIdLength")
+        SIGNATUREINPUTHEADERKEYIDLENGTH,
+
+        @SerialName("SignatureInputHeaderInvalidParameter")
+        SIGNATUREINPUTHEADERINVALIDPARAMETER,
+
+        @SerialName("SignatureInputHeaderMissingRequiredParameters")
+        SIGNATUREINPUTHEADERMISSINGREQUIREDPARAMETERS,
+
+        @SerialName("ValidationFailedSignatureExpired")
+        VALIDATIONFAILEDSIGNATUREEXPIRED,
+
+        @SerialName("ValidationFailedInvalidLength")
+        VALIDATIONFAILEDINVALIDLENGTH,
+
+        @SerialName("ValidationFailedSignatureMismatch")
+        VALIDATIONFAILEDSIGNATUREMISMATCH,
+
+        @SerialName("ValidationFailedIntegrityMismatch")
+        VALIDATIONFAILEDINTEGRITYMISMATCH,
     }
 
     /**
@@ -628,10 +842,21 @@ public class Audits(
     )
 
     @Serializable
-    public enum class GenericIssueErrorType {
-        @SerialName("CrossOriginPortalPostMessageError")
-        CROSSORIGINPORTALPOSTMESSAGEERROR,
+    public data class SharedDictionaryIssueDetails(
+        public val sharedDictionaryError: SharedDictionaryError,
+        public val request: AffectedRequest,
+    )
 
+    @Serializable
+    public data class SRIMessageSignatureIssueDetails(
+        public val error: SRIMessageSignatureError,
+        public val signatureBase: String,
+        public val integrityAssertions: List<String>,
+        public val request: AffectedRequest,
+    )
+
+    @Serializable
+    public enum class GenericIssueErrorType {
         @SerialName("FormLabelForNameError")
         FORMLABELFORNAMEERROR,
 
@@ -717,6 +942,9 @@ public class Audits(
     @Serializable
     public data class CookieDeprecationMetadataIssueDetails(
         public val allowedSites: List<String>,
+        public val optOutPercentage: Double,
+        public val isOptOutTopLevel: Boolean,
+        public val operation: CookieOperation,
     )
 
     @Serializable
@@ -792,8 +1020,14 @@ public class Audits(
         @SerialName("ClientMetadataInvalidContentType")
         CLIENTMETADATAINVALIDCONTENTTYPE,
 
+        @SerialName("IdpNotPotentiallyTrustworthy")
+        IDPNOTPOTENTIALLYTRUSTWORTHY,
+
         @SerialName("DisabledInSettings")
         DISABLEDINSETTINGS,
+
+        @SerialName("DisabledInFlags")
+        DISABLEDINFLAGS,
 
         @SerialName("ErrorFetchingSignin")
         ERRORFETCHINGSIGNIN,
@@ -854,6 +1088,30 @@ public class Audits(
 
         @SerialName("NotSignedInWithIdp")
         NOTSIGNEDINWITHIDP,
+
+        @SerialName("MissingTransientUserActivation")
+        MISSINGTRANSIENTUSERACTIVATION,
+
+        @SerialName("ReplacedByActiveMode")
+        REPLACEDBYACTIVEMODE,
+
+        @SerialName("InvalidFieldsSpecified")
+        INVALIDFIELDSSPECIFIED,
+
+        @SerialName("RelyingPartyOriginIsOpaque")
+        RELYINGPARTYORIGINISOPAQUE,
+
+        @SerialName("TypeNotMatching")
+        TYPENOTMATCHING,
+
+        @SerialName("UiDismissedNoEmbargo")
+        UIDISMISSEDNOEMBARGO,
+
+        @SerialName("CorsError")
+        CORSERROR,
+
+        @SerialName("SuppressedBySegmentationPlatform")
+        SUPPRESSEDBYSEGMENTATIONPLATFORM,
     }
 
     @Serializable
@@ -920,6 +1178,58 @@ public class Audits(
     )
 
     @Serializable
+    public enum class PartitioningBlobURLInfo {
+        @SerialName("BlockedCrossPartitionFetching")
+        BLOCKEDCROSSPARTITIONFETCHING,
+
+        @SerialName("EnforceNoopenerForNavigation")
+        ENFORCENOOPENERFORNAVIGATION,
+    }
+
+    @Serializable
+    public data class PartitioningBlobURLIssueDetails(
+        /**
+         * The BlobURL that failed to load.
+         */
+        public val url: String,
+        /**
+         * Additional information about the Partitioning Blob URL issue.
+         */
+        public val partitioningBlobURLInfo: PartitioningBlobURLInfo,
+    )
+
+    @Serializable
+    public enum class ElementAccessibilityIssueReason {
+        @SerialName("DisallowedSelectChild")
+        DISALLOWEDSELECTCHILD,
+
+        @SerialName("DisallowedOptGroupChild")
+        DISALLOWEDOPTGROUPCHILD,
+
+        @SerialName("NonPhrasingContentOptionChild")
+        NONPHRASINGCONTENTOPTIONCHILD,
+
+        @SerialName("InteractiveContentOptionChild")
+        INTERACTIVECONTENTOPTIONCHILD,
+
+        @SerialName("InteractiveContentLegendChild")
+        INTERACTIVECONTENTLEGENDCHILD,
+
+        @SerialName("InteractiveContentSummaryDescendant")
+        INTERACTIVECONTENTSUMMARYDESCENDANT,
+    }
+
+    /**
+     * This issue warns about errors in the select or summary element content model.
+     */
+    @Serializable
+    public data class ElementAccessibilityIssueDetails(
+        public val nodeId: Int,
+        public val elementAccessibilityIssueReason: ElementAccessibilityIssueReason,
+        public val hasDisallowedAttributes: Boolean,
+    )
+
+    @Serializable
     public enum class StyleSheetLoadingIssueReason {
         @SerialName("LateImportRule")
         LATEIMPORTRULE,
@@ -982,6 +1292,28 @@ public class Audits(
         public val propertyValue: String? = null,
     )
 
+    @Serializable
+    public enum class UserReidentificationIssueType {
+        @SerialName("BlockedFrameNavigation")
+        BLOCKEDFRAMENAVIGATION,
+
+        @SerialName("BlockedSubresource")
+        BLOCKEDSUBRESOURCE,
+    }
+
+    /**
+     * This issue warns about uses of APIs that may be considered misuse to
+     * re-identify users.
+     */
+    @Serializable
+    public data class UserReidentificationIssueDetails(
+        public val type: UserReidentificationIssueType,
+        /**
+         * Applies to BlockedFrameNavigation and BlockedSubresource issue types.
+         */
+        public val request: AffectedRequest? = null,
+    )
+
     /**
      * A unique identifier for the type of issue. Each type may use one of the
      * optional fields in InspectorIssueDetails to convey more specific
@@ -1019,6 +1351,9 @@ public class Audits(
         @SerialName("QuirksModeIssue")
         QUIRKSMODEISSUE,
 
+        @SerialName("PartitioningBlobURLIssue")
+        PARTITIONINGBLOBURLISSUE,
+
         @SerialName("NavigatorUserAgentIssue")
         NAVIGATORUSERAGENTISSUE,
 
@@ -1048,6 +1383,18 @@ public class Audits(
 
         @SerialName("PropertyRuleIssue")
         PROPERTYRULEISSUE,
+
+        @SerialName("SharedDictionaryIssue")
+        SHAREDDICTIONARYISSUE,
+
+        @SerialName("ElementAccessibilityIssue")
+        ELEMENTACCESSIBILITYISSUE,
+
+        @SerialName("SRIMessageSignatureIssue")
+        SRIMESSAGESIGNATUREISSUE,
+
+        @SerialName("UserReidentificationIssue")
+        USERREIDENTIFICATIONISSUE,
     }
 
     /**
@@ -1067,6 +1414,7 @@ public class Audits(
         public val corsIssueDetails: CorsIssueDetails? = null,
         public val attributionReportingIssueDetails: AttributionReportingIssueDetails? = null,
         public val quirksModeIssueDetails: QuirksModeIssueDetails? = null,
+        public val partitioningBlobURLIssueDetails: PartitioningBlobURLIssueDetails? = null,
         public val navigatorUserAgentIssueDetails: NavigatorUserAgentIssueDetails? = null,
         public val genericIssueDetails: GenericIssueDetails? = null,
         public val deprecationIssueDetails: DeprecationIssueDetails? = null,
@@ -1079,6 +1427,10 @@ public class Audits(
         public val propertyRuleIssueDetails: PropertyRuleIssueDetails? = null,
         public val federatedAuthUserInfoRequestIssueDetails:
         FederatedAuthUserInfoRequestIssueDetails? = null,
+        public val sharedDictionaryIssueDetails: SharedDictionaryIssueDetails? = null,
+        public val elementAccessibilityIssueDetails: ElementAccessibilityIssueDetails? = null,
+        public val sriMessageSignatureIssueDetails: SRIMessageSignatureIssueDetails? = null,
+        public val userReidentificationIssueDetails: UserReidentificationIssueDetails? = null,
     )
 
     /**

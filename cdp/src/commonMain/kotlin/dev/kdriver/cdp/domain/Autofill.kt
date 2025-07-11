@@ -157,7 +157,7 @@ public class Autofill(
     @Serializable
     public data class AddressUI(
         /**
-         * A two dimension array containing the repesentation of values from an address profile.
+         * A two dimension array containing the representation of values from an address profile.
          */
         public val addressFields: List<AddressFields>,
     )
@@ -200,6 +200,10 @@ public class Autofill(
          * The filling strategy
          */
         public val fillingStrategy: FillingStrategy,
+        /**
+         * The frame the field belongs to
+         */
+        public val frameId: String,
         /**
          * The form field's DOM node
          */

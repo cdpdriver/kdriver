@@ -141,6 +141,16 @@ public class DOM(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
+     * Fired when a node's scrollability state changes.
+     */
+    public val scrollableFlagUpdated: Flow<ScrollableFlagUpdatedParameter> = cdp
+        .events
+        .filter { it.method == "DOM.scrollableFlagUpdated" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
      * Called when a pseudo element is removed from an element.
      */
     public val pseudoElementRemoved: Flow<PseudoElementRemovedParameter> = cdp
@@ -386,7 +396,7 @@ public class DOM(
     /**
      * Returns attributes for the specified node.
      *
-     * @param nodeId Id of the node to retrieve attibutes for.
+     * @param nodeId Id of the node to retrieve attributes for.
      */
     public suspend fun getAttributes(nodeId: Int): GetAttributesReturn {
         val parameter = GetAttributesParameter(nodeId = nodeId)
@@ -800,6 +810,26 @@ public class DOM(
     }
 
     /**
+     * Returns the NodeId of the matched element according to certain relations.
+     */
+    public suspend fun getElementByRelation(args: GetElementByRelationParameter): GetElementByRelationReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("DOM.getElementByRelation", parameter)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Returns the NodeId of the matched element according to certain relations.
+     *
+     * @param nodeId Id of the node from which to query the relation.
+     * @param relation Type of relation to get.
+     */
+    public suspend fun getElementByRelation(nodeId: Int, relation: String): GetElementByRelationReturn {
+        val parameter = GetElementByRelationParameter(nodeId = nodeId, relation = relation)
+        return getElementByRelation(parameter)
+    }
+
+    /**
      * Re-does the last undone action.
      */
     public suspend fun redo() {
@@ -1070,6 +1100,15 @@ public class DOM(
     }
 
     /**
+     * Returns list of detached nodes
+     */
+    public suspend fun getDetachedDomNodes(): GetDetachedDomNodesReturn {
+        val parameter = null
+        val result = cdp.callCommand("DOM.getDetachedDomNodes", parameter)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
      * Enables console to refer to the node with given id via $x (see Command Line API for more details
      * $x functions).
      */
@@ -1176,9 +1215,10 @@ public class DOM(
 
     /**
      * Returns the query container of the given node based on container query
-     * conditions: containerName, physical, and logical axes. If no axes are
-     * provided, the style container is returned, which is the direct parent or the
-     * closest element with a matching container-name.
+     * conditions: containerName, physical and logical axes, and whether it queries
+     * scroll-state. If no axes are provided and queriesScrollState is false, the
+     * style container is returned, which is the direct parent or the closest
+     * element with a matching container-name.
      */
     public suspend fun getContainerForNode(args: GetContainerForNodeParameter): GetContainerForNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
@@ -1188,26 +1228,30 @@ public class DOM(
 
     /**
      * Returns the query container of the given node based on container query
-     * conditions: containerName, physical, and logical axes. If no axes are
-     * provided, the style container is returned, which is the direct parent or the
-     * closest element with a matching container-name.
+     * conditions: containerName, physical and logical axes, and whether it queries
+     * scroll-state. If no axes are provided and queriesScrollState is false, the
+     * style container is returned, which is the direct parent or the closest
+     * element with a matching container-name.
      *
      * @param nodeId No description
      * @param containerName No description
      * @param physicalAxes No description
      * @param logicalAxes No description
+     * @param queriesScrollState No description
      */
     public suspend fun getContainerForNode(
         nodeId: Int,
         containerName: String? = null,
         physicalAxes: PhysicalAxes? = null,
         logicalAxes: LogicalAxes? = null,
+        queriesScrollState: Boolean? = null,
     ): GetContainerForNodeReturn {
         val parameter = GetContainerForNodeParameter(
             nodeId = nodeId,
             containerName = containerName,
             physicalAxes = physicalAxes,
-            logicalAxes = logicalAxes
+            logicalAxes = logicalAxes,
+            queriesScrollState = queriesScrollState
         )
         return getContainerForNode(parameter)
     }
@@ -1231,6 +1275,31 @@ public class DOM(
     public suspend fun getQueryingDescendantsForContainer(nodeId: Int): GetQueryingDescendantsForContainerReturn {
         val parameter = GetQueryingDescendantsForContainerParameter(nodeId = nodeId)
         return getQueryingDescendantsForContainer(parameter)
+    }
+
+    /**
+     * Returns the target anchor element of the given anchor query according to
+     * https://www.w3.org/TR/css-anchor-position-1/#target.
+     */
+    public suspend fun getAnchorElement(args: GetAnchorElementParameter): GetAnchorElementReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("DOM.getAnchorElement", parameter)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Returns the target anchor element of the given anchor query according to
+     * https://www.w3.org/TR/css-anchor-position-1/#target.
+     *
+     * @param nodeId Id of the positioned element from which to find the anchor.
+     * @param anchorSpecifier An optional anchor specifier, as defined in
+     * https://www.w3.org/TR/css-anchor-position-1/#anchor-specifier.
+     * If not provided, it will return the implicit anchor element for
+     * the given positioned element.
+     */
+    public suspend fun getAnchorElement(nodeId: Int, anchorSpecifier: String? = null): GetAnchorElementReturn {
+        val parameter = GetAnchorElementParameter(nodeId = nodeId, anchorSpecifier = anchorSpecifier)
+        return getAnchorElement(parameter)
     }
 
     /**
@@ -1260,11 +1329,17 @@ public class DOM(
         @SerialName("first-letter")
         FIRST_LETTER,
 
+        @SerialName("checkmark")
+        CHECKMARK,
+
         @SerialName("before")
         BEFORE,
 
         @SerialName("after")
         AFTER,
+
+        @SerialName("picker-icon")
+        PICKER_ICON,
 
         @SerialName("marker")
         MARKER,
@@ -1272,8 +1347,14 @@ public class DOM(
         @SerialName("backdrop")
         BACKDROP,
 
+        @SerialName("column")
+        COLUMN,
+
         @SerialName("selection")
         SELECTION,
+
+        @SerialName("search-text")
+        SEARCH_TEXT,
 
         @SerialName("target-text")
         TARGET_TEXT,
@@ -1289,6 +1370,15 @@ public class DOM(
 
         @SerialName("first-line-inherited")
         FIRST_LINE_INHERITED,
+
+        @SerialName("scroll-marker")
+        SCROLL_MARKER,
+
+        @SerialName("scroll-marker-group")
+        SCROLL_MARKER_GROUP,
+
+        @SerialName("scroll-button")
+        SCROLL_BUTTON,
 
         @SerialName("scrollbar")
         SCROLLBAR,
@@ -1323,11 +1413,29 @@ public class DOM(
         @SerialName("view-transition-image-pair")
         VIEW_TRANSITION_IMAGE_PAIR,
 
+        @SerialName("view-transition-group-children")
+        VIEW_TRANSITION_GROUP_CHILDREN,
+
         @SerialName("view-transition-old")
         VIEW_TRANSITION_OLD,
 
         @SerialName("view-transition-new")
         VIEW_TRANSITION_NEW,
+
+        @SerialName("placeholder")
+        PLACEHOLDER,
+
+        @SerialName("file-selector-button")
+        FILE_SELECTOR_BUTTON,
+
+        @SerialName("details-content")
+        DETAILS_CONTENT,
+
+        @SerialName("picker")
+        PICKER,
+
+        @SerialName("permission-icon")
+        PERMISSION_ICON,
     }
 
     /**
@@ -1388,6 +1496,18 @@ public class DOM(
 
         @SerialName("Both")
         BOTH,
+    }
+
+    /**
+     * Physical scroll orientation
+     */
+    @Serializable
+    public enum class ScrollOrientation {
+        @SerialName("horizontal")
+        HORIZONTAL,
+
+        @SerialName("vertical")
+        VERTICAL,
     }
 
     /**
@@ -1519,6 +1639,16 @@ public class DOM(
         public val isSVG: Boolean? = null,
         public val compatibilityMode: CompatibilityMode? = null,
         public val assignedSlot: BackendNode? = null,
+        public val isScrollable: Boolean? = null,
+    )
+
+    /**
+     * A structure to hold the top-level node of a detached tree and an array of its retained descendants.
+     */
+    @Serializable
+    public data class DetachedElementInfo(
+        public val treeNode: Node,
+        public val retainedNodeIds: List<Int>,
     )
 
     /**
@@ -1773,6 +1903,21 @@ public class DOM(
     )
 
     /**
+     * Fired when a node's scrollability state changes.
+     */
+    @Serializable
+    public data class ScrollableFlagUpdatedParameter(
+        /**
+         * The id of the node.
+         */
+        public val nodeId: Int,
+        /**
+         * If the node is scrollable.
+         */
+        public val isScrollable: Boolean,
+    )
+
+    /**
      * Called when a pseudo element is removed from an element.
      */
     @Serializable
@@ -1964,7 +2109,7 @@ public class DOM(
     @Serializable
     public data class GetAttributesParameter(
         /**
-         * Id of the node to retrieve attibutes for.
+         * Id of the node to retrieve attributes for.
          */
         public val nodeId: Int,
     )
@@ -2325,6 +2470,26 @@ public class DOM(
     )
 
     @Serializable
+    public data class GetElementByRelationParameter(
+        /**
+         * Id of the node from which to query the relation.
+         */
+        public val nodeId: Int,
+        /**
+         * Type of relation to get.
+         */
+        public val relation: String,
+    )
+
+    @Serializable
+    public data class GetElementByRelationReturn(
+        /**
+         * NodeId of the element matching the queried relation.
+         */
+        public val nodeId: Int,
+    )
+
+    @Serializable
     public data class RemoveAttributeParameter(
         /**
          * Id of the element to remove attribute from.
@@ -2497,6 +2662,14 @@ public class DOM(
     )
 
     @Serializable
+    public data class GetDetachedDomNodesReturn(
+        /**
+         * The list of detached nodes
+         */
+        public val detachedNodes: List<DetachedElementInfo>,
+    )
+
+    @Serializable
     public data class SetInspectedNodeParameter(
         /**
          * DOM node id to be accessible by means of $x command line API.
@@ -2571,6 +2744,7 @@ public class DOM(
         public val containerName: String? = null,
         public val physicalAxes: PhysicalAxes? = null,
         public val logicalAxes: LogicalAxes? = null,
+        public val queriesScrollState: Boolean? = null,
     )
 
     @Serializable
@@ -2595,5 +2769,28 @@ public class DOM(
          * Descendant nodes with container queries against the given container.
          */
         public val nodeIds: List<Int>,
+    )
+
+    @Serializable
+    public data class GetAnchorElementParameter(
+        /**
+         * Id of the positioned element from which to find the anchor.
+         */
+        public val nodeId: Int,
+        /**
+         * An optional anchor specifier, as defined in
+         * https://www.w3.org/TR/css-anchor-position-1/#anchor-specifier.
+         * If not provided, it will return the implicit anchor element for
+         * the given positioned element.
+         */
+        public val anchorSpecifier: String? = null,
+    )
+
+    @Serializable
+    public data class GetAnchorElementReturn(
+        /**
+         * The anchor element of the given anchor query.
+         */
+        public val nodeId: Int,
     )
 }

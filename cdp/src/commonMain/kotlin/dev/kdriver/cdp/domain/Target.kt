@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -169,7 +170,7 @@ public class Target(
      *
      * Injected object will be available as `window[bindingName]`.
      *
-     * The object has the follwing API:
+     * The object has the following API:
      * - `binding.send(json)` - a method to send messages over the remote debugging protocol
      * - `binding.onmessage = json => handleMessage(json)` - a callback that will be called for the protocol notifications and command responses.
      */
@@ -184,15 +185,24 @@ public class Target(
      *
      * Injected object will be available as `window[bindingName]`.
      *
-     * The object has the follwing API:
+     * The object has the following API:
      * - `binding.send(json)` - a method to send messages over the remote debugging protocol
      * - `binding.onmessage = json => handleMessage(json)` - a callback that will be called for the protocol notifications and command responses.
      *
      * @param targetId No description
      * @param bindingName Binding name, 'cdp' if not specified.
+     * @param inheritPermissions If true, inherits the current root session's permissions (default: false).
      */
-    public suspend fun exposeDevToolsProtocol(targetId: String, bindingName: String? = null) {
-        val parameter = ExposeDevToolsProtocolParameter(targetId = targetId, bindingName = bindingName)
+    public suspend fun exposeDevToolsProtocol(
+        targetId: String,
+        bindingName: String? = null,
+        inheritPermissions: Boolean? = null,
+    ) {
+        val parameter = ExposeDevToolsProtocolParameter(
+            targetId = targetId,
+            bindingName = bindingName,
+            inheritPermissions = inheritPermissions
+        )
         exposeDevToolsProtocol(parameter)
     }
 
@@ -253,35 +263,50 @@ public class Target(
      * Creates a new page.
      *
      * @param url The initial URL the page will be navigated to. An empty string indicates about:blank.
-     * @param width Frame width in DIP (headless chrome only).
-     * @param height Frame height in DIP (headless chrome only).
+     * @param left Frame left origin in DIP (requires newWindow to be true or headless shell).
+     * @param top Frame top origin in DIP (requires newWindow to be true or headless shell).
+     * @param width Frame width in DIP (requires newWindow to be true or headless shell).
+     * @param height Frame height in DIP (requires newWindow to be true or headless shell).
+     * @param windowState Frame window state (requires newWindow to be true or headless shell).
+     * Default is normal.
      * @param browserContextId The browser context to create the page in.
-     * @param enableBeginFrameControl Whether BeginFrames for this target will be controlled via DevTools (headless chrome only,
+     * @param enableBeginFrameControl Whether BeginFrames for this target will be controlled via DevTools (headless shell only,
      * not supported on MacOS yet, false by default).
-     * @param newWindow Whether to create a new Window or Tab (chrome-only, false by default).
-     * @param background Whether to create the target in background or foreground (chrome-only,
-     * false by default).
+     * @param newWindow Whether to create a new Window or Tab (false by default, not supported by headless shell).
+     * @param background Whether to create the target in background or foreground (false by default, not supported
+     * by headless shell).
      * @param forTab Whether to create the target of type "tab".
+     * @param hidden Whether to create a hidden target. The hidden target is observable via protocol, but not
+     * present in the tab UI strip. Cannot be created with `forTab: true`, `newWindow: true` or
+     * `background: false`. The life-time of the tab is limited to the life-time of the session.
      */
     public suspend fun createTarget(
         url: String,
+        left: Int? = null,
+        top: Int? = null,
         width: Int? = null,
         height: Int? = null,
+        windowState: WindowState? = null,
         browserContextId: String? = null,
         enableBeginFrameControl: Boolean? = null,
         newWindow: Boolean? = null,
         background: Boolean? = null,
         forTab: Boolean? = null,
+        hidden: Boolean? = null,
     ): CreateTargetReturn {
         val parameter = CreateTargetParameter(
             url = url,
+            left = left,
+            top = top,
             width = width,
             height = height,
+            windowState = windowState,
             browserContextId = browserContextId,
             enableBeginFrameControl = enableBeginFrameControl,
             newWindow = newWindow,
             background = background,
-            forTab = forTab
+            forTab = forTab,
+            hidden = hidden
         )
         return createTarget(parameter)
     }
@@ -396,11 +421,14 @@ public class Target(
     }
 
     /**
-     * Controls whether to automatically attach to new targets which are considered to be related to
-     * this one. When turned on, attaches to all existing related targets as well. When turned off,
+     * Controls whether to automatically attach to new targets which are considered
+     * to be directly related to this one (for example, iframes or workers).
+     * When turned on, attaches to all existing related targets as well. When turned off,
      * automatically detaches from all currently attached targets.
      * This also clears all targets added by `autoAttachRelated` from the list of targets to watch
      * for creation of related targets.
+     * You might want to call this recursively for auto-attached targets to attach
+     * to all available targets.
      */
     public suspend fun setAutoAttach(args: SetAutoAttachParameter) {
         val parameter = Serialization.json.encodeToJsonElement(args)
@@ -408,11 +436,14 @@ public class Target(
     }
 
     /**
-     * Controls whether to automatically attach to new targets which are considered to be related to
-     * this one. When turned on, attaches to all existing related targets as well. When turned off,
+     * Controls whether to automatically attach to new targets which are considered
+     * to be directly related to this one (for example, iframes or workers).
+     * When turned on, attaches to all existing related targets as well. When turned off,
      * automatically detaches from all currently attached targets.
      * This also clears all targets added by `autoAttachRelated` from the list of targets to watch
      * for creation of related targets.
+     * You might want to call this recursively for auto-attached targets to attach
+     * to all available targets.
      *
      * @param autoAttach Whether to auto-attach to related targets.
      * @param waitForDebuggerOnStart Whether to pause new targets when attaching to them. Use `Runtime.runIfWaitingForDebugger`
@@ -519,6 +550,9 @@ public class Target(
     @Serializable
     public data class TargetInfo(
         public val targetId: String,
+        /**
+         * List of types: https://source.chromium.org/chromium/chromium/src/+/main:content/browser/devtools/devtools_agent_host_impl.cc?ss=chromium&q=f:devtools%20-f:out%20%22::kTypeTab%5B%5D%22
+         */
         public val type: String,
         public val title: String,
         public val url: String,
@@ -541,7 +575,7 @@ public class Target(
         public val browserContextId: String? = null,
         /**
          * Provides additional details for specific target types. For example, for
-         * the type of "page", this may be set to "portal" or "prerender".
+         * the type of "page", this may be set to "prerender".
          */
         public val subtype: String? = null,
     )
@@ -552,7 +586,7 @@ public class Target(
     @Serializable
     public data class FilterEntry(
         /**
-         * If set, causes exclusion of mathcing targets from the list.
+         * If set, causes exclusion of matching targets from the list.
          */
         public val exclude: Boolean? = null,
         /**
@@ -566,6 +600,24 @@ public class Target(
         public val host: String,
         public val port: Int,
     )
+
+    /**
+     * The state of the target window.
+     */
+    @Serializable
+    public enum class WindowState {
+        @SerialName("normal")
+        NORMAL,
+
+        @SerialName("minimized")
+        MINIMIZED,
+
+        @SerialName("maximized")
+        MAXIMIZED,
+
+        @SerialName("fullscreen")
+        FULLSCREEN,
+    }
 
     /**
      * Issued when attached to target because of auto-attach or `attachToTarget` command.
@@ -706,6 +758,10 @@ public class Target(
          * Binding name, 'cdp' if not specified.
          */
         public val bindingName: String? = null,
+        /**
+         * If true, inherits the current root session's permissions (default: false).
+         */
+        public val inheritPermissions: Boolean? = null,
     )
 
     @Serializable
@@ -752,35 +808,54 @@ public class Target(
          */
         public val url: String,
         /**
-         * Frame width in DIP (headless chrome only).
+         * Frame left origin in DIP (requires newWindow to be true or headless shell).
+         */
+        public val left: Int? = null,
+        /**
+         * Frame top origin in DIP (requires newWindow to be true or headless shell).
+         */
+        public val top: Int? = null,
+        /**
+         * Frame width in DIP (requires newWindow to be true or headless shell).
          */
         public val width: Int? = null,
         /**
-         * Frame height in DIP (headless chrome only).
+         * Frame height in DIP (requires newWindow to be true or headless shell).
          */
         public val height: Int? = null,
+        /**
+         * Frame window state (requires newWindow to be true or headless shell).
+         * Default is normal.
+         */
+        public val windowState: WindowState? = null,
         /**
          * The browser context to create the page in.
          */
         public val browserContextId: String? = null,
         /**
-         * Whether BeginFrames for this target will be controlled via DevTools (headless chrome only,
+         * Whether BeginFrames for this target will be controlled via DevTools (headless shell only,
          * not supported on MacOS yet, false by default).
          */
         public val enableBeginFrameControl: Boolean? = null,
         /**
-         * Whether to create a new Window or Tab (chrome-only, false by default).
+         * Whether to create a new Window or Tab (false by default, not supported by headless shell).
          */
         public val newWindow: Boolean? = null,
         /**
-         * Whether to create the target in background or foreground (chrome-only,
-         * false by default).
+         * Whether to create the target in background or foreground (false by default, not supported
+         * by headless shell).
          */
         public val background: Boolean? = null,
         /**
          * Whether to create the target of type "tab".
          */
         public val forTab: Boolean? = null,
+        /**
+         * Whether to create a hidden target. The hidden target is observable via protocol, but not
+         * present in the tab UI strip. Cannot be created with `forTab: true`, `newWindow: true` or
+         * `background: false`. The life-time of the tab is limited to the life-time of the session.
+         */
+        public val hidden: Boolean? = null,
     )
 
     @Serializable

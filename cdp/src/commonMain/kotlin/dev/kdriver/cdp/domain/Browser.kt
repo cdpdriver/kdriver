@@ -130,7 +130,7 @@ public class Browser(
      *
      * @param behavior Whether to allow all or deny all download requests, or use default Chrome behavior if
      * available (otherwise deny). |allowAndName| allows download and names files according to
-     * their dowmload guids.
+     * their download guids.
      * @param browserContextId BrowserContext to set download behavior. When omitted, default browser context is used.
      * @param downloadPath The default path to save downloaded files to. This is required if behavior is set to 'allow'
      * or 'allowAndName'.
@@ -371,6 +371,44 @@ public class Browser(
     }
 
     /**
+     * Configures encryption keys used with a given privacy sandbox API to talk
+     * to a trusted coordinator.  Since this is intended for test automation only,
+     * coordinatorOrigin must be a .test domain. No existing coordinator
+     * configuration for the origin may exist.
+     */
+    public suspend fun addPrivacySandboxCoordinatorKeyConfig(args: AddPrivacySandboxCoordinatorKeyConfigParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Browser.addPrivacySandboxCoordinatorKeyConfig", parameter)
+    }
+
+    /**
+     * Configures encryption keys used with a given privacy sandbox API to talk
+     * to a trusted coordinator.  Since this is intended for test automation only,
+     * coordinatorOrigin must be a .test domain. No existing coordinator
+     * configuration for the origin may exist.
+     *
+     * @param api No description
+     * @param coordinatorOrigin No description
+     * @param keyConfig No description
+     * @param browserContextId BrowserContext to perform the action in. When omitted, default browser
+     * context is used.
+     */
+    public suspend fun addPrivacySandboxCoordinatorKeyConfig(
+        api: PrivacySandboxAPI,
+        coordinatorOrigin: String,
+        keyConfig: String,
+        browserContextId: String? = null,
+    ) {
+        val parameter = AddPrivacySandboxCoordinatorKeyConfigParameter(
+            api = api,
+            coordinatorOrigin = coordinatorOrigin,
+            keyConfig = keyConfig,
+            browserContextId = browserContextId
+        )
+        addPrivacySandboxCoordinatorKeyConfig(parameter)
+    }
+
+    /**
      * The state of the browser window.
      */
     @Serializable
@@ -417,17 +455,23 @@ public class Browser(
 
     @Serializable
     public enum class PermissionType {
-        @SerialName("accessibilityEvents")
-        ACCESSIBILITYEVENTS,
+        @SerialName("ar")
+        AR,
 
         @SerialName("audioCapture")
         AUDIOCAPTURE,
 
-        @SerialName("backgroundSync")
-        BACKGROUNDSYNC,
+        @SerialName("automaticFullscreen")
+        AUTOMATICFULLSCREEN,
 
         @SerialName("backgroundFetch")
         BACKGROUNDFETCH,
+
+        @SerialName("backgroundSync")
+        BACKGROUNDSYNC,
+
+        @SerialName("cameraPanTiltZoom")
+        CAMERAPANTILTZOOM,
 
         @SerialName("capturedSurfaceControl")
         CAPTUREDSURFACECONTROL,
@@ -444,17 +488,23 @@ public class Browser(
         @SerialName("durableStorage")
         DURABLESTORAGE,
 
-        @SerialName("flash")
-        FLASH,
-
         @SerialName("geolocation")
         GEOLOCATION,
+
+        @SerialName("handTracking")
+        HANDTRACKING,
 
         @SerialName("idleDetection")
         IDLEDETECTION,
 
+        @SerialName("keyboardLock")
+        KEYBOARDLOCK,
+
         @SerialName("localFonts")
         LOCALFONTS,
+
+        @SerialName("localNetworkAccess")
+        LOCALNETWORKACCESS,
 
         @SerialName("midi")
         MIDI,
@@ -474,11 +524,20 @@ public class Browser(
         @SerialName("periodicBackgroundSync")
         PERIODICBACKGROUNDSYNC,
 
+        @SerialName("pointerLock")
+        POINTERLOCK,
+
         @SerialName("protectedMediaIdentifier")
         PROTECTEDMEDIAIDENTIFIER,
 
         @SerialName("sensors")
         SENSORS,
+
+        @SerialName("smartCard")
+        SMARTCARD,
+
+        @SerialName("speakerSelection")
+        SPEAKERSELECTION,
 
         @SerialName("storageAccess")
         STORAGEACCESS,
@@ -489,14 +548,20 @@ public class Browser(
         @SerialName("videoCapture")
         VIDEOCAPTURE,
 
-        @SerialName("videoCapturePanTiltZoom")
-        VIDEOCAPTUREPANTILTZOOM,
+        @SerialName("vr")
+        VR,
 
         @SerialName("wakeLockScreen")
         WAKELOCKSCREEN,
 
         @SerialName("wakeLockSystem")
         WAKELOCKSYSTEM,
+
+        @SerialName("webAppInstallation")
+        WEBAPPINSTALLATION,
+
+        @SerialName("webPrinting")
+        WEBPRINTING,
 
         @SerialName("windowManagement")
         WINDOWMANAGEMENT,
@@ -539,6 +604,10 @@ public class Browser(
          */
         public val allowWithoutSanitization: Boolean? = null,
         /**
+         * For "fullscreen" permission, must specify allowWithoutGesture:true.
+         */
+        public val allowWithoutGesture: Boolean? = null,
+        /**
          * For "camera" permission, may specify panTiltZoom.
          */
         public val panTiltZoom: Boolean? = null,
@@ -554,6 +623,9 @@ public class Browser(
 
         @SerialName("closeTabSearch")
         CLOSETABSEARCH,
+
+        @SerialName("openGlic")
+        OPENGLIC,
     }
 
     /**
@@ -597,6 +669,15 @@ public class Browser(
          */
         public val buckets: List<Bucket>,
     )
+
+    @Serializable
+    public enum class PrivacySandboxAPI {
+        @SerialName("BiddingAndAuctionServices")
+        BIDDINGANDAUCTIONSERVICES,
+
+        @SerialName("TrustedKeyValue")
+        TRUSTEDKEYVALUE,
+    }
 
     /**
      * Fired when page is about to start a download.
@@ -642,6 +723,12 @@ public class Browser(
          * Download status.
          */
         public val state: String,
+        /**
+         * If download is "completed", provides the path of the downloaded file.
+         * Depending on the platform, it is not guaranteed to be set, nor the file
+         * is guaranteed to exist.
+         */
+        public val filePath: String? = null,
     )
 
     @Serializable
@@ -690,7 +777,7 @@ public class Browser(
         /**
          * Whether to allow all or deny all download requests, or use default Chrome behavior if
          * available (otherwise deny). |allowAndName| allows download and names files according to
-         * their dowmload guids.
+         * their download guids.
          */
         public val behavior: String,
         /**
@@ -862,5 +949,17 @@ public class Browser(
     @Serializable
     public data class AddPrivacySandboxEnrollmentOverrideParameter(
         public val url: String,
+    )
+
+    @Serializable
+    public data class AddPrivacySandboxCoordinatorKeyConfigParameter(
+        public val api: PrivacySandboxAPI,
+        public val coordinatorOrigin: String,
+        public val keyConfig: String,
+        /**
+         * BrowserContext to perform the action in. When omitted, default browser
+         * context is used.
+         */
+        public val browserContextId: String? = null,
     )
 }

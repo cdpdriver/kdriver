@@ -230,6 +230,126 @@ public class Network(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
+     * Fired upon direct_socket.TCPSocket creation.
+     */
+    public val directTCPSocketCreated: Flow<DirectTCPSocketCreatedParameter> = cdp
+        .events
+        .filter { it.method == "Network.directTCPSocketCreated" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when direct_socket.TCPSocket connection is opened.
+     */
+    public val directTCPSocketOpened: Flow<DirectTCPSocketOpenedParameter> = cdp
+        .events
+        .filter { it.method == "Network.directTCPSocketOpened" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when direct_socket.TCPSocket is aborted.
+     */
+    public val directTCPSocketAborted: Flow<DirectTCPSocketAbortedParameter> = cdp
+        .events
+        .filter { it.method == "Network.directTCPSocketAborted" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when direct_socket.TCPSocket is closed.
+     */
+    public val directTCPSocketClosed: Flow<DirectTCPSocketClosedParameter> = cdp
+        .events
+        .filter { it.method == "Network.directTCPSocketClosed" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when data is sent to tcp direct socket stream.
+     */
+    public val directTCPSocketChunkSent: Flow<DirectTCPSocketChunkSentParameter> = cdp
+        .events
+        .filter { it.method == "Network.directTCPSocketChunkSent" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when data is received from tcp direct socket stream.
+     */
+    public val directTCPSocketChunkReceived: Flow<DirectTCPSocketChunkReceivedParameter> = cdp
+        .events
+        .filter { it.method == "Network.directTCPSocketChunkReceived" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired upon direct_socket.UDPSocket creation.
+     */
+    public val directUDPSocketCreated: Flow<DirectUDPSocketCreatedParameter> = cdp
+        .events
+        .filter { it.method == "Network.directUDPSocketCreated" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when direct_socket.UDPSocket connection is opened.
+     */
+    public val directUDPSocketOpened: Flow<DirectUDPSocketOpenedParameter> = cdp
+        .events
+        .filter { it.method == "Network.directUDPSocketOpened" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when direct_socket.UDPSocket is aborted.
+     */
+    public val directUDPSocketAborted: Flow<DirectUDPSocketAbortedParameter> = cdp
+        .events
+        .filter { it.method == "Network.directUDPSocketAborted" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when direct_socket.UDPSocket is closed.
+     */
+    public val directUDPSocketClosed: Flow<DirectUDPSocketClosedParameter> = cdp
+        .events
+        .filter { it.method == "Network.directUDPSocketClosed" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when message is sent to udp direct socket stream.
+     */
+    public val directUDPSocketChunkSent: Flow<DirectUDPSocketChunkSentParameter> = cdp
+        .events
+        .filter { it.method == "Network.directUDPSocketChunkSent" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when message is received from udp direct socket stream.
+     */
+    public val directUDPSocketChunkReceived: Flow<DirectUDPSocketChunkReceivedParameter> = cdp
+        .events
+        .filter { it.method == "Network.directUDPSocketChunkReceived" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
      * Fired when additional information about a requestWillBeSent event is available from the
      * network stack. Not every requestWillBeSent event will have an additional
      * requestWillBeSentExtraInfo fired for it, and there is no guarantee whether requestWillBeSent
@@ -255,6 +375,18 @@ public class Network(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
+     * Fired when 103 Early Hints headers is received in addition to the common response.
+     * Not every responseReceived event will have an responseReceivedEarlyHints fired.
+     * Only one responseReceivedEarlyHints may be fired for eached responseReceived event.
+     */
+    public val responseReceivedEarlyHints: Flow<ResponseReceivedEarlyHintsParameter> = cdp
+        .events
+        .filter { it.method == "Network.responseReceivedEarlyHints" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
      * Fired exactly once for each Trust Token operation. Depending on
      * the type of the operation and whether the operation succeeded or
      * failed, the event is fired before the corresponding request was sent
@@ -263,6 +395,16 @@ public class Network(
     public val trustTokenOperationDone: Flow<TrustTokenOperationDoneParameter> = cdp
         .events
         .filter { it.method == "Network.trustTokenOperationDone" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired once security policy has been updated.
+     */
+    public val policyUpdated: Flow<Unit> = cdp
+        .events
+        .filter { it.method == "Network.policyUpdated" }
         .map { it.params }
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
@@ -471,7 +613,7 @@ public class Network(
     }
 
     /**
-     * Deletes browser cookies with matching name and url or domain/path pair.
+     * Deletes browser cookies with matching name and url or domain/path/partitionKey pair.
      */
     public suspend fun deleteCookies(args: DeleteCookiesParameter) {
         val parameter = Serialization.json.encodeToJsonElement(args)
@@ -479,21 +621,25 @@ public class Network(
     }
 
     /**
-     * Deletes browser cookies with matching name and url or domain/path pair.
+     * Deletes browser cookies with matching name and url or domain/path/partitionKey pair.
      *
      * @param name Name of the cookies to remove.
      * @param url If specified, deletes all the cookies with the given name where domain and path match
      * provided URL.
      * @param domain If specified, deletes only cookies with the exact domain.
      * @param path If specified, deletes only cookies with the exact path.
+     * @param partitionKey If specified, deletes only cookies with the the given name and partitionKey where
+     * all partition key attributes match the cookie partition key attribute.
      */
     public suspend fun deleteCookies(
         name: String,
         url: String? = null,
         domain: String? = null,
         path: String? = null,
+        partitionKey: CookiePartitionKey? = null,
     ) {
-        val parameter = DeleteCookiesParameter(name = name, url = url, domain = domain, path = path)
+        val parameter =
+            DeleteCookiesParameter(name = name, url = url, domain = domain, path = path, partitionKey = partitionKey)
         deleteCookies(parameter)
     }
 
@@ -521,6 +667,9 @@ public class Network(
      * @param downloadThroughput Maximal aggregated download throughput (bytes/sec). -1 disables download throttling.
      * @param uploadThroughput Maximal aggregated upload throughput (bytes/sec).  -1 disables upload throttling.
      * @param connectionType Connection type if known.
+     * @param packetLoss WebRTC packet loss (percent, 0-100). 0 disables packet loss emulation, 100 drops all the packets.
+     * @param packetQueueLength WebRTC packet queue length (packet). 0 removes any queue length limitations.
+     * @param packetReordering WebRTC packetReordering feature.
      */
     public suspend fun emulateNetworkConditions(
         offline: Boolean,
@@ -528,13 +677,19 @@ public class Network(
         downloadThroughput: Double,
         uploadThroughput: Double,
         connectionType: ConnectionType? = null,
+        packetLoss: Double? = null,
+        packetQueueLength: Int? = null,
+        packetReordering: Boolean? = null,
     ) {
         val parameter = EmulateNetworkConditionsParameter(
             offline = offline,
             latency = latency,
             downloadThroughput = downloadThroughput,
             uploadThroughput = uploadThroughput,
-            connectionType = connectionType
+            connectionType = connectionType,
+            packetLoss = packetLoss,
+            packetQueueLength = packetQueueLength,
+            packetReordering = packetReordering
         )
         emulateNetworkConditions(parameter)
     }
@@ -553,16 +708,19 @@ public class Network(
      * @param maxTotalBufferSize Buffer size in bytes to use when preserving network payloads (XHRs, etc).
      * @param maxResourceBufferSize Per-resource buffer size in bytes to use when preserving network payloads (XHRs, etc).
      * @param maxPostDataSize Longest post body size (in bytes) that would be included in requestWillBeSent notification
+     * @param reportDirectSocketTraffic Whether DirectSocket chunk send/receive events should be reported.
      */
     public suspend fun enable(
         maxTotalBufferSize: Int? = null,
         maxResourceBufferSize: Int? = null,
         maxPostDataSize: Int? = null,
+        reportDirectSocketTraffic: Boolean? = null,
     ) {
         val parameter = EnableParameter(
             maxTotalBufferSize = maxTotalBufferSize,
             maxResourceBufferSize = maxResourceBufferSize,
-            maxPostDataSize = maxPostDataSize
+            maxPostDataSize = maxPostDataSize,
+            reportDirectSocketTraffic = reportDirectSocketTraffic
         )
         enable(parameter)
     }
@@ -839,9 +997,7 @@ public class Network(
      * @param sourcePort Cookie source port. Valid values are {-1, [1, 65535]}, -1 indicates an unspecified port.
      * An unspecified port value allows protocol clients to emulate legacy cookie scope for the port.
      * This is a temporary ability and it will be removed in the future.
-     * @param partitionKey Cookie partition key. The site of the top-level URL the browser was visiting at the start
-     * of the request to the endpoint that set the cookie.
-     * If not set, the cookie will be set as not partitioned.
+     * @param partitionKey Cookie partition key. If not set, the cookie will be set as not partitioned.
      */
     public suspend fun setCookie(
         name: String,
@@ -857,7 +1013,7 @@ public class Network(
         sameParty: Boolean? = null,
         sourceScheme: CookieSourceScheme? = null,
         sourcePort: Int? = null,
-        partitionKey: String? = null,
+        partitionKey: CookiePartitionKey? = null,
     ): SetCookieReturn {
         val parameter = SetCookieParameter(
             name = name,
@@ -1073,6 +1229,36 @@ public class Network(
     }
 
     /**
+     * Sets Controls for third-party cookie access
+     * Page reload is required before the new cookie behavior will be observed
+     */
+    public suspend fun setCookieControls(args: SetCookieControlsParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Network.setCookieControls", parameter)
+    }
+
+    /**
+     * Sets Controls for third-party cookie access
+     * Page reload is required before the new cookie behavior will be observed
+     *
+     * @param enableThirdPartyCookieRestriction Whether 3pc restriction is enabled.
+     * @param disableThirdPartyCookieMetadata Whether 3pc grace period exception should be enabled; false by default.
+     * @param disableThirdPartyCookieHeuristics Whether 3pc heuristics exceptions should be enabled; false by default.
+     */
+    public suspend fun setCookieControls(
+        enableThirdPartyCookieRestriction: Boolean,
+        disableThirdPartyCookieMetadata: Boolean,
+        disableThirdPartyCookieHeuristics: Boolean,
+    ) {
+        val parameter = SetCookieControlsParameter(
+            enableThirdPartyCookieRestriction = enableThirdPartyCookieRestriction,
+            disableThirdPartyCookieMetadata = disableThirdPartyCookieMetadata,
+            disableThirdPartyCookieHeuristics = disableThirdPartyCookieHeuristics
+        )
+        setCookieControls(parameter)
+    }
+
+    /**
      * Resource type as it was perceived by the rendering engine.
      */
     @Serializable
@@ -1127,6 +1313,9 @@ public class Network(
 
         @SerialName("Preflight")
         PREFLIGHT,
+
+        @SerialName("FedCM")
+        FEDCM,
 
         @SerialName("Other")
         OTHER,
@@ -1321,6 +1510,14 @@ public class Network(
          */
         public val workerRespondWithSettled: Double,
         /**
+         * Started ServiceWorker static routing source evaluation.
+         */
+        public val workerRouterEvaluationStart: Double? = null,
+        /**
+         * Started cache lookup when the source was evaluated to `cache`.
+         */
+        public val workerCacheLookupStart: Double? = null,
+        /**
          * Started sending request.
          */
         public val sendStart: Double,
@@ -1398,6 +1595,7 @@ public class Network(
         public val headers: Map<String, JsonElement>,
         /**
          * HTTP POST request data.
+         * Use postDataEntries instead.
          */
         public val postData: String? = null,
         /**
@@ -1405,7 +1603,7 @@ public class Network(
          */
         public val hasPostData: Boolean? = null,
         /**
-         * Request body elements. This will be converted from base64 to binary
+         * Request body elements (post data broken into individual entries).
          */
         public val postDataEntries: List<PostDataEntry>? = null,
         /**
@@ -1431,7 +1629,7 @@ public class Network(
         public val trustTokenParams: TrustTokenParams? = null,
         /**
          * True if this resource request is considered to be the 'same site' as the
-         * request correspondinfg to the main frame.
+         * request corresponding to the main frame.
          */
         public val isSameSite: Boolean? = null,
     )
@@ -1580,6 +1778,9 @@ public class Network(
         @SerialName("inspector")
         INSPECTOR,
 
+        @SerialName("integrity")
+        INTEGRITY,
+
         @SerialName("subresource-filter")
         SUBRESOURCE_FILTER,
 
@@ -1598,8 +1799,17 @@ public class Network(
         @SerialName("corp-not-same-origin-after-defaulted-to-same-origin-by-coep")
         CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_COEP,
 
+        @SerialName("corp-not-same-origin-after-defaulted-to-same-origin-by-dip")
+        CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_DIP,
+
+        @SerialName("corp-not-same-origin-after-defaulted-to-same-origin-by-coep-and-dip")
+        CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_COEP_AND_DIP,
+
         @SerialName("corp-not-same-site")
         CORP_NOT_SAME_SITE,
+
+        @SerialName("sri-message-signature-mismatch")
+        SRI_MESSAGE_SIGNATURE_MISMATCH,
     }
 
     /**
@@ -1708,6 +1918,9 @@ public class Network(
 
         @SerialName("PrivateNetworkAccessPermissionDenied")
         PRIVATENETWORKACCESSPERMISSIONDENIED,
+
+        @SerialName("LocalNetworkAccessPermissionDenied")
+        LOCALNETWORKACCESSPERMISSIONDENIED,
     }
 
     @Serializable
@@ -1796,9 +2009,43 @@ public class Network(
         UNSPECIFIEDREASON,
     }
 
+    /**
+     * Source of service worker router.
+     */
+    @Serializable
+    public enum class ServiceWorkerRouterSource {
+        @SerialName("network")
+        NETWORK,
+
+        @SerialName("cache")
+        CACHE,
+
+        @SerialName("fetch-event")
+        FETCH_EVENT,
+
+        @SerialName("race-network-and-fetch-handler")
+        RACE_NETWORK_AND_FETCH_HANDLER,
+
+        @SerialName("race-network-and-cache")
+        RACE_NETWORK_AND_CACHE,
+    }
+
     @Serializable
     public data class ServiceWorkerRouterInfo(
-        public val ruleIdMatched: Int,
+        /**
+         * ID of the rule matched. If there is a matched rule, this field will
+         * be set, otherwiser no value will be set.
+         */
+        public val ruleIdMatched: Int? = null,
+        /**
+         * The router source of the matched rule. If there is a matched rule, this
+         * field will be set, otherwise no value will be set.
+         */
+        public val matchedSourceType: ServiceWorkerRouterSource? = null,
+        /**
+         * The actual router source used.
+         */
+        public val actualSourceType: ServiceWorkerRouterSource? = null,
     )
 
     /**
@@ -1871,7 +2118,14 @@ public class Network(
          */
         public val fromPrefetchCache: Boolean? = null,
         /**
-         * Infomation about how Service Worker Static Router was used.
+         * Specifies that the request was served from the prefetch cache.
+         */
+        public val fromEarlyHints: Boolean? = null,
+        /**
+         * Information about how ServiceWorker Static Router API was used. If this
+         * field is set with `matchedSourceType` field, a matching rule is found.
+         * If this field is set without `matchedSource`, no matching rule is found.
+         * Otherwise, the API is not used.
          */
         public val serviceWorkerRouterInfo: ServiceWorkerRouterInfo? = null,
         /**
@@ -2009,6 +2263,7 @@ public class Network(
         public val type: String,
         /**
          * Initiator JavaScript stack trace, set for Script only.
+         * Requires the Debugger domain to be enabled.
          */
         public val stack: Runtime.StackTrace? = null,
         /**
@@ -2029,6 +2284,23 @@ public class Network(
          * Set if another request triggered this request (e.g. preflight).
          */
         public val requestId: String? = null,
+    )
+
+    /**
+     * cookiePartitionKey object
+     * The representation of the components of the key that are created by the cookiePartitionKey class contained in net/cookies/cookie_partition_key.h.
+     */
+    @Serializable
+    public data class CookiePartitionKey(
+        /**
+         * The site of the top-level URL the browser was visiting at the start
+         * of the request to the endpoint that set the cookie.
+         */
+        public val topLevelSite: String,
+        /**
+         * Indicates if the cookie has any ancestors that are cross-site to the topLevelSite.
+         */
+        public val hasCrossSiteAncestor: Boolean,
     )
 
     /**
@@ -2095,10 +2367,9 @@ public class Network(
          */
         public val sourcePort: Int,
         /**
-         * Cookie partition key. The site of the top-level URL the browser was visiting at the start
-         * of the request to the endpoint that set the cookie.
+         * Cookie partition key.
          */
-        public val partitionKey: String? = null,
+        public val partitionKey: CookiePartitionKey? = null,
         /**
          * True if cookie partition key is opaque.
          */
@@ -2229,6 +2500,54 @@ public class Network(
 
         @SerialName("NameValuePairExceedsMaxSize")
         NAMEVALUEPAIREXCEEDSMAXSIZE,
+
+        @SerialName("PortMismatch")
+        PORTMISMATCH,
+
+        @SerialName("SchemeMismatch")
+        SCHEMEMISMATCH,
+
+        @SerialName("AnonymousContext")
+        ANONYMOUSCONTEXT,
+    }
+
+    /**
+     * Types of reasons why a cookie should have been blocked by 3PCD but is exempted for the request.
+     */
+    @Serializable
+    public enum class CookieExemptionReason {
+        @SerialName("None")
+        NONE,
+
+        @SerialName("UserSetting")
+        USERSETTING,
+
+        @SerialName("TPCDMetadata")
+        TPCDMETADATA,
+
+        @SerialName("TPCDDeprecationTrial")
+        TPCDDEPRECATIONTRIAL,
+
+        @SerialName("TopLevelTPCDDeprecationTrial")
+        TOPLEVELTPCDDEPRECATIONTRIAL,
+
+        @SerialName("TPCDHeuristics")
+        TPCDHEURISTICS,
+
+        @SerialName("EnterprisePolicy")
+        ENTERPRISEPOLICY,
+
+        @SerialName("StorageAccess")
+        STORAGEACCESS,
+
+        @SerialName("TopLevelStorageAccess")
+        TOPLEVELSTORAGEACCESS,
+
+        @SerialName("Scheme")
+        SCHEME,
+
+        @SerialName("SameSiteNoneCookiesInSandbox")
+        SAMESITENONECOOKIESINSANDBOX,
     }
 
     /**
@@ -2254,18 +2573,44 @@ public class Network(
     )
 
     /**
-     * A cookie with was not sent with a request with the corresponding reason.
+     * A cookie should have been blocked by 3PCD but is exempted and stored from a response with the
+     * corresponding reason. A cookie could only have at most one exemption reason.
      */
     @Serializable
-    public data class BlockedCookieWithReason(
+    public data class ExemptedSetCookieWithReason(
         /**
-         * The reason(s) the cookie was blocked.
+         * The reason the cookie was exempted.
          */
-        public val blockedReasons: List<CookieBlockedReason>,
+        public val exemptionReason: CookieExemptionReason,
+        /**
+         * The string representing this individual cookie as it would appear in the header.
+         */
+        public val cookieLine: String,
+        /**
+         * The cookie object representing the cookie.
+         */
+        public val cookie: Cookie,
+    )
+
+    /**
+     * A cookie associated with the request which may or may not be sent with it.
+     * Includes the cookies itself and reasons for blocking or exemption.
+     */
+    @Serializable
+    public data class AssociatedCookie(
         /**
          * The cookie object representing the cookie which was not sent.
          */
         public val cookie: Cookie,
+        /**
+         * The reason(s) the cookie was blocked. If empty means the cookie is included.
+         */
+        public val blockedReasons: List<CookieBlockedReason>,
+        /**
+         * The reason the cookie should have been blocked by 3PCD but is exempted. A cookie could
+         * only have at most one exemption reason.
+         */
+        public val exemptionReason: CookieExemptionReason? = null,
     )
 
     /**
@@ -2329,11 +2674,9 @@ public class Network(
          */
         public val sourcePort: Int? = null,
         /**
-         * Cookie partition key. The site of the top-level URL the browser was visiting at the start
-         * of the request to the endpoint that set the cookie.
-         * If not set, the cookie will be set as not partitioned.
+         * Cookie partition key. If not set, the cookie will be set as not partitioned.
          */
-        public val partitionKey: String? = null,
+        public val partitionKey: CookiePartitionKey? = null,
     )
 
     /**
@@ -2540,6 +2883,11 @@ public class Network(
          */
         public val outerResponse: Response,
         /**
+         * Whether network response for the signed exchange was accompanied by
+         * extra headers.
+         */
+        public val hasExtraInfo: Boolean,
+        /**
          * Information about the signed exchange header.
          */
         public val `header`: SignedExchangeHeader? = null,
@@ -2548,7 +2896,7 @@ public class Network(
          */
         public val securityDetails: SecurityDetails? = null,
         /**
-         * Errors occurred while handling the signed exchagne.
+         * Errors occurred while handling the signed exchange.
          */
         public val errors: List<SignedExchangeError>? = null,
     )
@@ -2572,6 +2920,73 @@ public class Network(
     }
 
     @Serializable
+    public enum class DirectSocketDnsQueryType {
+        @SerialName("ipv4")
+        IPV4,
+
+        @SerialName("ipv6")
+        IPV6,
+    }
+
+    @Serializable
+    public data class DirectTCPSocketOptions(
+        /**
+         * TCP_NODELAY option
+         */
+        public val noDelay: Boolean,
+        /**
+         * Expected to be unsigned integer.
+         */
+        public val keepAliveDelay: Double? = null,
+        /**
+         * Expected to be unsigned integer.
+         */
+        public val sendBufferSize: Double? = null,
+        /**
+         * Expected to be unsigned integer.
+         */
+        public val receiveBufferSize: Double? = null,
+        public val dnsQueryType: DirectSocketDnsQueryType? = null,
+    )
+
+    @Serializable
+    public data class DirectUDPSocketOptions(
+        public val remoteAddr: String? = null,
+        /**
+         * Unsigned int 16.
+         */
+        public val remotePort: Int? = null,
+        public val localAddr: String? = null,
+        /**
+         * Unsigned int 16.
+         */
+        public val localPort: Int? = null,
+        public val dnsQueryType: DirectSocketDnsQueryType? = null,
+        /**
+         * Expected to be unsigned integer.
+         */
+        public val sendBufferSize: Double? = null,
+        /**
+         * Expected to be unsigned integer.
+         */
+        public val receiveBufferSize: Double? = null,
+    )
+
+    @Serializable
+    public data class DirectUDPMessage(
+        public val `data`: String,
+        /**
+         * Null for connected mode.
+         */
+        public val remoteAddr: String? = null,
+        /**
+         * Null for connected mode.
+         * Expected to be unsigned integer.
+         */
+        public val remotePort: Int? = null,
+    )
+
+    @Serializable
     public enum class PrivateNetworkRequestPolicy {
         @SerialName("Allow")
         ALLOW,
@@ -2587,12 +3002,18 @@ public class Network(
 
         @SerialName("PreflightWarn")
         PREFLIGHTWARN,
+
+        @SerialName("PermissionBlock")
+        PERMISSIONBLOCK,
+
+        @SerialName("PermissionWarn")
+        PERMISSIONWARN,
     }
 
     @Serializable
     public enum class IPAddressSpace {
-        @SerialName("Local")
-        LOCAL,
+        @SerialName("Loopback")
+        LOOPBACK,
 
         @SerialName("Private")
         PRIVATE,
@@ -2640,6 +3061,9 @@ public class Network(
 
         @SerialName("RestrictPropertiesPlusCoep")
         RESTRICTPROPERTIESPLUSCOEP,
+
+        @SerialName("NoopenerAllowPopups")
+        NOOPENERALLOWPOPUPS,
     }
 
     @Serializable
@@ -2861,7 +3285,7 @@ public class Network(
          */
         public val type: ResourceType,
         /**
-         * User friendly error message.
+         * Error message. List of network errors: https://cs.chromium.org/chromium/src/net/base/net_error_list.h
          */
         public val errorText: String,
         /**
@@ -3284,6 +3708,149 @@ public class Network(
     )
 
     /**
+     * Fired upon direct_socket.TCPSocket creation.
+     */
+    @Serializable
+    public data class DirectTCPSocketCreatedParameter(
+        public val identifier: String,
+        public val remoteAddr: String,
+        /**
+         * Unsigned int 16.
+         */
+        public val remotePort: Int,
+        public val options: DirectTCPSocketOptions,
+        public val timestamp: Double,
+        public val initiator: Initiator? = null,
+    )
+
+    /**
+     * Fired when direct_socket.TCPSocket connection is opened.
+     */
+    @Serializable
+    public data class DirectTCPSocketOpenedParameter(
+        public val identifier: String,
+        public val remoteAddr: String,
+        /**
+         * Expected to be unsigned integer.
+         */
+        public val remotePort: Int,
+        public val timestamp: Double,
+        public val localAddr: String? = null,
+        /**
+         * Expected to be unsigned integer.
+         */
+        public val localPort: Int? = null,
+    )
+
+    /**
+     * Fired when direct_socket.TCPSocket is aborted.
+     */
+    @Serializable
+    public data class DirectTCPSocketAbortedParameter(
+        public val identifier: String,
+        public val errorMessage: String,
+        public val timestamp: Double,
+    )
+
+    /**
+     * Fired when direct_socket.TCPSocket is closed.
+     */
+    @Serializable
+    public data class DirectTCPSocketClosedParameter(
+        public val identifier: String,
+        public val timestamp: Double,
+    )
+
+    /**
+     * Fired when data is sent to tcp direct socket stream.
+     */
+    @Serializable
+    public data class DirectTCPSocketChunkSentParameter(
+        public val identifier: String,
+        public val `data`: String,
+        public val timestamp: Double,
+    )
+
+    /**
+     * Fired when data is received from tcp direct socket stream.
+     */
+    @Serializable
+    public data class DirectTCPSocketChunkReceivedParameter(
+        public val identifier: String,
+        public val `data`: String,
+        public val timestamp: Double,
+    )
+
+    /**
+     * Fired upon direct_socket.UDPSocket creation.
+     */
+    @Serializable
+    public data class DirectUDPSocketCreatedParameter(
+        public val identifier: String,
+        public val options: DirectUDPSocketOptions,
+        public val timestamp: Double,
+        public val initiator: Initiator? = null,
+    )
+
+    /**
+     * Fired when direct_socket.UDPSocket connection is opened.
+     */
+    @Serializable
+    public data class DirectUDPSocketOpenedParameter(
+        public val identifier: String,
+        public val localAddr: String,
+        /**
+         * Expected to be unsigned integer.
+         */
+        public val localPort: Int,
+        public val timestamp: Double,
+        public val remoteAddr: String? = null,
+        /**
+         * Expected to be unsigned integer.
+         */
+        public val remotePort: Int? = null,
+    )
+
+    /**
+     * Fired when direct_socket.UDPSocket is aborted.
+     */
+    @Serializable
+    public data class DirectUDPSocketAbortedParameter(
+        public val identifier: String,
+        public val errorMessage: String,
+        public val timestamp: Double,
+    )
+
+    /**
+     * Fired when direct_socket.UDPSocket is closed.
+     */
+    @Serializable
+    public data class DirectUDPSocketClosedParameter(
+        public val identifier: String,
+        public val timestamp: Double,
+    )
+
+    /**
+     * Fired when message is sent to udp direct socket stream.
+     */
+    @Serializable
+    public data class DirectUDPSocketChunkSentParameter(
+        public val identifier: String,
+        public val message: DirectUDPMessage,
+        public val timestamp: Double,
+    )
+
+    /**
+     * Fired when message is received from udp direct socket stream.
+     */
+    @Serializable
+    public data class DirectUDPSocketChunkReceivedParameter(
+        public val identifier: String,
+        public val message: DirectUDPMessage,
+        public val timestamp: Double,
+    )
+
+    /**
      * Fired when additional information about a requestWillBeSent event is available from the
      * network stack. Not every requestWillBeSent event will have an additional
      * requestWillBeSentExtraInfo fired for it, and there is no guarantee whether requestWillBeSent
@@ -3297,9 +3864,9 @@ public class Network(
         public val requestId: String,
         /**
          * A list of cookies potentially associated to the requested URL. This includes both cookies sent with
-         * the request and the ones not sent; the latter are distinguished by having blockedReason field set.
+         * the request and the ones not sent; the latter are distinguished by having blockedReasons field set.
          */
-        public val associatedCookies: List<BlockedCookieWithReason>,
+        public val associatedCookies: List<AssociatedCookie>,
         /**
          * Raw request headers as they will be sent over the wire.
          */
@@ -3337,6 +3904,9 @@ public class Network(
         public val blockedCookies: List<BlockedSetCookieWithReason>,
         /**
          * Raw response headers as they were received over the wire.
+         * Duplicate headers in the response are represented as a single key with their values
+         * concatentated using `\n` as the separator.
+         * See also `headersText` that contains verbatim text for HTTP/1.*.
          */
         public val headers: Map<String, JsonElement>,
         /**
@@ -3359,11 +3929,36 @@ public class Network(
          * The cookie partition key that will be used to store partitioned cookies set in this response.
          * Only sent when partitioned cookies are enabled.
          */
-        public val cookiePartitionKey: String? = null,
+        public val cookiePartitionKey: CookiePartitionKey? = null,
         /**
-         * True if partitioned cookies are enabled, but the partition key is not serializeable to string.
+         * True if partitioned cookies are enabled, but the partition key is not serializable to string.
          */
         public val cookiePartitionKeyOpaque: Boolean? = null,
+        /**
+         * A list of cookies which should have been blocked by 3PCD but are exempted and stored from
+         * the response with the corresponding reason.
+         */
+        public val exemptedCookies: List<ExemptedSetCookieWithReason>? = null,
+    )
+
+    /**
+     * Fired when 103 Early Hints headers is received in addition to the common response.
+     * Not every responseReceived event will have an responseReceivedEarlyHints fired.
+     * Only one responseReceivedEarlyHints may be fired for eached responseReceived event.
+     */
+    @Serializable
+    public data class ResponseReceivedEarlyHintsParameter(
+        /**
+         * Request identifier. Used to match this information to another responseReceived event.
+         */
+        public val requestId: String,
+        /**
+         * Raw response headers as they were received over the wire.
+         * Duplicate headers in the response are represented as a single key with their values
+         * concatentated using `\n` as the separator.
+         * See also `headersText` that contains verbatim text for HTTP/1.*.
+         */
+        public val headers: Map<String, JsonElement>,
     )
 
     /**
@@ -3588,6 +4183,11 @@ public class Network(
          * If specified, deletes only cookies with the exact path.
          */
         public val path: String? = null,
+        /**
+         * If specified, deletes only cookies with the the given name and partitionKey where
+         * all partition key attributes match the cookie partition key attribute.
+         */
+        public val partitionKey: CookiePartitionKey? = null,
     )
 
     @Serializable
@@ -3612,6 +4212,18 @@ public class Network(
          * Connection type if known.
          */
         public val connectionType: ConnectionType? = null,
+        /**
+         * WebRTC packet loss (percent, 0-100). 0 disables packet loss emulation, 100 drops all the packets.
+         */
+        public val packetLoss: Double? = null,
+        /**
+         * WebRTC packet queue length (packet). 0 removes any queue length limitations.
+         */
+        public val packetQueueLength: Int? = null,
+        /**
+         * WebRTC packetReordering feature.
+         */
+        public val packetReordering: Boolean? = null,
     )
 
     @Serializable
@@ -3628,6 +4240,10 @@ public class Network(
          * Longest post body size (in bytes) that would be included in requestWillBeSent notification
          */
         public val maxPostDataSize: Int? = null,
+        /**
+         * Whether DirectSocket chunk send/receive events should be reported.
+         */
+        public val reportDirectSocketTraffic: Boolean? = null,
     )
 
     @Serializable
@@ -3853,11 +4469,9 @@ public class Network(
          */
         public val sourcePort: Int? = null,
         /**
-         * Cookie partition key. The site of the top-level URL the browser was visiting at the start
-         * of the request to the endpoint that set the cookie.
-         * If not set, the cookie will be set as not partitioned.
+         * Cookie partition key. If not set, the cookie will be set as not partitioned.
          */
-        public val partitionKey: String? = null,
+        public val partitionKey: CookiePartitionKey? = null,
     )
 
     @Serializable
@@ -3978,5 +4592,21 @@ public class Network(
     @Serializable
     public data class LoadNetworkResourceReturn(
         public val resource: LoadNetworkResourcePageResult,
+    )
+
+    @Serializable
+    public data class SetCookieControlsParameter(
+        /**
+         * Whether 3pc restriction is enabled.
+         */
+        public val enableThirdPartyCookieRestriction: Boolean,
+        /**
+         * Whether 3pc grace period exception should be enabled; false by default.
+         */
+        public val disableThirdPartyCookieMetadata: Boolean,
+        /**
+         * Whether 3pc heuristics exceptions should be enabled; false by default.
+         */
+        public val disableThirdPartyCookieHeuristics: Boolean,
     )
 }

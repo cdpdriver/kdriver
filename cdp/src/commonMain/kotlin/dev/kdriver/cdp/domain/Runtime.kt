@@ -1475,13 +1475,21 @@ public class Runtime(
     @Serializable
     public data class GetHeapUsageReturn(
         /**
-         * Used heap size in bytes.
+         * Used JavaScript heap size in bytes.
          */
         public val usedSize: Double,
         /**
-         * Allocated heap size in bytes.
+         * Allocated JavaScript heap size in bytes.
          */
         public val totalSize: Double,
+        /**
+         * Used size in bytes in the embedder's garbage-collected heap.
+         */
+        public val embedderHeapUsedSize: Double,
+        /**
+         * Size in bytes of backing storage for array buffers and external strings.
+         */
+        public val backingStorageSize: Double,
     )
 
     @Serializable

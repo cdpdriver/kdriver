@@ -50,6 +50,16 @@ public class Animation(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
+     * Event for animation that has been updated.
+     */
+    public val animationUpdated: Flow<AnimationUpdatedParameter> = cdp
+        .events
+        .filter { it.method == "Animation.animationUpdated" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
      * Disables animation domain notifications.
      */
     public suspend fun disable() {
@@ -237,6 +247,9 @@ public class Animation(
         public val playbackRate: Double,
         /**
          * `Animation`'s start time.
+         * Milliseconds for time based animations and
+         * percentage [0 - 100] for scroll driven animations
+         * (i.e. when viewOrScrollTimeline exists).
          */
         public val startTime: Double,
         /**
@@ -256,6 +269,41 @@ public class Animation(
          * animation/transition.
          */
         public val cssId: String? = null,
+        /**
+         * View or scroll timeline
+         */
+        public val viewOrScrollTimeline: ViewOrScrollTimeline? = null,
+    )
+
+    /**
+     * Timeline instance
+     */
+    @Serializable
+    public data class ViewOrScrollTimeline(
+        /**
+         * Scroll container node
+         */
+        public val sourceNodeId: Int? = null,
+        /**
+         * Represents the starting scroll position of the timeline
+         * as a length offset in pixels from scroll origin.
+         */
+        public val startOffset: Double? = null,
+        /**
+         * Represents the ending scroll position of the timeline
+         * as a length offset in pixels from scroll origin.
+         */
+        public val endOffset: Double? = null,
+        /**
+         * The element whose principal box's visibility in the
+         * scrollport defined the progress of the timeline.
+         * Does not exist for animations with ScrollTimeline
+         */
+        public val subjectNodeId: Int? = null,
+        /**
+         * Orientation of the scroll
+         */
+        public val axis: DOM.ScrollOrientation,
     )
 
     /**
@@ -281,6 +329,9 @@ public class Animation(
         public val iterations: Double,
         /**
          * `AnimationEffect`'s iteration duration.
+         * Milliseconds for time based animations and
+         * percentage [0 - 100] for scroll driven animations
+         * (i.e. when viewOrScrollTimeline exists).
          */
         public val duration: Double,
         /**
@@ -364,6 +415,17 @@ public class Animation(
     public data class AnimationStartedParameter(
         /**
          * Animation that was started.
+         */
+        public val animation: Animation,
+    )
+
+    /**
+     * Event for animation that has been updated.
+     */
+    @Serializable
+    public data class AnimationUpdatedParameter(
+        /**
+         * Animation that was updated.
          */
         public val animation: Animation,
     )

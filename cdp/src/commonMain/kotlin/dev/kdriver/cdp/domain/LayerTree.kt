@@ -345,7 +345,7 @@ public class LayerTree(
     @Serializable
     public data class LayerTreeDidChangeParameter(
         /**
-         * Layer tree, absent if not in the comspositing mode.
+         * Layer tree, absent if not in the compositing mode.
          */
         public val layers: List<Layer>? = null,
     )
