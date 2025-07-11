@@ -5,6 +5,14 @@ import dev.kdriver.cdp.CDP
 import dev.kdriver.cdp.Domain
 import dev.kdriver.cdp.cacheGeneratedDomain
 import dev.kdriver.cdp.getGeneratedDomain
+import kotlin.Boolean
+import kotlin.Deprecated
+import kotlin.Int
+import kotlin.String
+import kotlin.collections.List
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -225,10 +233,8 @@ public class DOMDebugger(
     public enum class DOMBreakpointType {
         @SerialName("subtree-modified")
         SUBTREE_MODIFIED,
-
         @SerialName("attribute-modified")
         ATTRIBUTE_MODIFIED,
-
         @SerialName("node-removed")
         NODE_REMOVED,
     }
@@ -240,7 +246,6 @@ public class DOMDebugger(
     public enum class CSPViolationType {
         @SerialName("trustedtype-sink-violation")
         TRUSTEDTYPE_SINK_VIOLATION,
-
         @SerialName("trustedtype-policy-violation")
         TRUSTEDTYPE_POLICY_VIOLATION,
     }

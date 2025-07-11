@@ -214,6 +214,9 @@ public class WebAudio(
 
         @SerialName("closed")
         CLOSED,
+
+        @SerialName("interrupted")
+        INTERRUPTED,
     }
 
     /**

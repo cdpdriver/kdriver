@@ -189,7 +189,7 @@ public class Preload(
      * that had a speculation rule that triggered the attempt, and the
      * BackendNodeIds of <a href> or <area href> elements that triggered the
      * attempt (in the case of attempts triggered by a document rule). It is
-     * possible for mulitple rule sets and links to trigger a single attempt.
+     * possible for multiple rule sets and links to trigger a single attempt.
      */
     @Serializable
     public data class PreloadingAttemptSource(
@@ -220,9 +220,6 @@ public class Preload(
 
         @SerialName("NavigationRequestBlockedByCsp")
         NAVIGATIONREQUESTBLOCKEDBYCSP,
-
-        @SerialName("MainFrameNavigation")
-        MAINFRAMENAVIGATION,
 
         @SerialName("MojoBinderPolicy")
         MOJOBINDERPOLICY,
@@ -397,6 +394,33 @@ public class Preload(
 
         @SerialName("ActivationUrlHasEffectiveUrl")
         ACTIVATIONURLHASEFFECTIVEURL,
+
+        @SerialName("JavaScriptInterfaceAdded")
+        JAVASCRIPTINTERFACEADDED,
+
+        @SerialName("JavaScriptInterfaceRemoved")
+        JAVASCRIPTINTERFACEREMOVED,
+
+        @SerialName("AllPrerenderingCanceled")
+        ALLPRERENDERINGCANCELED,
+
+        @SerialName("WindowClosed")
+        WINDOWCLOSED,
+
+        @SerialName("SlowNetwork")
+        SLOWNETWORK,
+
+        @SerialName("OtherPrerenderedPageActivated")
+        OTHERPRERENDEREDPAGEACTIVATED,
+
+        @SerialName("V8OptimizerDisabled")
+        V8OPTIMIZERDISABLED,
+
+        @SerialName("PrerenderFailedDuringPrefetch")
+        PRERENDERFAILEDDURINGPREFETCH,
+
+        @SerialName("BrowsingDataRemoved")
+        BROWSINGDATAREMOVED,
     }
 
     /**
@@ -448,8 +472,8 @@ public class Preload(
         @SerialName("PrefetchFailedNon2XX")
         PREFETCHFAILEDNON2XX,
 
-        @SerialName("PrefetchFailedPerPageLimitExceeded")
-        PREFETCHFAILEDPERPAGELIMITEXCEEDED,
+        @SerialName("PrefetchEvictedAfterBrowsingDataRemoved")
+        PREFETCHEVICTEDAFTERBROWSINGDATAREMOVED,
 
         @SerialName("PrefetchEvictedAfterCandidateRemoved")
         PREFETCHEVICTEDAFTERCANDIDATEREMOVED,
@@ -495,6 +519,15 @@ public class Preload(
 
         @SerialName("PrefetchNotEligibleUserHasServiceWorker")
         PREFETCHNOTELIGIBLEUSERHASSERVICEWORKER,
+
+        @SerialName("PrefetchNotEligibleUserHasServiceWorkerNoFetchHandler")
+        PREFETCHNOTELIGIBLEUSERHASSERVICEWORKERNOFETCHHANDLER,
+
+        @SerialName("PrefetchNotEligibleRedirectFromServiceWorker")
+        PREFETCHNOTELIGIBLEREDIRECTFROMSERVICEWORKER,
+
+        @SerialName("PrefetchNotEligibleRedirectToServiceWorker")
+        PREFETCHNOTELIGIBLEREDIRECTTOSERVICEWORKER,
 
         @SerialName("PrefetchNotEligibleBatterySaverEnabled")
         PREFETCHNOTELIGIBLEBATTERYSAVERENABLED,
@@ -565,6 +598,7 @@ public class Preload(
     @Serializable
     public data class PrefetchStatusUpdatedParameter(
         public val key: PreloadingAttemptKey,
+        public val pipelineId: String,
         /**
          * The frame id of the frame initiating prefetch.
          */
@@ -581,6 +615,7 @@ public class Preload(
     @Serializable
     public data class PrerenderStatusUpdatedParameter(
         public val key: PreloadingAttemptKey,
+        public val pipelineId: String,
         public val status: PreloadingStatus,
         public val prerenderStatus: PrerenderFinalStatus? = null,
         /**

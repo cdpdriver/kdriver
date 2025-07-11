@@ -5,6 +5,12 @@ import dev.kdriver.cdp.CDP
 import dev.kdriver.cdp.Domain
 import dev.kdriver.cdp.cacheGeneratedDomain
 import dev.kdriver.cdp.getGeneratedDomain
+import kotlin.Boolean
+import kotlin.Int
+import kotlin.String
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -49,7 +55,7 @@ public class IO(
      * Read a chunk of the stream
      *
      * @param handle Handle of the stream to read.
-     * @param offset Seek to the specified offset before reading (if not specificed, proceed with offset
+     * @param offset Seek to the specified offset before reading (if not specified, proceed with offset
      * following the last read). Some types of streams may only support sequential reads.
      * @param size Maximum number of bytes to read (left upon the agent discretion if not specified).
      */
@@ -96,7 +102,7 @@ public class IO(
          */
         public val handle: String,
         /**
-         * Seek to the specified offset before reading (if not specificed, proceed with offset
+         * Seek to the specified offset before reading (if not specified, proceed with offset
          * following the last read). Some types of streams may only support sequential reads.
          */
         public val offset: Int? = null,

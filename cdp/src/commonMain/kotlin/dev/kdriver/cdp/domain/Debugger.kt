@@ -27,6 +27,7 @@ public class Debugger(
 ) : Domain {
     /**
      * Fired when breakpoint is resolved to an actual script and location.
+     * Deprecated in favor of `resolvedBreakpoints` in the `scriptParsed` event.
      */
     public val breakpointResolved: Flow<BreakpointResolvedParameter> = cdp
         .events
@@ -466,6 +467,28 @@ public class Debugger(
     }
 
     /**
+     * Replace previous blackbox execution contexts with passed ones. Forces backend to skip
+     * stepping/pausing in scripts in these execution contexts. VM will try to leave blackboxed script by
+     * performing 'step in' several times, finally resorting to 'step out' if unsuccessful.
+     */
+    public suspend fun setBlackboxExecutionContexts(args: SetBlackboxExecutionContextsParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Debugger.setBlackboxExecutionContexts", parameter)
+    }
+
+    /**
+     * Replace previous blackbox execution contexts with passed ones. Forces backend to skip
+     * stepping/pausing in scripts in these execution contexts. VM will try to leave blackboxed script by
+     * performing 'step in' several times, finally resorting to 'step out' if unsuccessful.
+     *
+     * @param uniqueIds Array of execution context unique ids for the debugger to ignore.
+     */
+    public suspend fun setBlackboxExecutionContexts(uniqueIds: List<String>) {
+        val parameter = SetBlackboxExecutionContextsParameter(uniqueIds = uniqueIds)
+        setBlackboxExecutionContexts(parameter)
+    }
+
+    /**
      * Replace previous blackbox patterns with passed ones. Forces backend to skip stepping/pausing in
      * scripts with url matching one of the patterns. VM will try to leave blackboxed script by
      * performing 'step in' several times, finally resorting to 'step out' if unsuccessful.
@@ -481,9 +504,10 @@ public class Debugger(
      * performing 'step in' several times, finally resorting to 'step out' if unsuccessful.
      *
      * @param patterns Array of regexps that will be used to check script url for blackbox state.
+     * @param skipAnonymous If true, also ignore scripts with no source url.
      */
-    public suspend fun setBlackboxPatterns(patterns: List<String>) {
-        val parameter = SetBlackboxPatternsParameter(patterns = patterns)
+    public suspend fun setBlackboxPatterns(patterns: List<String>, skipAnonymous: Boolean? = null) {
+        val parameter = SetBlackboxPatternsParameter(patterns = patterns, skipAnonymous = skipAnonymous)
         setBlackboxPatterns(parameter)
     }
 
@@ -1009,8 +1033,21 @@ public class Debugger(
         public val externalURL: String? = null,
     )
 
+    @Serializable
+    public data class ResolvedBreakpoint(
+        /**
+         * Breakpoint unique identifier.
+         */
+        public val breakpointId: String,
+        /**
+         * Actual breakpoint location.
+         */
+        public val location: Location,
+    )
+
     /**
      * Fired when breakpoint is resolved to an actual script and location.
+     * Deprecated in favor of `resolvedBreakpoints` in the `scriptParsed` event.
      */
     @Serializable
     public data class BreakpointResolvedParameter(
@@ -1097,6 +1134,10 @@ public class Debugger(
          */
         public val hash: String,
         /**
+         * For Wasm modules, the content of the `build_id` custom section. For JavaScript the `debugId` magic comment.
+         */
+        public val buildId: String,
+        /**
          * Embedder-specific auxiliary data likely matching {isDefault: boolean, type: 'default'|'isolated'|'worker', frameId: string}
          */
         public val executionContextAuxData: Map<String, JsonElement>? = null,
@@ -1173,6 +1214,10 @@ public class Debugger(
          */
         public val hash: String,
         /**
+         * For Wasm modules, the content of the `build_id` custom section. For JavaScript the `debugId` magic comment.
+         */
+        public val buildId: String,
+        /**
          * Embedder-specific auxiliary data likely matching {isDefault: boolean, type: 'default'|'isolated'|'worker', frameId: string}
          */
         public val executionContextAuxData: Map<String, JsonElement>? = null,
@@ -1209,13 +1254,19 @@ public class Debugger(
          */
         public val scriptLanguage: ScriptLanguage? = null,
         /**
-         * If the scriptLanguage is WebASsembly, the source of debug symbols for the module.
+         * If the scriptLanguage is WebAssembly, the source of debug symbols for the module.
          */
-        public val debugSymbols: DebugSymbols? = null,
+        public val debugSymbols: List<DebugSymbols>? = null,
         /**
          * The name the embedder supplied for this script.
          */
         public val embedderName: String? = null,
+        /**
+         * The list of set breakpoints in this script if calls to `setBreakpointByUrl`
+         * matches this script's URL or hash. Clients that use this list can ignore the
+         * `breakpointResolved` event. They are equivalent.
+         */
+        public val resolvedBreakpoints: List<ResolvedBreakpoint>? = null,
     )
 
     @Serializable
@@ -1505,11 +1556,23 @@ public class Debugger(
     )
 
     @Serializable
+    public data class SetBlackboxExecutionContextsParameter(
+        /**
+         * Array of execution context unique ids for the debugger to ignore.
+         */
+        public val uniqueIds: List<String>,
+    )
+
+    @Serializable
     public data class SetBlackboxPatternsParameter(
         /**
          * Array of regexps that will be used to check script url for blackbox state.
          */
         public val patterns: List<String>,
+        /**
+         * If true, also ignore scripts with no source url.
+         */
+        public val skipAnonymous: Boolean? = null,
     )
 
     @Serializable

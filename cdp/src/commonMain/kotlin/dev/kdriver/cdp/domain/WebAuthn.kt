@@ -35,6 +35,28 @@ public class WebAuthn(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
+     * Triggered when a credential is deleted, e.g. through
+     * PublicKeyCredential.signalUnknownCredential().
+     */
+    public val credentialDeleted: Flow<CredentialDeletedParameter> = cdp
+        .events
+        .filter { it.method == "WebAuthn.credentialDeleted" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Triggered when a credential is updated, e.g. through
+     * PublicKeyCredential.signalCurrentUserDetails().
+     */
+    public val credentialUpdated: Flow<CredentialUpdatedParameter> = cdp
+        .events
+        .filter { it.method == "WebAuthn.credentialUpdated" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
      * Triggered when a credential is used in a webauthn assertion.
      */
     public val credentialAsserted: Flow<CredentialAssertedParameter> = cdp
@@ -286,6 +308,39 @@ public class WebAuthn(
         setAutomaticPresenceSimulation(parameter)
     }
 
+    /**
+     * Allows setting credential properties.
+     * https://w3c.github.io/webauthn/#sctn-automation-set-credential-properties
+     */
+    public suspend fun setCredentialProperties(args: SetCredentialPropertiesParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("WebAuthn.setCredentialProperties", parameter)
+    }
+
+    /**
+     * Allows setting credential properties.
+     * https://w3c.github.io/webauthn/#sctn-automation-set-credential-properties
+     *
+     * @param authenticatorId No description
+     * @param credentialId No description
+     * @param backupEligibility No description
+     * @param backupState No description
+     */
+    public suspend fun setCredentialProperties(
+        authenticatorId: String,
+        credentialId: String,
+        backupEligibility: Boolean? = null,
+        backupState: Boolean? = null,
+    ) {
+        val parameter = SetCredentialPropertiesParameter(
+            authenticatorId = authenticatorId,
+            credentialId = credentialId,
+            backupEligibility = backupEligibility,
+            backupState = backupState
+        )
+        setCredentialProperties(parameter)
+    }
+
     @Serializable
     public enum class AuthenticatorProtocol {
         @SerialName("u2f")
@@ -415,6 +470,29 @@ public class WebAuthn(
          * See https://w3c.github.io/webauthn/#sctn-large-blob-extension (Encoded as a base64 string when passed over JSON)
          */
         public val largeBlob: String? = null,
+        /**
+         * Assertions returned by this credential will have the backup eligibility
+         * (BE) flag set to this value. Defaults to the authenticator's
+         * defaultBackupEligibility value.
+         */
+        public val backupEligibility: Boolean? = null,
+        /**
+         * Assertions returned by this credential will have the backup state (BS)
+         * flag set to this value. Defaults to the authenticator's
+         * defaultBackupState value.
+         */
+        public val backupState: Boolean? = null,
+        /**
+         * The credential's user.name property. Equivalent to empty if not set.
+         * https://w3c.github.io/webauthn/#dom-publickeycredentialentity-name
+         */
+        public val userName: String? = null,
+        /**
+         * The credential's user.displayName property. Equivalent to empty if
+         * not set.
+         * https://w3c.github.io/webauthn/#dom-publickeycredentialuserentity-displayname
+         */
+        public val userDisplayName: String? = null,
     )
 
     /**
@@ -422,6 +500,26 @@ public class WebAuthn(
      */
     @Serializable
     public data class CredentialAddedParameter(
+        public val authenticatorId: String,
+        public val credential: Credential,
+    )
+
+    /**
+     * Triggered when a credential is deleted, e.g. through
+     * PublicKeyCredential.signalUnknownCredential().
+     */
+    @Serializable
+    public data class CredentialDeletedParameter(
+        public val authenticatorId: String,
+        public val credentialId: String,
+    )
+
+    /**
+     * Triggered when a credential is updated, e.g. through
+     * PublicKeyCredential.signalCurrentUserDetails().
+     */
+    @Serializable
+    public data class CredentialUpdatedParameter(
         public val authenticatorId: String,
         public val credential: Credential,
     )
@@ -530,5 +628,13 @@ public class WebAuthn(
     public data class SetAutomaticPresenceSimulationParameter(
         public val authenticatorId: String,
         public val enabled: Boolean,
+    )
+
+    @Serializable
+    public data class SetCredentialPropertiesParameter(
+        public val authenticatorId: String,
+        public val credentialId: String,
+        public val backupEligibility: Boolean? = null,
+        public val backupState: Boolean? = null,
     )
 }

@@ -108,7 +108,7 @@ public class PerformanceTimeline(
         public val frameId: String,
         /**
          * The event type, as specified in https://w3c.github.io/performance-timeline/#dom-performanceentry-entrytype
-         * This determines which of the optional "details" fiedls is present.
+         * This determines which of the optional "details" fields is present.
          */
         public val type: String,
         /**

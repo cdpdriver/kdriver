@@ -164,8 +164,8 @@ public class Overlay(
 
     /**
      * Highlights owner element of the frame with given id.
-     * Deprecated: Doesn't work reliablity and cannot be fixed due to process
-     * separatation (the owner node might be in a different process). Determine
+     * Deprecated: Doesn't work reliably and cannot be fixed due to process
+     * separation (the owner node might be in a different process). Determine
      * the owner node in the client and use highlightNode.
      */
     @Deprecated(message = "")
@@ -176,8 +176,8 @@ public class Overlay(
 
     /**
      * Highlights owner element of the frame with given id.
-     * Deprecated: Doesn't work reliablity and cannot be fixed due to process
-     * separatation (the owner node might be in a different process). Determine
+     * Deprecated: Doesn't work reliably and cannot be fixed due to process
+     * separation (the owner node might be in a different process). Determine
      * the owner node in the client and use highlightNode.
      *
      * @param frameId Identifier of the frame to highlight.
@@ -558,18 +558,20 @@ public class Overlay(
     }
 
     /**
-     * Request that backend shows an overlay with web vital metrics.
+     * Deprecated, no longer has any effect.
      */
+    @Deprecated(message = "")
     public suspend fun setShowWebVitals(args: SetShowWebVitalsParameter) {
         val parameter = Serialization.json.encodeToJsonElement(args)
         cdp.callCommand("Overlay.setShowWebVitals", parameter)
     }
 
     /**
-     * Request that backend shows an overlay with web vital metrics.
+     * Deprecated, no longer has any effect.
      *
      * @param show No description
      */
+    @Deprecated(message = "")
     public suspend fun setShowWebVitals(show: Boolean) {
         val parameter = SetShowWebVitalsParameter(show = show)
         setShowWebVitals(parameter)
@@ -654,7 +656,7 @@ public class Overlay(
     @Serializable
     public data class SourceOrderConfig(
         /**
-         * the color to outline the givent element in.
+         * the color to outline the given element in.
          */
         public val parentOutlineColor: DOM.RGBA,
         /**
@@ -1037,7 +1039,7 @@ public class Overlay(
          */
         public val showCSS: Boolean,
         /**
-         * Seleted platforms to show the overlay.
+         * Selected platforms to show the overlay.
          */
         public val selectedPlatform: String,
         /**

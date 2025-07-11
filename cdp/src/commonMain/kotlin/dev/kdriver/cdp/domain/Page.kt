@@ -71,6 +71,17 @@ public class Page(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
+     * Fired before frame subtree is detached. Emitted before any frame of the
+     * subtree is actually detached.
+     */
+    public val frameSubtreeWillBeDetached: Flow<FrameSubtreeWillBeDetachedParameter> = cdp
+        .events
+        .filter { it.method == "Page.frameSubtreeWillBeDetached" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
      * Fired once navigation of the frame has completed. Frame is now associated with the new loader.
      */
     public val frameNavigated: Flow<FrameNavigatedParameter> = cdp
@@ -93,6 +104,22 @@ public class Page(
     public val frameResized: Flow<Unit> = cdp
         .events
         .filter { it.method == "Page.frameResized" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when a navigation starts. This event is fired for both
+     * renderer-initiated and browser-initiated navigations. For renderer-initiated
+     * navigations, the event is fired after `frameRequestedNavigation`.
+     * Navigation may still be cancelled after the event is issued. Multiple events
+     * can be fired for a single navigation, for example, when a same-document
+     * navigation becomes a cross-document navigation (such as in the case of a
+     * frameset).
+     */
+    public val frameStartedNavigating: Flow<FrameStartedNavigatingParameter> = cdp
+        .events
+        .filter { it.method == "Page.frameStartedNavigating" }
         .map { it.params }
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
@@ -203,7 +230,8 @@ public class Page(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
-     * Fired for top level page lifecycle events such as navigation, load, paint, etc.
+     * Fired for lifecycle events (navigation, load, paint, etc) in the current
+     * target (including local frames).
      */
     public val lifecycleEvent: Flow<LifecycleEventParameter> = cdp
         .events
@@ -497,15 +525,47 @@ public class Page(
     /**
      * Enables page domain notifications.
      */
-    public suspend fun enable() {
-        val parameter = null
+    public suspend fun enable(args: EnableParameter) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
         cdp.callCommand("Page.enable", parameter)
     }
 
-    public suspend fun getAppManifest(): GetAppManifestReturn {
-        val parameter = null
+    /**
+     * Enables page domain notifications.
+     *
+     * @param enableFileChooserOpenedEvent If true, the `Page.fileChooserOpened` event will be emitted regardless of the state set by
+     * `Page.setInterceptFileChooserDialog` command (default: false).
+     */
+    public suspend fun enable(enableFileChooserOpenedEvent: Boolean? = null) {
+        val parameter = EnableParameter(enableFileChooserOpenedEvent = enableFileChooserOpenedEvent)
+        enable(parameter)
+    }
+
+    /**
+     * Gets the processed manifest for this current document.
+     *   This API always waits for the manifest to be loaded.
+     *   If manifestId is provided, and it does not match the manifest of the
+     *     current document, this API errors out.
+     *   If there is not a loaded page, this API errors out immediately.
+     */
+    public suspend fun getAppManifest(args: GetAppManifestParameter): GetAppManifestReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
         val result = cdp.callCommand("Page.getAppManifest", parameter)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Gets the processed manifest for this current document.
+     *   This API always waits for the manifest to be loaded.
+     *   If manifestId is provided, and it does not match the manifest of the
+     *     current document, this API errors out.
+     *   If there is not a loaded page, this API errors out immediately.
+     *
+     * @param manifestId No description
+     */
+    public suspend fun getAppManifest(manifestId: String? = null): GetAppManifestReturn {
+        val parameter = GetAppManifestParameter(manifestId = manifestId)
+        return getAppManifest(parameter)
     }
 
     public suspend fun getInstallabilityErrors(): GetInstallabilityErrorsReturn {
@@ -534,9 +594,9 @@ public class Page(
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
-    public suspend fun getAdScriptId(args: GetAdScriptIdParameter): GetAdScriptIdReturn {
+    public suspend fun getAdScriptAncestry(args: GetAdScriptAncestryParameter): GetAdScriptAncestryReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.getAdScriptId", parameter)
+        val result = cdp.callCommand("Page.getAdScriptAncestry", parameter)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -545,9 +605,9 @@ public class Page(
      *
      * @param frameId No description
      */
-    public suspend fun getAdScriptId(frameId: String): GetAdScriptIdReturn {
-        val parameter = GetAdScriptIdParameter(frameId = frameId)
-        return getAdScriptId(parameter)
+    public suspend fun getAdScriptAncestry(frameId: String): GetAdScriptAncestryReturn {
+        val parameter = GetAdScriptAncestryParameter(frameId = frameId)
+        return getAdScriptAncestry(parameter)
     }
 
     /**
@@ -788,9 +848,20 @@ public class Page(
      * @param ignoreCache If true, browser cache is ignored (as if the user pressed Shift+refresh).
      * @param scriptToEvaluateOnLoad If set, the script will be injected into all frames of the inspected page after reload.
      * Argument will be ignored if reloading dataURL origin.
+     * @param loaderId If set, an error will be thrown if the target page's main frame's
+     * loader id does not match the provided id. This prevents accidentally
+     * reloading an unintended target in case there's a racing navigation.
      */
-    public suspend fun reload(ignoreCache: Boolean? = null, scriptToEvaluateOnLoad: String? = null) {
-        val parameter = ReloadParameter(ignoreCache = ignoreCache, scriptToEvaluateOnLoad = scriptToEvaluateOnLoad)
+    public suspend fun reload(
+        ignoreCache: Boolean? = null,
+        scriptToEvaluateOnLoad: String? = null,
+        loaderId: String? = null,
+    ) {
+        val parameter = ReloadParameter(
+            ignoreCache = ignoreCache,
+            scriptToEvaluateOnLoad = scriptToEvaluateOnLoad,
+            loaderId = loaderId
+        )
         reload(parameter)
     }
 
@@ -1282,7 +1353,7 @@ public class Page(
 
     /**
      * Requests backend to produce compilation cache for the specified scripts.
-     * `scripts` are appeneded to the list of scripts for which the cache
+     * `scripts` are appended to the list of scripts for which the cache
      * would be produced. The list may be reset during page navigation.
      * When script with a matching URL is encountered, the cache is optionally
      * produced upon backend discretion, based on internal heuristics.
@@ -1295,7 +1366,7 @@ public class Page(
 
     /**
      * Requests backend to produce compilation cache for the specified scripts.
-     * `scripts` are appeneded to the list of scripts for which the cache
+     * `scripts` are appended to the list of scripts for which the cache
      * would be produced. The list may be reset during page navigation.
      * When script with a matching URL is encountered, the cache is optionally
      * produced upon backend discretion, based on internal heuristics.
@@ -1352,7 +1423,7 @@ public class Page(
      *
      * @param mode No description
      */
-    public suspend fun setSPCTransactionMode(mode: AutoResponseMode) {
+    public suspend fun setSPCTransactionMode(mode: String) {
         val parameter = SetSPCTransactionModeParameter(mode = mode)
         setSPCTransactionMode(parameter)
     }
@@ -1372,7 +1443,7 @@ public class Page(
      *
      * @param mode No description
      */
-    public suspend fun setRPHRegistrationMode(mode: AutoResponseMode) {
+    public suspend fun setRPHRegistrationMode(mode: String) {
         val parameter = SetRPHRegistrationModeParameter(mode = mode)
         setRPHRegistrationMode(parameter)
     }
@@ -1420,9 +1491,12 @@ public class Page(
      * Instead, a protocol event `Page.fileChooserOpened` is emitted.
      *
      * @param enabled No description
+     * @param cancel If true, cancels the dialog by emitting relevant events (if any)
+     * in addition to not showing it if the interception is enabled
+     * (default: false).
      */
-    public suspend fun setInterceptFileChooserDialog(enabled: Boolean) {
-        val parameter = SetInterceptFileChooserDialogParameter(enabled = enabled)
+    public suspend fun setInterceptFileChooserDialog(enabled: Boolean, cancel: Boolean? = null) {
+        val parameter = SetInterceptFileChooserDialogParameter(enabled = enabled, cancel = cancel)
         setInterceptFileChooserDialog(parameter)
     }
 
@@ -1493,20 +1567,42 @@ public class Page(
     )
 
     /**
-     * Identifies the bottom-most script which caused the frame to be labelled
-     * as an ad.
+     * Identifies the script which caused a script or frame to be labelled as an
+     * ad.
      */
     @Serializable
     public data class AdScriptId(
         /**
-         * Script Id of the bottom-most script which caused the frame to be labelled
-         * as an ad.
+         * Script Id of the script which caused a script or frame to be labelled as
+         * an ad.
          */
         public val scriptId: String,
         /**
-         * Id of adScriptId's debugger.
+         * Id of scriptId's debugger.
          */
         public val debuggerId: String,
+    )
+
+    /**
+     * Encapsulates the script ancestry and the root script filterlist rule that
+     * caused the frame to be labelled as an ad. Only created when `ancestryChain`
+     * is not empty.
+     */
+    @Serializable
+    public data class AdScriptAncestry(
+        /**
+         * A chain of `AdScriptId`s representing the ancestry of an ad script that
+         * led to the creation of a frame. The chain is ordered from the script
+         * itself (lower level) up to its root ancestor that was flagged by
+         * filterlist.
+         */
+        public val ancestryChain: List<AdScriptId>,
+        /**
+         * The filterlist rule that caused the root (last) script in
+         * `ancestryChain` to be ad-tagged. Only populated if the rule is
+         * available.
+         */
+        public val rootScriptFilterlistRule: String? = null,
     )
 
     /**
@@ -1559,12 +1655,16 @@ public class Page(
 
     /**
      * All Permissions Policy features. This enum should match the one defined
-     * in third_party/blink/renderer/core/permissions_policy/permissions_policy_features.json5.
+     * in services/network/public/cpp/permissions_policy/permissions_policy_features.json5.
+     * LINT.IfChange(PermissionsPolicyFeature)
      */
     @Serializable
     public enum class PermissionsPolicyFeature {
         @SerialName("accelerometer")
         ACCELEROMETER,
+
+        @SerialName("all-screens-capture")
+        ALL_SCREENS_CAPTURE,
 
         @SerialName("ambient-light-sensor")
         AMBIENT_LIGHT_SENSOR,
@@ -1623,6 +1723,9 @@ public class Page(
         @SerialName("ch-ua-bitness")
         CH_UA_BITNESS,
 
+        @SerialName("ch-ua-high-entropy-values")
+        CH_UA_HIGH_ENTROPY_VALUES,
+
         @SerialName("ch-ua-platform")
         CH_UA_PLATFORM,
 
@@ -1632,8 +1735,8 @@ public class Page(
         @SerialName("ch-ua-mobile")
         CH_UA_MOBILE,
 
-        @SerialName("ch-ua-form-factor")
-        CH_UA_FORM_FACTOR,
+        @SerialName("ch-ua-form-factors")
+        CH_UA_FORM_FACTORS,
 
         @SerialName("ch-ua-full-version")
         CH_UA_FULL_VERSION,
@@ -1665,11 +1768,29 @@ public class Page(
         @SerialName("compute-pressure")
         COMPUTE_PRESSURE,
 
+        @SerialName("controlled-frame")
+        CONTROLLED_FRAME,
+
         @SerialName("cross-origin-isolated")
         CROSS_ORIGIN_ISOLATED,
 
+        @SerialName("deferred-fetch")
+        DEFERRED_FETCH,
+
+        @SerialName("deferred-fetch-minimal")
+        DEFERRED_FETCH_MINIMAL,
+
+        @SerialName("device-attributes")
+        DEVICE_ATTRIBUTES,
+
+        @SerialName("digital-credentials-get")
+        DIGITAL_CREDENTIALS_GET,
+
         @SerialName("direct-sockets")
         DIRECT_SOCKETS,
+
+        @SerialName("direct-sockets-private")
+        DIRECT_SOCKETS_PRIVATE,
 
         @SerialName("display-capture")
         DISPLAY_CAPTURE,
@@ -1685,6 +1806,9 @@ public class Page(
 
         @SerialName("execution-while-not-rendered")
         EXECUTION_WHILE_NOT_RENDERED,
+
+        @SerialName("fenced-unpartitioned-storage-read")
+        FENCED_UNPARTITIONED_STORAGE_READ,
 
         @SerialName("focus-without-user-activation")
         FOCUS_WITHOUT_USER_ACTIVATION,
@@ -1722,17 +1846,32 @@ public class Page(
         @SerialName("keyboard-map")
         KEYBOARD_MAP,
 
+        @SerialName("language-detector")
+        LANGUAGE_DETECTOR,
+
+        @SerialName("language-model")
+        LANGUAGE_MODEL,
+
         @SerialName("local-fonts")
         LOCAL_FONTS,
 
+        @SerialName("local-network-access")
+        LOCAL_NETWORK_ACCESS,
+
         @SerialName("magnetometer")
         MAGNETOMETER,
+
+        @SerialName("media-playback-while-not-visible")
+        MEDIA_PLAYBACK_WHILE_NOT_VISIBLE,
 
         @SerialName("microphone")
         MICROPHONE,
 
         @SerialName("midi")
         MIDI,
+
+        @SerialName("on-device-speech-recognition")
+        ON_DEVICE_SPEECH_RECOGNITION,
 
         @SerialName("otp-credentials")
         OTP_CREDENTIALS,
@@ -1742,6 +1881,9 @@ public class Page(
 
         @SerialName("picture-in-picture")
         PICTURE_IN_PICTURE,
+
+        @SerialName("popins")
+        POPINS,
 
         @SerialName("private-aggregation")
         PRIVATE_AGGREGATION,
@@ -1757,6 +1899,12 @@ public class Page(
 
         @SerialName("publickey-credentials-get")
         PUBLICKEY_CREDENTIALS_GET,
+
+        @SerialName("record-ad-auction-events")
+        RECORD_AD_AUCTION_EVENTS,
+
+        @SerialName("rewriter")
+        REWRITER,
 
         @SerialName("run-ad-auction")
         RUN_AD_AUCTION,
@@ -1779,14 +1927,23 @@ public class Page(
         @SerialName("smart-card")
         SMART_CARD,
 
+        @SerialName("speaker-selection")
+        SPEAKER_SELECTION,
+
         @SerialName("storage-access")
         STORAGE_ACCESS,
 
         @SerialName("sub-apps")
         SUB_APPS,
 
+        @SerialName("summarizer")
+        SUMMARIZER,
+
         @SerialName("sync-xhr")
         SYNC_XHR,
+
+        @SerialName("translator")
+        TRANSLATOR,
 
         @SerialName("unload")
         UNLOAD,
@@ -1800,6 +1957,9 @@ public class Page(
         @SerialName("vertical-scroll")
         VERTICAL_SCROLL,
 
+        @SerialName("web-app-installation")
+        WEB_APP_INSTALLATION,
+
         @SerialName("web-printing")
         WEB_PRINTING,
 
@@ -1809,8 +1969,8 @@ public class Page(
         @SerialName("window-management")
         WINDOW_MANAGEMENT,
 
-        @SerialName("window-placement")
-        WINDOW_PLACEMENT,
+        @SerialName("writer")
+        WRITER,
 
         @SerialName("xr-spatial-tracking")
         XR_SPATIAL_TRACKING,
@@ -1946,6 +2106,19 @@ public class Page(
     )
 
     /**
+     * Additional information about the frame document's security origin.
+     */
+    @Serializable
+    public data class SecurityOriginDetails(
+        /**
+         * Indicates whether the frame document's security origin is one
+         * of the local hostnames (e.g. "localhost") or IP addresses (IPv4
+         * 127.0.0.0/8 or IPv6 ::1).
+         */
+        public val isLocalhost: Boolean,
+    )
+
+    /**
      * Information about the Frame on the page.
      */
     @Serializable
@@ -1985,6 +2158,10 @@ public class Page(
          * Frame document's security origin.
          */
         public val securityOrigin: String,
+        /**
+         * Additional details about the frame document's security origin.
+         */
+        public val securityOriginDetails: SecurityOriginDetails? = null,
         /**
          * Frame document's mimeType as determined by the browser.
          */
@@ -2215,7 +2392,7 @@ public class Page(
          */
         public val message: String,
         /**
-         * If criticial, this is a non-recoverable parse error.
+         * If critical, this is a non-recoverable parse error.
          */
         public val critical: Int,
         /**
@@ -2395,6 +2572,9 @@ public class Page(
 
     @Serializable
     public enum class ClientNavigationReason {
+        @SerialName("anchorClick")
+        ANCHORCLICK,
+
         @SerialName("formSubmissionGet")
         FORMSUBMISSIONGET,
 
@@ -2404,11 +2584,14 @@ public class Page(
         @SerialName("httpHeaderRefresh")
         HTTPHEADERREFRESH,
 
-        @SerialName("scriptInitiated")
-        SCRIPTINITIATED,
+        @SerialName("initialFrameNavigation")
+        INITIALFRAMENAVIGATION,
 
         @SerialName("metaTagRefresh")
         METATAGREFRESH,
+
+        @SerialName("other")
+        OTHER,
 
         @SerialName("pageBlockInterstitial")
         PAGEBLOCKINTERSTITIAL,
@@ -2416,8 +2599,8 @@ public class Page(
         @SerialName("reload")
         RELOAD,
 
-        @SerialName("anchorClick")
-        ANCHORCLICK,
+        @SerialName("scriptInitiated")
+        SCRIPTINITIATED,
     }
 
     @Serializable
@@ -2508,23 +2691,146 @@ public class Page(
         public val eager: Boolean? = null,
     )
 
+    @Serializable
+    public data class FileFilter(
+        public val name: String? = null,
+        public val accepts: List<String>? = null,
+    )
+
+    @Serializable
+    public data class FileHandler(
+        public val action: String,
+        public val name: String,
+        public val icons: List<ImageResource>? = null,
+        /**
+         * Mimic a map, name is the key, accepts is the value.
+         */
+        public val accepts: List<FileFilter>? = null,
+        /**
+         * Won't repeat the enums, using string for easy comparison. Same as the
+         * other enums below.
+         */
+        public val launchType: String,
+    )
+
     /**
-     * Enum of possible auto-reponse for permisison / prompt dialogs.
+     * The image definition used in both icon and screenshot.
      */
     @Serializable
-    public enum class AutoResponseMode {
-        @SerialName("none")
-        NONE,
+    public data class ImageResource(
+        /**
+         * The src field in the definition, but changing to url in favor of
+         * consistency.
+         */
+        public val url: String,
+        public val sizes: String? = null,
+        public val type: String? = null,
+    )
 
-        @SerialName("autoAccept")
-        AUTOACCEPT,
+    @Serializable
+    public data class LaunchHandler(
+        public val clientMode: String,
+    )
 
-        @SerialName("autoReject")
-        AUTOREJECT,
+    @Serializable
+    public data class ProtocolHandler(
+        public val protocol: String,
+        public val url: String,
+    )
 
-        @SerialName("autoOptOut")
-        AUTOOPTOUT,
-    }
+    @Serializable
+    public data class RelatedApplication(
+        public val id: String? = null,
+        public val url: String,
+    )
+
+    @Serializable
+    public data class ScopeExtension(
+        /**
+         * Instead of using tuple, this field always returns the serialized string
+         * for easy understanding and comparison.
+         */
+        public val origin: String,
+        public val hasOriginWildcard: Boolean,
+    )
+
+    @Serializable
+    public data class Screenshot(
+        public val image: ImageResource,
+        public val formFactor: String,
+        public val label: String? = null,
+    )
+
+    @Serializable
+    public data class ShareTarget(
+        public val action: String,
+        public val method: String,
+        public val enctype: String,
+        /**
+         * Embed the ShareTargetParams
+         */
+        public val title: String? = null,
+        public val text: String? = null,
+        public val url: String? = null,
+        public val files: List<FileFilter>? = null,
+    )
+
+    @Serializable
+    public data class Shortcut(
+        public val name: String,
+        public val url: String,
+    )
+
+    @Serializable
+    public data class WebAppManifest(
+        public val backgroundColor: String? = null,
+        /**
+         * The extra description provided by the manifest.
+         */
+        public val description: String? = null,
+        public val dir: String? = null,
+        public val display: String? = null,
+        /**
+         * The overrided display mode controlled by the user.
+         */
+        public val displayOverrides: List<String>? = null,
+        /**
+         * The handlers to open files.
+         */
+        public val fileHandlers: List<FileHandler>? = null,
+        public val icons: List<ImageResource>? = null,
+        public val id: String? = null,
+        public val lang: String? = null,
+        /**
+         * TODO(crbug.com/1231886): This field is non-standard and part of a Chrome
+         * experiment. See:
+         * https://github.com/WICG/web-app-launch/blob/main/launch_handler.md
+         */
+        public val launchHandler: LaunchHandler? = null,
+        public val name: String? = null,
+        public val orientation: String? = null,
+        public val preferRelatedApplications: Boolean? = null,
+        /**
+         * The handlers to open protocols.
+         */
+        public val protocolHandlers: List<ProtocolHandler>? = null,
+        public val relatedApplications: List<RelatedApplication>? = null,
+        public val scope: String? = null,
+        /**
+         * Non-standard, see
+         * https://github.com/WICG/manifest-incubations/blob/gh-pages/scope_extensions-explainer.md
+         */
+        public val scopeExtensions: List<ScopeExtension>? = null,
+        /**
+         * The screenshots used by chromium.
+         */
+        public val screenshots: List<Screenshot>? = null,
+        public val shareTarget: ShareTarget? = null,
+        public val shortName: String? = null,
+        public val shortcuts: List<Shortcut>? = null,
+        public val startUrl: String? = null,
+        public val themeColor: String? = null,
+    )
 
     /**
      * The type of a frameNavigated event.
@@ -2711,6 +3017,24 @@ public class Page(
         @SerialName("CookieFlushed")
         COOKIEFLUSHED,
 
+        @SerialName("BroadcastChannelOnMessage")
+        BROADCASTCHANNELONMESSAGE,
+
+        @SerialName("WebViewSettingsChanged")
+        WEBVIEWSETTINGSCHANGED,
+
+        @SerialName("WebViewJavaScriptObjectChanged")
+        WEBVIEWJAVASCRIPTOBJECTCHANGED,
+
+        @SerialName("WebViewMessageListenerInjected")
+        WEBVIEWMESSAGELISTENERINJECTED,
+
+        @SerialName("WebViewSafeBrowsingAllowlistChanged")
+        WEBVIEWSAFEBROWSINGALLOWLISTCHANGED,
+
+        @SerialName("WebViewDocumentStartJavascriptChanged")
+        WEBVIEWDOCUMENTSTARTJAVASCRIPTCHANGED,
+
         @SerialName("WebSocket")
         WEBSOCKET,
 
@@ -2738,9 +3062,6 @@ public class Page(
         @SerialName("DocumentLoaded")
         DOCUMENTLOADED,
 
-        @SerialName("DedicatedWorkerOrWorklet")
-        DEDICATEDWORKERORWORKLET,
-
         @SerialName("OutstandingNetworkRequestOthers")
         OUTSTANDINGNETWORKREQUESTOTHERS,
 
@@ -2767,6 +3088,9 @@ public class Page(
 
         @SerialName("SharedWorker")
         SHAREDWORKER,
+
+        @SerialName("SharedWorkerMessage")
+        SHAREDWORKERMESSAGE,
 
         @SerialName("WebLocks")
         WEBLOCKS,
@@ -2800,9 +3124,6 @@ public class Page(
 
         @SerialName("PictureInPicture")
         PICTUREINPICTURE,
-
-        @SerialName("Portal")
-        PORTAL,
 
         @SerialName("SpeechRecognizer")
         SPEECHRECOGNIZER,
@@ -2861,6 +3182,9 @@ public class Page(
         @SerialName("UnloadHandler")
         UNLOADHANDLER,
 
+        @SerialName("ParserAborted")
+        PARSERABORTED,
+
         @SerialName("ContentSecurityHandler")
         CONTENTSECURITYHANDLER,
 
@@ -2890,6 +3214,9 @@ public class Page(
 
         @SerialName("ContentScreenReader")
         CONTENTSCREENREADER,
+
+        @SerialName("ContentDiscarded")
+        CONTENTDISCARDED,
 
         @SerialName("EmbedderPopupBlockerTabHelper")
         EMBEDDERPOPUPBLOCKERTABHELPER,
@@ -2935,6 +3262,21 @@ public class Page(
 
         @SerialName("EmbedderExtensionSentMessageToCachedFrame")
         EMBEDDEREXTENSIONSENTMESSAGETOCACHEDFRAME,
+
+        @SerialName("RequestedByWebViewClient")
+        REQUESTEDBYWEBVIEWCLIENT,
+
+        @SerialName("PostMessageByWebViewClient")
+        POSTMESSAGEBYWEBVIEWCLIENT,
+
+        @SerialName("CacheControlNoStoreDeviceBoundSessionTerminated")
+        CACHECONTROLNOSTOREDEVICEBOUNDSESSIONTERMINATED,
+
+        @SerialName("CacheLimitPrunedOnModerateMemoryPressure")
+        CACHELIMITPRUNEDONMODERATEMEMORYPRESSURE,
+
+        @SerialName("CacheLimitPrunedOnCriticalMemoryPressure")
+        CACHELIMITPRUNEDONCRITICALMEMORYPRESSURE,
     }
 
     /**
@@ -3074,6 +3416,18 @@ public class Page(
     )
 
     /**
+     * Fired before frame subtree is detached. Emitted before any frame of the
+     * subtree is actually detached.
+     */
+    @Serializable
+    public data class FrameSubtreeWillBeDetachedParameter(
+        /**
+         * Id of the frame that is the root of the subtree that will be detached.
+         */
+        public val frameId: String,
+    )
+
+    /**
      * Fired once navigation of the frame has completed. Frame is now associated with the new loader.
      */
     @Serializable
@@ -3094,6 +3448,35 @@ public class Page(
          * Frame object.
          */
         public val frame: Frame,
+    )
+
+    /**
+     * Fired when a navigation starts. This event is fired for both
+     * renderer-initiated and browser-initiated navigations. For renderer-initiated
+     * navigations, the event is fired after `frameRequestedNavigation`.
+     * Navigation may still be cancelled after the event is issued. Multiple events
+     * can be fired for a single navigation, for example, when a same-document
+     * navigation becomes a cross-document navigation (such as in the case of a
+     * frameset).
+     */
+    @Serializable
+    public data class FrameStartedNavigatingParameter(
+        /**
+         * ID of the frame that is being navigated.
+         */
+        public val frameId: String,
+        /**
+         * The URL the navigation started with. The final URL can be different.
+         */
+        public val url: String,
+        /**
+         * Loader identifier. Even though it is present in case of same-document
+         * navigation, the previously committed loaderId would not change unless
+         * the navigation changes from a same-document to a cross-document
+         * navigation.
+         */
+        public val loaderId: String,
+        public val navigationType: String,
     )
 
     /**
@@ -3221,6 +3604,10 @@ public class Page(
     @Serializable
     public data class JavascriptDialogClosedParameter(
         /**
+         * Frame id.
+         */
+        public val frameId: String,
+        /**
          * Whether dialog was confirmed.
          */
         public val result: Boolean,
@@ -3240,6 +3627,10 @@ public class Page(
          * Frame url.
          */
         public val url: String,
+        /**
+         * Frame id.
+         */
+        public val frameId: String,
         /**
          * Message that will be displayed by the dialog.
          */
@@ -3261,7 +3652,8 @@ public class Page(
     )
 
     /**
-     * Fired for top level page lifecycle events such as navigation, load, paint, etc.
+     * Fired for lifecycle events (navigation, load, paint, etc) in the current
+     * target (including local frames).
      */
     @Serializable
     public data class LifecycleEventParameter(
@@ -3286,7 +3678,7 @@ public class Page(
     @Serializable
     public data class BackForwardCacheNotUsedParameter(
         /**
-         * The loader id for the associated navgation.
+         * The loader id for the associated navigation.
          */
         public val loaderId: String,
         /**
@@ -3321,6 +3713,10 @@ public class Page(
          * Frame's new url.
          */
         public val url: String,
+        /**
+         * Navigation type
+         */
+        public val navigationType: String,
     )
 
     /**
@@ -3522,6 +3918,20 @@ public class Page(
     )
 
     @Serializable
+    public data class EnableParameter(
+        /**
+         * If true, the `Page.fileChooserOpened` event will be emitted regardless of the state set by
+         * `Page.setInterceptFileChooserDialog` command (default: false).
+         */
+        public val enableFileChooserOpenedEvent: Boolean? = null,
+    )
+
+    @Serializable
+    public data class GetAppManifestParameter(
+        public val manifestId: String? = null,
+    )
+
+    @Serializable
     public data class GetAppManifestReturn(
         /**
          * Manifest location.
@@ -3533,9 +3943,10 @@ public class Page(
          */
         public val `data`: String?,
         /**
-         * Parsed manifest properties
+         * Parsed manifest properties. Deprecated, use manifest instead.
          */
         public val parsed: AppManifestParsedProperties?,
+        public val manifest: WebAppManifest,
     )
 
     @Serializable
@@ -3561,17 +3972,20 @@ public class Page(
     )
 
     @Serializable
-    public data class GetAdScriptIdParameter(
+    public data class GetAdScriptAncestryParameter(
         public val frameId: String,
     )
 
     @Serializable
-    public data class GetAdScriptIdReturn(
+    public data class GetAdScriptAncestryReturn(
         /**
-         * Identifies the bottom-most script which caused the frame to be labelled
-         * as an ad. Only sent if frame is labelled as an ad and id is available.
+         * The ancestry chain of ad script identifiers leading to this frame's
+         * creation, along with the root script's filterlist rule. The ancestry
+         * chain is ordered from the most immediate script (in the frame creation
+         * stack) to more distant ancestors (that created the immediately preceding
+         * script). Only sent if frame is labelled as an ad and ids are available.
          */
-        public val adScriptId: AdScriptId?,
+        public val adScriptAncestry: AdScriptAncestry?,
     )
 
     @Serializable
@@ -3827,6 +4241,12 @@ public class Page(
          * Argument will be ignored if reloading dataURL origin.
          */
         public val scriptToEvaluateOnLoad: String? = null,
+        /**
+         * If set, an error will be thrown if the target page's main frame's
+         * loader id does not match the provided id. This prevents accidentally
+         * reloading an unintended target in case there's a racing navigation.
+         */
+        public val loaderId: String? = null,
     )
 
     @Serializable
@@ -4113,12 +4533,12 @@ public class Page(
 
     @Serializable
     public data class SetSPCTransactionModeParameter(
-        public val mode: AutoResponseMode,
+        public val mode: String,
     )
 
     @Serializable
     public data class SetRPHRegistrationModeParameter(
-        public val mode: AutoResponseMode,
+        public val mode: String,
     )
 
     @Serializable
@@ -4136,6 +4556,12 @@ public class Page(
     @Serializable
     public data class SetInterceptFileChooserDialogParameter(
         public val enabled: Boolean,
+        /**
+         * If true, cancels the dialog by emitting relevant events (if any)
+         * in addition to not showing it if the interception is enabled
+         * (default: false).
+         */
+        public val cancel: Boolean? = null,
     )
 
     @Serializable
