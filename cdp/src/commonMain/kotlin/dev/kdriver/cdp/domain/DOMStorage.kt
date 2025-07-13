@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -50,9 +47,9 @@ public class DOMStorage(
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
 
-    public suspend fun clear(args: ClearParameter) {
+    public suspend fun clear(args: ClearParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMStorage.clear", parameter)
+        cdp.callCommand("DOMStorage.clear", parameter, mode)
     }
 
     /**
@@ -68,22 +65,25 @@ public class DOMStorage(
     /**
      * Disables storage tracking, prevents storage events from being sent to the client.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOMStorage.disable", parameter)
+        cdp.callCommand("DOMStorage.disable", parameter, mode)
     }
 
     /**
      * Enables storage tracking, storage events will now be delivered to the client.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOMStorage.enable", parameter)
+        cdp.callCommand("DOMStorage.enable", parameter, mode)
     }
 
-    public suspend fun getDOMStorageItems(args: GetDOMStorageItemsParameter): GetDOMStorageItemsReturn {
+    public suspend fun getDOMStorageItems(
+        args: GetDOMStorageItemsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetDOMStorageItemsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOMStorage.getDOMStorageItems", parameter)
+        val result = cdp.callCommand("DOMStorage.getDOMStorageItems", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -97,9 +97,12 @@ public class DOMStorage(
         return getDOMStorageItems(parameter)
     }
 
-    public suspend fun removeDOMStorageItem(args: RemoveDOMStorageItemParameter) {
+    public suspend fun removeDOMStorageItem(
+        args: RemoveDOMStorageItemParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMStorage.removeDOMStorageItem", parameter)
+        cdp.callCommand("DOMStorage.removeDOMStorageItem", parameter, mode)
     }
 
     /**
@@ -113,9 +116,9 @@ public class DOMStorage(
         removeDOMStorageItem(parameter)
     }
 
-    public suspend fun setDOMStorageItem(args: SetDOMStorageItemParameter) {
+    public suspend fun setDOMStorageItem(args: SetDOMStorageItemParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMStorage.setDOMStorageItem", parameter)
+        cdp.callCommand("DOMStorage.setDOMStorageItem", parameter, mode)
     }
 
     /**

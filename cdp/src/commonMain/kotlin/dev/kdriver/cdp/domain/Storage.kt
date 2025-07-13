@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -169,9 +166,12 @@ public class Storage(
     /**
      * Returns a storage key given a frame id.
      */
-    public suspend fun getStorageKeyForFrame(args: GetStorageKeyForFrameParameter): GetStorageKeyForFrameReturn {
+    public suspend fun getStorageKeyForFrame(
+        args: GetStorageKeyForFrameParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetStorageKeyForFrameReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Storage.getStorageKeyForFrame", parameter)
+        val result = cdp.callCommand("Storage.getStorageKeyForFrame", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -188,9 +188,9 @@ public class Storage(
     /**
      * Clears storage for origin.
      */
-    public suspend fun clearDataForOrigin(args: ClearDataForOriginParameter) {
+    public suspend fun clearDataForOrigin(args: ClearDataForOriginParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.clearDataForOrigin", parameter)
+        cdp.callCommand("Storage.clearDataForOrigin", parameter, mode)
     }
 
     /**
@@ -207,9 +207,12 @@ public class Storage(
     /**
      * Clears storage for storage key.
      */
-    public suspend fun clearDataForStorageKey(args: ClearDataForStorageKeyParameter) {
+    public suspend fun clearDataForStorageKey(
+        args: ClearDataForStorageKeyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.clearDataForStorageKey", parameter)
+        cdp.callCommand("Storage.clearDataForStorageKey", parameter, mode)
     }
 
     /**
@@ -226,9 +229,12 @@ public class Storage(
     /**
      * Returns all browser cookies.
      */
-    public suspend fun getCookies(args: GetCookiesParameter): GetCookiesReturn {
+    public suspend fun getCookies(
+        args: GetCookiesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetCookiesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Storage.getCookies", parameter)
+        val result = cdp.callCommand("Storage.getCookies", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -245,9 +251,9 @@ public class Storage(
     /**
      * Sets given cookies.
      */
-    public suspend fun setCookies(args: SetCookiesParameter) {
+    public suspend fun setCookies(args: SetCookiesParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setCookies", parameter)
+        cdp.callCommand("Storage.setCookies", parameter, mode)
     }
 
     /**
@@ -264,9 +270,9 @@ public class Storage(
     /**
      * Clears cookies.
      */
-    public suspend fun clearCookies(args: ClearCookiesParameter) {
+    public suspend fun clearCookies(args: ClearCookiesParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.clearCookies", parameter)
+        cdp.callCommand("Storage.clearCookies", parameter, mode)
     }
 
     /**
@@ -282,9 +288,12 @@ public class Storage(
     /**
      * Returns usage and quota in bytes.
      */
-    public suspend fun getUsageAndQuota(args: GetUsageAndQuotaParameter): GetUsageAndQuotaReturn {
+    public suspend fun getUsageAndQuota(
+        args: GetUsageAndQuotaParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetUsageAndQuotaReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Storage.getUsageAndQuota", parameter)
+        val result = cdp.callCommand("Storage.getUsageAndQuota", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -301,9 +310,12 @@ public class Storage(
     /**
      * Override quota for the specified origin
      */
-    public suspend fun overrideQuotaForOrigin(args: OverrideQuotaForOriginParameter) {
+    public suspend fun overrideQuotaForOrigin(
+        args: OverrideQuotaForOriginParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.overrideQuotaForOrigin", parameter)
+        cdp.callCommand("Storage.overrideQuotaForOrigin", parameter, mode)
     }
 
     /**
@@ -326,9 +338,12 @@ public class Storage(
     /**
      * Registers origin to be notified when an update occurs to its cache storage list.
      */
-    public suspend fun trackCacheStorageForOrigin(args: TrackCacheStorageForOriginParameter) {
+    public suspend fun trackCacheStorageForOrigin(
+        args: TrackCacheStorageForOriginParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.trackCacheStorageForOrigin", parameter)
+        cdp.callCommand("Storage.trackCacheStorageForOrigin", parameter, mode)
     }
 
     /**
@@ -344,9 +359,12 @@ public class Storage(
     /**
      * Registers storage key to be notified when an update occurs to its cache storage list.
      */
-    public suspend fun trackCacheStorageForStorageKey(args: TrackCacheStorageForStorageKeyParameter) {
+    public suspend fun trackCacheStorageForStorageKey(
+        args: TrackCacheStorageForStorageKeyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.trackCacheStorageForStorageKey", parameter)
+        cdp.callCommand("Storage.trackCacheStorageForStorageKey", parameter, mode)
     }
 
     /**
@@ -362,9 +380,12 @@ public class Storage(
     /**
      * Registers origin to be notified when an update occurs to its IndexedDB.
      */
-    public suspend fun trackIndexedDBForOrigin(args: TrackIndexedDBForOriginParameter) {
+    public suspend fun trackIndexedDBForOrigin(
+        args: TrackIndexedDBForOriginParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.trackIndexedDBForOrigin", parameter)
+        cdp.callCommand("Storage.trackIndexedDBForOrigin", parameter, mode)
     }
 
     /**
@@ -380,9 +401,12 @@ public class Storage(
     /**
      * Registers storage key to be notified when an update occurs to its IndexedDB.
      */
-    public suspend fun trackIndexedDBForStorageKey(args: TrackIndexedDBForStorageKeyParameter) {
+    public suspend fun trackIndexedDBForStorageKey(
+        args: TrackIndexedDBForStorageKeyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.trackIndexedDBForStorageKey", parameter)
+        cdp.callCommand("Storage.trackIndexedDBForStorageKey", parameter, mode)
     }
 
     /**
@@ -398,9 +422,12 @@ public class Storage(
     /**
      * Unregisters origin from receiving notifications for cache storage.
      */
-    public suspend fun untrackCacheStorageForOrigin(args: UntrackCacheStorageForOriginParameter) {
+    public suspend fun untrackCacheStorageForOrigin(
+        args: UntrackCacheStorageForOriginParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.untrackCacheStorageForOrigin", parameter)
+        cdp.callCommand("Storage.untrackCacheStorageForOrigin", parameter, mode)
     }
 
     /**
@@ -416,9 +443,12 @@ public class Storage(
     /**
      * Unregisters storage key from receiving notifications for cache storage.
      */
-    public suspend fun untrackCacheStorageForStorageKey(args: UntrackCacheStorageForStorageKeyParameter) {
+    public suspend fun untrackCacheStorageForStorageKey(
+        args: UntrackCacheStorageForStorageKeyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.untrackCacheStorageForStorageKey", parameter)
+        cdp.callCommand("Storage.untrackCacheStorageForStorageKey", parameter, mode)
     }
 
     /**
@@ -434,9 +464,12 @@ public class Storage(
     /**
      * Unregisters origin from receiving notifications for IndexedDB.
      */
-    public suspend fun untrackIndexedDBForOrigin(args: UntrackIndexedDBForOriginParameter) {
+    public suspend fun untrackIndexedDBForOrigin(
+        args: UntrackIndexedDBForOriginParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.untrackIndexedDBForOrigin", parameter)
+        cdp.callCommand("Storage.untrackIndexedDBForOrigin", parameter, mode)
     }
 
     /**
@@ -452,9 +485,12 @@ public class Storage(
     /**
      * Unregisters storage key from receiving notifications for IndexedDB.
      */
-    public suspend fun untrackIndexedDBForStorageKey(args: UntrackIndexedDBForStorageKeyParameter) {
+    public suspend fun untrackIndexedDBForStorageKey(
+        args: UntrackIndexedDBForStorageKeyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.untrackIndexedDBForStorageKey", parameter)
+        cdp.callCommand("Storage.untrackIndexedDBForStorageKey", parameter, mode)
     }
 
     /**
@@ -471,9 +507,9 @@ public class Storage(
      * Returns the number of stored Trust Tokens per issuer for the
      * current browsing context.
      */
-    public suspend fun getTrustTokens(): GetTrustTokensReturn {
+    public suspend fun getTrustTokens(mode: CommandMode = CommandMode.DEFAULT): GetTrustTokensReturn {
         val parameter = null
-        val result = cdp.callCommand("Storage.getTrustTokens", parameter)
+        val result = cdp.callCommand("Storage.getTrustTokens", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -481,9 +517,12 @@ public class Storage(
      * Removes all Trust Tokens issued by the provided issuerOrigin.
      * Leaves other stored data, including the issuer's Redemption Records, intact.
      */
-    public suspend fun clearTrustTokens(args: ClearTrustTokensParameter): ClearTrustTokensReturn {
+    public suspend fun clearTrustTokens(
+        args: ClearTrustTokensParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): ClearTrustTokensReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Storage.clearTrustTokens", parameter)
+        val result = cdp.callCommand("Storage.clearTrustTokens", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -501,9 +540,12 @@ public class Storage(
     /**
      * Gets details for a named interest group.
      */
-    public suspend fun getInterestGroupDetails(args: GetInterestGroupDetailsParameter): GetInterestGroupDetailsReturn {
+    public suspend fun getInterestGroupDetails(
+        args: GetInterestGroupDetailsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetInterestGroupDetailsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Storage.getInterestGroupDetails", parameter)
+        val result = cdp.callCommand("Storage.getInterestGroupDetails", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -521,9 +563,12 @@ public class Storage(
     /**
      * Enables/Disables issuing of interestGroupAccessed events.
      */
-    public suspend fun setInterestGroupTracking(args: SetInterestGroupTrackingParameter) {
+    public suspend fun setInterestGroupTracking(
+        args: SetInterestGroupTrackingParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setInterestGroupTracking", parameter)
+        cdp.callCommand("Storage.setInterestGroupTracking", parameter, mode)
     }
 
     /**
@@ -540,9 +585,12 @@ public class Storage(
      * Enables/Disables issuing of interestGroupAuctionEventOccurred and
      * interestGroupAuctionNetworkRequestCreated.
      */
-    public suspend fun setInterestGroupAuctionTracking(args: SetInterestGroupAuctionTrackingParameter) {
+    public suspend fun setInterestGroupAuctionTracking(
+        args: SetInterestGroupAuctionTrackingParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setInterestGroupAuctionTracking", parameter)
+        cdp.callCommand("Storage.setInterestGroupAuctionTracking", parameter, mode)
     }
 
     /**
@@ -559,9 +607,12 @@ public class Storage(
     /**
      * Gets metadata for an origin's shared storage.
      */
-    public suspend fun getSharedStorageMetadata(args: GetSharedStorageMetadataParameter): GetSharedStorageMetadataReturn {
+    public suspend fun getSharedStorageMetadata(
+        args: GetSharedStorageMetadataParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetSharedStorageMetadataReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Storage.getSharedStorageMetadata", parameter)
+        val result = cdp.callCommand("Storage.getSharedStorageMetadata", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -578,9 +629,12 @@ public class Storage(
     /**
      * Gets the entries in an given origin's shared storage.
      */
-    public suspend fun getSharedStorageEntries(args: GetSharedStorageEntriesParameter): GetSharedStorageEntriesReturn {
+    public suspend fun getSharedStorageEntries(
+        args: GetSharedStorageEntriesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetSharedStorageEntriesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Storage.getSharedStorageEntries", parameter)
+        val result = cdp.callCommand("Storage.getSharedStorageEntries", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -597,9 +651,12 @@ public class Storage(
     /**
      * Sets entry with `key` and `value` for a given origin's shared storage.
      */
-    public suspend fun setSharedStorageEntry(args: SetSharedStorageEntryParameter) {
+    public suspend fun setSharedStorageEntry(
+        args: SetSharedStorageEntryParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setSharedStorageEntry", parameter)
+        cdp.callCommand("Storage.setSharedStorageEntry", parameter, mode)
     }
 
     /**
@@ -629,9 +686,12 @@ public class Storage(
     /**
      * Deletes entry for `key` (if it exists) for a given origin's shared storage.
      */
-    public suspend fun deleteSharedStorageEntry(args: DeleteSharedStorageEntryParameter) {
+    public suspend fun deleteSharedStorageEntry(
+        args: DeleteSharedStorageEntryParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.deleteSharedStorageEntry", parameter)
+        cdp.callCommand("Storage.deleteSharedStorageEntry", parameter, mode)
     }
 
     /**
@@ -648,9 +708,12 @@ public class Storage(
     /**
      * Clears all entries for a given origin's shared storage.
      */
-    public suspend fun clearSharedStorageEntries(args: ClearSharedStorageEntriesParameter) {
+    public suspend fun clearSharedStorageEntries(
+        args: ClearSharedStorageEntriesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.clearSharedStorageEntries", parameter)
+        cdp.callCommand("Storage.clearSharedStorageEntries", parameter, mode)
     }
 
     /**
@@ -666,9 +729,12 @@ public class Storage(
     /**
      * Resets the budget for `ownerOrigin` by clearing all budget withdrawals.
      */
-    public suspend fun resetSharedStorageBudget(args: ResetSharedStorageBudgetParameter) {
+    public suspend fun resetSharedStorageBudget(
+        args: ResetSharedStorageBudgetParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.resetSharedStorageBudget", parameter)
+        cdp.callCommand("Storage.resetSharedStorageBudget", parameter, mode)
     }
 
     /**
@@ -684,9 +750,12 @@ public class Storage(
     /**
      * Enables/disables issuing of sharedStorageAccessed events.
      */
-    public suspend fun setSharedStorageTracking(args: SetSharedStorageTrackingParameter) {
+    public suspend fun setSharedStorageTracking(
+        args: SetSharedStorageTrackingParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setSharedStorageTracking", parameter)
+        cdp.callCommand("Storage.setSharedStorageTracking", parameter, mode)
     }
 
     /**
@@ -702,9 +771,12 @@ public class Storage(
     /**
      * Set tracking for a storage key's buckets.
      */
-    public suspend fun setStorageBucketTracking(args: SetStorageBucketTrackingParameter) {
+    public suspend fun setStorageBucketTracking(
+        args: SetStorageBucketTrackingParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setStorageBucketTracking", parameter)
+        cdp.callCommand("Storage.setStorageBucketTracking", parameter, mode)
     }
 
     /**
@@ -721,9 +793,12 @@ public class Storage(
     /**
      * Deletes the Storage Bucket with the given storage key and bucket name.
      */
-    public suspend fun deleteStorageBucket(args: DeleteStorageBucketParameter) {
+    public suspend fun deleteStorageBucket(
+        args: DeleteStorageBucketParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.deleteStorageBucket", parameter)
+        cdp.callCommand("Storage.deleteStorageBucket", parameter, mode)
     }
 
     /**
@@ -739,18 +814,21 @@ public class Storage(
     /**
      * Deletes state for sites identified as potential bounce trackers, immediately.
      */
-    public suspend fun runBounceTrackingMitigations(): RunBounceTrackingMitigationsReturn {
+    public suspend fun runBounceTrackingMitigations(mode: CommandMode = CommandMode.DEFAULT): RunBounceTrackingMitigationsReturn {
         val parameter = null
-        val result = cdp.callCommand("Storage.runBounceTrackingMitigations", parameter)
+        val result = cdp.callCommand("Storage.runBounceTrackingMitigations", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * https://wicg.github.io/attribution-reporting-api/
      */
-    public suspend fun setAttributionReportingLocalTestingMode(args: SetAttributionReportingLocalTestingModeParameter) {
+    public suspend fun setAttributionReportingLocalTestingMode(
+        args: SetAttributionReportingLocalTestingModeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setAttributionReportingLocalTestingMode", parameter)
+        cdp.callCommand("Storage.setAttributionReportingLocalTestingMode", parameter, mode)
     }
 
     /**
@@ -766,9 +844,12 @@ public class Storage(
     /**
      * Enables/disables issuing of Attribution Reporting events.
      */
-    public suspend fun setAttributionReportingTracking(args: SetAttributionReportingTrackingParameter) {
+    public suspend fun setAttributionReportingTracking(
+        args: SetAttributionReportingTrackingParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setAttributionReportingTracking", parameter)
+        cdp.callCommand("Storage.setAttributionReportingTracking", parameter, mode)
     }
 
     /**
@@ -785,9 +866,9 @@ public class Storage(
      * Sends all pending Attribution Reports immediately, regardless of their
      * scheduled report time.
      */
-    public suspend fun sendPendingAttributionReports(): SendPendingAttributionReportsReturn {
+    public suspend fun sendPendingAttributionReports(mode: CommandMode = CommandMode.DEFAULT): SendPendingAttributionReportsReturn {
         val parameter = null
-        val result = cdp.callCommand("Storage.sendPendingAttributionReports", parameter)
+        val result = cdp.callCommand("Storage.sendPendingAttributionReports", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -795,9 +876,9 @@ public class Storage(
      * Returns the effective Related Website Sets in use by this profile for the browser
      * session. The effective Related Website Sets will not change during a browser session.
      */
-    public suspend fun getRelatedWebsiteSets(): GetRelatedWebsiteSetsReturn {
+    public suspend fun getRelatedWebsiteSets(mode: CommandMode = CommandMode.DEFAULT): GetRelatedWebsiteSetsReturn {
         val parameter = null
-        val result = cdp.callCommand("Storage.getRelatedWebsiteSets", parameter)
+        val result = cdp.callCommand("Storage.getRelatedWebsiteSets", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -806,9 +887,12 @@ public class Storage(
      * existing grace period URL pattern rules.
      * https://developers.google.com/privacy-sandbox/cookies/temporary-exceptions/grace-period
      */
-    public suspend fun getAffectedUrlsForThirdPartyCookieMetadata(args: GetAffectedUrlsForThirdPartyCookieMetadataParameter): GetAffectedUrlsForThirdPartyCookieMetadataReturn {
+    public suspend fun getAffectedUrlsForThirdPartyCookieMetadata(
+        args: GetAffectedUrlsForThirdPartyCookieMetadataParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetAffectedUrlsForThirdPartyCookieMetadataReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Storage.getAffectedUrlsForThirdPartyCookieMetadata", parameter)
+        val result = cdp.callCommand("Storage.getAffectedUrlsForThirdPartyCookieMetadata", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -831,9 +915,12 @@ public class Storage(
         return getAffectedUrlsForThirdPartyCookieMetadata(parameter)
     }
 
-    public suspend fun setProtectedAudienceKAnonymity(args: SetProtectedAudienceKAnonymityParameter) {
+    public suspend fun setProtectedAudienceKAnonymity(
+        args: SetProtectedAudienceKAnonymityParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setProtectedAudienceKAnonymity", parameter)
+        cdp.callCommand("Storage.setProtectedAudienceKAnonymity", parameter, mode)
     }
 
     /**

@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -59,25 +56,28 @@ public class Security(
     /**
      * Disables tracking security state changes.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Security.disable", parameter)
+        cdp.callCommand("Security.disable", parameter, mode)
     }
 
     /**
      * Enables tracking security state changes.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Security.enable", parameter)
+        cdp.callCommand("Security.enable", parameter, mode)
     }
 
     /**
      * Enable/disable whether all certificate errors should be ignored.
      */
-    public suspend fun setIgnoreCertificateErrors(args: SetIgnoreCertificateErrorsParameter) {
+    public suspend fun setIgnoreCertificateErrors(
+        args: SetIgnoreCertificateErrorsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Security.setIgnoreCertificateErrors", parameter)
+        cdp.callCommand("Security.setIgnoreCertificateErrors", parameter, mode)
     }
 
     /**
@@ -94,9 +94,12 @@ public class Security(
      * Handles a certificate error that fired a certificateError event.
      */
     @Deprecated(message = "")
-    public suspend fun handleCertificateError(args: HandleCertificateErrorParameter) {
+    public suspend fun handleCertificateError(
+        args: HandleCertificateErrorParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Security.handleCertificateError", parameter)
+        cdp.callCommand("Security.handleCertificateError", parameter, mode)
     }
 
     /**
@@ -116,9 +119,12 @@ public class Security(
      * be handled by the DevTools client and should be answered with `handleCertificateError` commands.
      */
     @Deprecated(message = "")
-    public suspend fun setOverrideCertificateErrors(args: SetOverrideCertificateErrorsParameter) {
+    public suspend fun setOverrideCertificateErrors(
+        args: SetOverrideCertificateErrorsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Security.setOverrideCertificateErrors", parameter)
+        cdp.callCommand("Security.setOverrideCertificateErrors", parameter, mode)
     }
 
     /**

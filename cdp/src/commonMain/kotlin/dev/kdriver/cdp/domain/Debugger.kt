@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -80,9 +77,9 @@ public class Debugger(
     /**
      * Continues execution until specific location is reached.
      */
-    public suspend fun continueToLocation(args: ContinueToLocationParameter) {
+    public suspend fun continueToLocation(args: ContinueToLocationParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.continueToLocation", parameter)
+        cdp.callCommand("Debugger.continueToLocation", parameter, mode)
     }
 
     /**
@@ -99,18 +96,18 @@ public class Debugger(
     /**
      * Disables debugger for given page.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Debugger.disable", parameter)
+        cdp.callCommand("Debugger.disable", parameter, mode)
     }
 
     /**
      * Enables debugger for the given page. Clients should not assume that the debugging has been
      * enabled until the result for this command is received.
      */
-    public suspend fun enable(args: EnableParameter): EnableReturn {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT): EnableReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.enable", parameter)
+        val result = cdp.callCommand("Debugger.enable", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -129,9 +126,12 @@ public class Debugger(
     /**
      * Evaluates expression on a given call frame.
      */
-    public suspend fun evaluateOnCallFrame(args: EvaluateOnCallFrameParameter): EvaluateOnCallFrameReturn {
+    public suspend fun evaluateOnCallFrame(
+        args: EvaluateOnCallFrameParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): EvaluateOnCallFrameReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.evaluateOnCallFrame", parameter)
+        val result = cdp.callCommand("Debugger.evaluateOnCallFrame", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -180,9 +180,12 @@ public class Debugger(
      * Returns possible locations for breakpoint. scriptId in start and end range locations should be
      * the same.
      */
-    public suspend fun getPossibleBreakpoints(args: GetPossibleBreakpointsParameter): GetPossibleBreakpointsReturn {
+    public suspend fun getPossibleBreakpoints(
+        args: GetPossibleBreakpointsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetPossibleBreakpointsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.getPossibleBreakpoints", parameter)
+        val result = cdp.callCommand("Debugger.getPossibleBreakpoints", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -208,9 +211,12 @@ public class Debugger(
     /**
      * Returns source for the script with given id.
      */
-    public suspend fun getScriptSource(args: GetScriptSourceParameter): GetScriptSourceReturn {
+    public suspend fun getScriptSource(
+        args: GetScriptSourceParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetScriptSourceReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.getScriptSource", parameter)
+        val result = cdp.callCommand("Debugger.getScriptSource", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -224,9 +230,12 @@ public class Debugger(
         return getScriptSource(parameter)
     }
 
-    public suspend fun disassembleWasmModule(args: DisassembleWasmModuleParameter): DisassembleWasmModuleReturn {
+    public suspend fun disassembleWasmModule(
+        args: DisassembleWasmModuleParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): DisassembleWasmModuleReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.disassembleWasmModule", parameter)
+        val result = cdp.callCommand("Debugger.disassembleWasmModule", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -246,9 +255,12 @@ public class Debugger(
      * and return an empty chunk. Any subsequent calls for the now invalid stream
      * will return errors.
      */
-    public suspend fun nextWasmDisassemblyChunk(args: NextWasmDisassemblyChunkParameter): NextWasmDisassemblyChunkReturn {
+    public suspend fun nextWasmDisassemblyChunk(
+        args: NextWasmDisassemblyChunkParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): NextWasmDisassemblyChunkReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.nextWasmDisassemblyChunk", parameter)
+        val result = cdp.callCommand("Debugger.nextWasmDisassemblyChunk", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -269,9 +281,12 @@ public class Debugger(
      * This command is deprecated. Use getScriptSource instead.
      */
     @Deprecated(message = "")
-    public suspend fun getWasmBytecode(args: GetWasmBytecodeParameter): GetWasmBytecodeReturn {
+    public suspend fun getWasmBytecode(
+        args: GetWasmBytecodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetWasmBytecodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.getWasmBytecode", parameter)
+        val result = cdp.callCommand("Debugger.getWasmBytecode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -289,9 +304,12 @@ public class Debugger(
     /**
      * Returns stack trace with given `stackTraceId`.
      */
-    public suspend fun getStackTrace(args: GetStackTraceParameter): GetStackTraceReturn {
+    public suspend fun getStackTrace(
+        args: GetStackTraceParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetStackTraceReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.getStackTrace", parameter)
+        val result = cdp.callCommand("Debugger.getStackTrace", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -308,15 +326,15 @@ public class Debugger(
     /**
      * Stops on the next JavaScript statement.
      */
-    public suspend fun pause() {
+    public suspend fun pause(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Debugger.pause", parameter)
+        cdp.callCommand("Debugger.pause", parameter, mode)
     }
 
     @Deprecated(message = "")
-    public suspend fun pauseOnAsyncCall(args: PauseOnAsyncCallParameter) {
+    public suspend fun pauseOnAsyncCall(args: PauseOnAsyncCallParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.pauseOnAsyncCall", parameter)
+        cdp.callCommand("Debugger.pauseOnAsyncCall", parameter, mode)
     }
 
     /**
@@ -333,9 +351,9 @@ public class Debugger(
     /**
      * Removes JavaScript breakpoint.
      */
-    public suspend fun removeBreakpoint(args: RemoveBreakpointParameter) {
+    public suspend fun removeBreakpoint(args: RemoveBreakpointParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.removeBreakpoint", parameter)
+        cdp.callCommand("Debugger.removeBreakpoint", parameter, mode)
     }
 
     /**
@@ -363,9 +381,12 @@ public class Debugger(
      * Use the call frames from the `Debugger#paused` events instead, that fires
      * once V8 pauses at the beginning of the restarted function.
      */
-    public suspend fun restartFrame(args: RestartFrameParameter): RestartFrameReturn {
+    public suspend fun restartFrame(
+        args: RestartFrameParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): RestartFrameReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.restartFrame", parameter)
+        val result = cdp.callCommand("Debugger.restartFrame", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -396,9 +417,9 @@ public class Debugger(
     /**
      * Resumes JavaScript execution.
      */
-    public suspend fun resume(args: ResumeParameter) {
+    public suspend fun resume(args: ResumeParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.resume", parameter)
+        cdp.callCommand("Debugger.resume", parameter, mode)
     }
 
     /**
@@ -418,9 +439,12 @@ public class Debugger(
     /**
      * Searches for given string in script content.
      */
-    public suspend fun searchInContent(args: SearchInContentParameter): SearchInContentReturn {
+    public suspend fun searchInContent(
+        args: SearchInContentParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SearchInContentReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.searchInContent", parameter)
+        val result = cdp.callCommand("Debugger.searchInContent", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -450,9 +474,12 @@ public class Debugger(
     /**
      * Enables or disables async call stacks tracking.
      */
-    public suspend fun setAsyncCallStackDepth(args: SetAsyncCallStackDepthParameter) {
+    public suspend fun setAsyncCallStackDepth(
+        args: SetAsyncCallStackDepthParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.setAsyncCallStackDepth", parameter)
+        cdp.callCommand("Debugger.setAsyncCallStackDepth", parameter, mode)
     }
 
     /**
@@ -471,9 +498,12 @@ public class Debugger(
      * stepping/pausing in scripts in these execution contexts. VM will try to leave blackboxed script by
      * performing 'step in' several times, finally resorting to 'step out' if unsuccessful.
      */
-    public suspend fun setBlackboxExecutionContexts(args: SetBlackboxExecutionContextsParameter) {
+    public suspend fun setBlackboxExecutionContexts(
+        args: SetBlackboxExecutionContextsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.setBlackboxExecutionContexts", parameter)
+        cdp.callCommand("Debugger.setBlackboxExecutionContexts", parameter, mode)
     }
 
     /**
@@ -493,9 +523,12 @@ public class Debugger(
      * scripts with url matching one of the patterns. VM will try to leave blackboxed script by
      * performing 'step in' several times, finally resorting to 'step out' if unsuccessful.
      */
-    public suspend fun setBlackboxPatterns(args: SetBlackboxPatternsParameter) {
+    public suspend fun setBlackboxPatterns(
+        args: SetBlackboxPatternsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.setBlackboxPatterns", parameter)
+        cdp.callCommand("Debugger.setBlackboxPatterns", parameter, mode)
     }
 
     /**
@@ -517,9 +550,12 @@ public class Debugger(
      * Positions array contains positions where blackbox state is changed. First interval isn't
      * blackboxed. Array should be sorted.
      */
-    public suspend fun setBlackboxedRanges(args: SetBlackboxedRangesParameter) {
+    public suspend fun setBlackboxedRanges(
+        args: SetBlackboxedRangesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.setBlackboxedRanges", parameter)
+        cdp.callCommand("Debugger.setBlackboxedRanges", parameter, mode)
     }
 
     /**
@@ -539,9 +575,12 @@ public class Debugger(
     /**
      * Sets JavaScript breakpoint at a given location.
      */
-    public suspend fun setBreakpoint(args: SetBreakpointParameter): SetBreakpointReturn {
+    public suspend fun setBreakpoint(
+        args: SetBreakpointParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetBreakpointReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.setBreakpoint", parameter)
+        val result = cdp.callCommand("Debugger.setBreakpoint", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -560,9 +599,12 @@ public class Debugger(
     /**
      * Sets instrumentation breakpoint.
      */
-    public suspend fun setInstrumentationBreakpoint(args: SetInstrumentationBreakpointParameter): SetInstrumentationBreakpointReturn {
+    public suspend fun setInstrumentationBreakpoint(
+        args: SetInstrumentationBreakpointParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetInstrumentationBreakpointReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.setInstrumentationBreakpoint", parameter)
+        val result = cdp.callCommand("Debugger.setInstrumentationBreakpoint", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -582,9 +624,12 @@ public class Debugger(
      * `locations` property. Further matching script parsing will result in subsequent
      * `breakpointResolved` events issued. This logical breakpoint will survive page reloads.
      */
-    public suspend fun setBreakpointByUrl(args: SetBreakpointByUrlParameter): SetBreakpointByUrlReturn {
+    public suspend fun setBreakpointByUrl(
+        args: SetBreakpointByUrlParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetBreakpointByUrlReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.setBreakpointByUrl", parameter)
+        val result = cdp.callCommand("Debugger.setBreakpointByUrl", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -627,9 +672,12 @@ public class Debugger(
      * If another function was created from the same source as a given one,
      * calling it will also trigger the breakpoint.
      */
-    public suspend fun setBreakpointOnFunctionCall(args: SetBreakpointOnFunctionCallParameter): SetBreakpointOnFunctionCallReturn {
+    public suspend fun setBreakpointOnFunctionCall(
+        args: SetBreakpointOnFunctionCallParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetBreakpointOnFunctionCallReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.setBreakpointOnFunctionCall", parameter)
+        val result = cdp.callCommand("Debugger.setBreakpointOnFunctionCall", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -653,9 +701,12 @@ public class Debugger(
     /**
      * Activates / deactivates all breakpoints on the page.
      */
-    public suspend fun setBreakpointsActive(args: SetBreakpointsActiveParameter) {
+    public suspend fun setBreakpointsActive(
+        args: SetBreakpointsActiveParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.setBreakpointsActive", parameter)
+        cdp.callCommand("Debugger.setBreakpointsActive", parameter, mode)
     }
 
     /**
@@ -672,9 +723,12 @@ public class Debugger(
      * Defines pause on exceptions state. Can be set to stop on all exceptions, uncaught exceptions,
      * or caught exceptions, no exceptions. Initial pause on exceptions state is `none`.
      */
-    public suspend fun setPauseOnExceptions(args: SetPauseOnExceptionsParameter) {
+    public suspend fun setPauseOnExceptions(
+        args: SetPauseOnExceptionsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.setPauseOnExceptions", parameter)
+        cdp.callCommand("Debugger.setPauseOnExceptions", parameter, mode)
     }
 
     /**
@@ -691,9 +745,9 @@ public class Debugger(
     /**
      * Changes return value in top frame. Available only at return break position.
      */
-    public suspend fun setReturnValue(args: SetReturnValueParameter) {
+    public suspend fun setReturnValue(args: SetReturnValueParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.setReturnValue", parameter)
+        cdp.callCommand("Debugger.setReturnValue", parameter, mode)
     }
 
     /**
@@ -715,9 +769,12 @@ public class Debugger(
      * the live edit will be successful and a `Debugger.restartFrame` for the
      * top-most function is automatically triggered.
      */
-    public suspend fun setScriptSource(args: SetScriptSourceParameter): SetScriptSourceReturn {
+    public suspend fun setScriptSource(
+        args: SetScriptSourceParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetScriptSourceReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Debugger.setScriptSource", parameter)
+        val result = cdp.callCommand("Debugger.setScriptSource", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -755,9 +812,9 @@ public class Debugger(
     /**
      * Makes page not interrupt on any pauses (breakpoint, exception, dom exception etc).
      */
-    public suspend fun setSkipAllPauses(args: SetSkipAllPausesParameter) {
+    public suspend fun setSkipAllPauses(args: SetSkipAllPausesParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.setSkipAllPauses", parameter)
+        cdp.callCommand("Debugger.setSkipAllPauses", parameter, mode)
     }
 
     /**
@@ -774,9 +831,9 @@ public class Debugger(
      * Changes value of variable in a callframe. Object-based scopes are not supported and must be
      * mutated manually.
      */
-    public suspend fun setVariableValue(args: SetVariableValueParameter) {
+    public suspend fun setVariableValue(args: SetVariableValueParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.setVariableValue", parameter)
+        cdp.callCommand("Debugger.setVariableValue", parameter, mode)
     }
 
     /**
@@ -807,9 +864,9 @@ public class Debugger(
     /**
      * Steps into the function call.
      */
-    public suspend fun stepInto(args: StepIntoParameter) {
+    public suspend fun stepInto(args: StepIntoParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.stepInto", parameter)
+        cdp.callCommand("Debugger.stepInto", parameter, mode)
     }
 
     /**
@@ -827,17 +884,17 @@ public class Debugger(
     /**
      * Steps out of the function call.
      */
-    public suspend fun stepOut() {
+    public suspend fun stepOut(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Debugger.stepOut", parameter)
+        cdp.callCommand("Debugger.stepOut", parameter, mode)
     }
 
     /**
      * Steps over the statement.
      */
-    public suspend fun stepOver(args: StepOverParameter) {
+    public suspend fun stepOver(args: StepOverParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Debugger.stepOver", parameter)
+        cdp.callCommand("Debugger.stepOver", parameter, mode)
     }
 
     /**

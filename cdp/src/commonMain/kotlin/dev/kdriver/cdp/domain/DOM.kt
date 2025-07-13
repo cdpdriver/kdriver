@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -194,9 +191,12 @@ public class DOM(
     /**
      * Collects class names for the node with given id and all of it's child nodes.
      */
-    public suspend fun collectClassNamesFromSubtree(args: CollectClassNamesFromSubtreeParameter): CollectClassNamesFromSubtreeReturn {
+    public suspend fun collectClassNamesFromSubtree(
+        args: CollectClassNamesFromSubtreeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CollectClassNamesFromSubtreeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.collectClassNamesFromSubtree", parameter)
+        val result = cdp.callCommand("DOM.collectClassNamesFromSubtree", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -214,9 +214,9 @@ public class DOM(
      * Creates a deep copy of the specified node and places it into the target container before the
      * given anchor.
      */
-    public suspend fun copyTo(args: CopyToParameter): CopyToReturn {
+    public suspend fun copyTo(args: CopyToParameter, mode: CommandMode = CommandMode.DEFAULT): CopyToReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.copyTo", parameter)
+        val result = cdp.callCommand("DOM.copyTo", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -243,9 +243,12 @@ public class DOM(
      * Describes node given its id, does not require domain to be enabled. Does not start tracking any
      * objects, can be used for automation.
      */
-    public suspend fun describeNode(args: DescribeNodeParameter): DescribeNodeReturn {
+    public suspend fun describeNode(
+        args: DescribeNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): DescribeNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.describeNode", parameter)
+        val result = cdp.callCommand("DOM.describeNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -283,9 +286,12 @@ public class DOM(
      * Note: exactly one between nodeId, backendNodeId and objectId should be passed
      * to identify the node.
      */
-    public suspend fun scrollIntoViewIfNeeded(args: ScrollIntoViewIfNeededParameter) {
+    public suspend fun scrollIntoViewIfNeeded(
+        args: ScrollIntoViewIfNeededParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.scrollIntoViewIfNeeded", parameter)
+        cdp.callCommand("DOM.scrollIntoViewIfNeeded", parameter, mode)
     }
 
     /**
@@ -317,18 +323,21 @@ public class DOM(
     /**
      * Disables DOM agent for the given page.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOM.disable", parameter)
+        cdp.callCommand("DOM.disable", parameter, mode)
     }
 
     /**
      * Discards search results from the session with the given id. `getSearchResults` should no longer
      * be called for that search.
      */
-    public suspend fun discardSearchResults(args: DiscardSearchResultsParameter) {
+    public suspend fun discardSearchResults(
+        args: DiscardSearchResultsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.discardSearchResults", parameter)
+        cdp.callCommand("DOM.discardSearchResults", parameter, mode)
     }
 
     /**
@@ -345,9 +354,9 @@ public class DOM(
     /**
      * Enables DOM agent for the given page.
      */
-    public suspend fun enable(args: EnableParameter) {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.enable", parameter)
+        cdp.callCommand("DOM.enable", parameter, mode)
     }
 
     /**
@@ -363,9 +372,9 @@ public class DOM(
     /**
      * Focuses the given element.
      */
-    public suspend fun focus(args: FocusParameter) {
+    public suspend fun focus(args: FocusParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.focus", parameter)
+        cdp.callCommand("DOM.focus", parameter, mode)
     }
 
     /**
@@ -387,9 +396,12 @@ public class DOM(
     /**
      * Returns attributes for the specified node.
      */
-    public suspend fun getAttributes(args: GetAttributesParameter): GetAttributesReturn {
+    public suspend fun getAttributes(
+        args: GetAttributesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetAttributesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getAttributes", parameter)
+        val result = cdp.callCommand("DOM.getAttributes", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -406,9 +418,12 @@ public class DOM(
     /**
      * Returns boxes for the given node.
      */
-    public suspend fun getBoxModel(args: GetBoxModelParameter): GetBoxModelReturn {
+    public suspend fun getBoxModel(
+        args: GetBoxModelParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetBoxModelReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getBoxModel", parameter)
+        val result = cdp.callCommand("DOM.getBoxModel", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -432,9 +447,12 @@ public class DOM(
      * Returns quads that describe node position on the page. This method
      * might return multiple quads for inline nodes.
      */
-    public suspend fun getContentQuads(args: GetContentQuadsParameter): GetContentQuadsReturn {
+    public suspend fun getContentQuads(
+        args: GetContentQuadsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetContentQuadsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getContentQuads", parameter)
+        val result = cdp.callCommand("DOM.getContentQuads", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -459,9 +477,12 @@ public class DOM(
      * Returns the root DOM node (and optionally the subtree) to the caller.
      * Implicitly enables the DOM domain events for the current target.
      */
-    public suspend fun getDocument(args: GetDocumentParameter): GetDocumentReturn {
+    public suspend fun getDocument(
+        args: GetDocumentParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetDocumentReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getDocument", parameter)
+        val result = cdp.callCommand("DOM.getDocument", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -485,9 +506,12 @@ public class DOM(
      * Use DOMSnapshot.captureSnapshot instead.
      */
     @Deprecated(message = "")
-    public suspend fun getFlattenedDocument(args: GetFlattenedDocumentParameter): GetFlattenedDocumentReturn {
+    public suspend fun getFlattenedDocument(
+        args: GetFlattenedDocumentParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetFlattenedDocumentReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getFlattenedDocument", parameter)
+        val result = cdp.callCommand("DOM.getFlattenedDocument", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -510,9 +534,12 @@ public class DOM(
     /**
      * Finds nodes with a given computed style in a subtree.
      */
-    public suspend fun getNodesForSubtreeByStyle(args: GetNodesForSubtreeByStyleParameter): GetNodesForSubtreeByStyleReturn {
+    public suspend fun getNodesForSubtreeByStyle(
+        args: GetNodesForSubtreeByStyleParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetNodesForSubtreeByStyleReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getNodesForSubtreeByStyle", parameter)
+        val result = cdp.callCommand("DOM.getNodesForSubtreeByStyle", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -538,9 +565,12 @@ public class DOM(
      * Returns node id at given location. Depending on whether DOM domain is enabled, nodeId is
      * either returned or not.
      */
-    public suspend fun getNodeForLocation(args: GetNodeForLocationParameter): GetNodeForLocationReturn {
+    public suspend fun getNodeForLocation(
+        args: GetNodeForLocationParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetNodeForLocationReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getNodeForLocation", parameter)
+        val result = cdp.callCommand("DOM.getNodeForLocation", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -571,9 +601,12 @@ public class DOM(
     /**
      * Returns node's HTML markup.
      */
-    public suspend fun getOuterHTML(args: GetOuterHTMLParameter): GetOuterHTMLReturn {
+    public suspend fun getOuterHTML(
+        args: GetOuterHTMLParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetOuterHTMLReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getOuterHTML", parameter)
+        val result = cdp.callCommand("DOM.getOuterHTML", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -596,9 +629,12 @@ public class DOM(
     /**
      * Returns the id of the nearest ancestor that is a relayout boundary.
      */
-    public suspend fun getRelayoutBoundary(args: GetRelayoutBoundaryParameter): GetRelayoutBoundaryReturn {
+    public suspend fun getRelayoutBoundary(
+        args: GetRelayoutBoundaryParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetRelayoutBoundaryReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getRelayoutBoundary", parameter)
+        val result = cdp.callCommand("DOM.getRelayoutBoundary", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -616,9 +652,12 @@ public class DOM(
      * Returns search results from given `fromIndex` to given `toIndex` from the search with the given
      * identifier.
      */
-    public suspend fun getSearchResults(args: GetSearchResultsParameter): GetSearchResultsReturn {
+    public suspend fun getSearchResults(
+        args: GetSearchResultsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetSearchResultsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getSearchResults", parameter)
+        val result = cdp.callCommand("DOM.getSearchResults", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -642,41 +681,41 @@ public class DOM(
     /**
      * Hides any highlight.
      */
-    public suspend fun hideHighlight() {
+    public suspend fun hideHighlight(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOM.hideHighlight", parameter)
+        cdp.callCommand("DOM.hideHighlight", parameter, mode)
     }
 
     /**
      * Highlights DOM node.
      */
-    public suspend fun highlightNode() {
+    public suspend fun highlightNode(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOM.highlightNode", parameter)
+        cdp.callCommand("DOM.highlightNode", parameter, mode)
     }
 
     /**
      * Highlights given rectangle.
      */
-    public suspend fun highlightRect() {
+    public suspend fun highlightRect(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOM.highlightRect", parameter)
+        cdp.callCommand("DOM.highlightRect", parameter, mode)
     }
 
     /**
      * Marks last undoable state.
      */
-    public suspend fun markUndoableState() {
+    public suspend fun markUndoableState(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOM.markUndoableState", parameter)
+        cdp.callCommand("DOM.markUndoableState", parameter, mode)
     }
 
     /**
      * Moves node into the new container, places it before the given anchor.
      */
-    public suspend fun moveTo(args: MoveToParameter): MoveToReturn {
+    public suspend fun moveTo(args: MoveToParameter, mode: CommandMode = CommandMode.DEFAULT): MoveToReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.moveTo", parameter)
+        val result = cdp.callCommand("DOM.moveTo", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -702,9 +741,12 @@ public class DOM(
      * Searches for a given string in the DOM tree. Use `getSearchResults` to access search results or
      * `cancelSearch` to end this search session.
      */
-    public suspend fun performSearch(args: PerformSearchParameter): PerformSearchReturn {
+    public suspend fun performSearch(
+        args: PerformSearchParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): PerformSearchReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.performSearch", parameter)
+        val result = cdp.callCommand("DOM.performSearch", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -723,9 +765,12 @@ public class DOM(
     /**
      * Requests that the node is sent to the caller given its path. // FIXME, use XPath
      */
-    public suspend fun pushNodeByPathToFrontend(args: PushNodeByPathToFrontendParameter): PushNodeByPathToFrontendReturn {
+    public suspend fun pushNodeByPathToFrontend(
+        args: PushNodeByPathToFrontendParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): PushNodeByPathToFrontendReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.pushNodeByPathToFrontend", parameter)
+        val result = cdp.callCommand("DOM.pushNodeByPathToFrontend", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -742,9 +787,12 @@ public class DOM(
     /**
      * Requests that a batch of nodes is sent to the caller given their backend node ids.
      */
-    public suspend fun pushNodesByBackendIdsToFrontend(args: PushNodesByBackendIdsToFrontendParameter): PushNodesByBackendIdsToFrontendReturn {
+    public suspend fun pushNodesByBackendIdsToFrontend(
+        args: PushNodesByBackendIdsToFrontendParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): PushNodesByBackendIdsToFrontendReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.pushNodesByBackendIdsToFrontend", parameter)
+        val result = cdp.callCommand("DOM.pushNodesByBackendIdsToFrontend", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -761,9 +809,12 @@ public class DOM(
     /**
      * Executes `querySelector` on a given node.
      */
-    public suspend fun querySelector(args: QuerySelectorParameter): QuerySelectorReturn {
+    public suspend fun querySelector(
+        args: QuerySelectorParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): QuerySelectorReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.querySelector", parameter)
+        val result = cdp.callCommand("DOM.querySelector", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -781,9 +832,12 @@ public class DOM(
     /**
      * Executes `querySelectorAll` on a given node.
      */
-    public suspend fun querySelectorAll(args: QuerySelectorAllParameter): QuerySelectorAllReturn {
+    public suspend fun querySelectorAll(
+        args: QuerySelectorAllParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): QuerySelectorAllReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.querySelectorAll", parameter)
+        val result = cdp.callCommand("DOM.querySelectorAll", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -803,18 +857,21 @@ public class DOM(
      * Top layer is rendered closest to the user within a viewport, therefore its elements always
      * appear on top of all other content.
      */
-    public suspend fun getTopLayerElements(): GetTopLayerElementsReturn {
+    public suspend fun getTopLayerElements(mode: CommandMode = CommandMode.DEFAULT): GetTopLayerElementsReturn {
         val parameter = null
-        val result = cdp.callCommand("DOM.getTopLayerElements", parameter)
+        val result = cdp.callCommand("DOM.getTopLayerElements", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Returns the NodeId of the matched element according to certain relations.
      */
-    public suspend fun getElementByRelation(args: GetElementByRelationParameter): GetElementByRelationReturn {
+    public suspend fun getElementByRelation(
+        args: GetElementByRelationParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetElementByRelationReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getElementByRelation", parameter)
+        val result = cdp.callCommand("DOM.getElementByRelation", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -832,17 +889,17 @@ public class DOM(
     /**
      * Re-does the last undone action.
      */
-    public suspend fun redo() {
+    public suspend fun redo(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOM.redo", parameter)
+        cdp.callCommand("DOM.redo", parameter, mode)
     }
 
     /**
      * Removes attribute with given name from an element with given id.
      */
-    public suspend fun removeAttribute(args: RemoveAttributeParameter) {
+    public suspend fun removeAttribute(args: RemoveAttributeParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.removeAttribute", parameter)
+        cdp.callCommand("DOM.removeAttribute", parameter, mode)
     }
 
     /**
@@ -859,9 +916,9 @@ public class DOM(
     /**
      * Removes node with given id.
      */
-    public suspend fun removeNode(args: RemoveNodeParameter) {
+    public suspend fun removeNode(args: RemoveNodeParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.removeNode", parameter)
+        cdp.callCommand("DOM.removeNode", parameter, mode)
     }
 
     /**
@@ -879,9 +936,9 @@ public class DOM(
      * `setChildNodes` events where not only immediate children are retrieved, but all children down to
      * the specified depth.
      */
-    public suspend fun requestChildNodes(args: RequestChildNodesParameter) {
+    public suspend fun requestChildNodes(args: RequestChildNodesParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.requestChildNodes", parameter)
+        cdp.callCommand("DOM.requestChildNodes", parameter, mode)
     }
 
     /**
@@ -909,9 +966,12 @@ public class DOM(
      * nodes that form the path from the node to the root are also sent to the client as a series of
      * `setChildNodes` notifications.
      */
-    public suspend fun requestNode(args: RequestNodeParameter): RequestNodeReturn {
+    public suspend fun requestNode(
+        args: RequestNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): RequestNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.requestNode", parameter)
+        val result = cdp.callCommand("DOM.requestNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -930,9 +990,12 @@ public class DOM(
     /**
      * Resolves the JavaScript node object for a given NodeId or BackendNodeId.
      */
-    public suspend fun resolveNode(args: ResolveNodeParameter): ResolveNodeReturn {
+    public suspend fun resolveNode(
+        args: ResolveNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): ResolveNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.resolveNode", parameter)
+        val result = cdp.callCommand("DOM.resolveNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -962,9 +1025,9 @@ public class DOM(
     /**
      * Sets attribute for an element with given id.
      */
-    public suspend fun setAttributeValue(args: SetAttributeValueParameter) {
+    public suspend fun setAttributeValue(args: SetAttributeValueParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.setAttributeValue", parameter)
+        cdp.callCommand("DOM.setAttributeValue", parameter, mode)
     }
 
     /**
@@ -987,9 +1050,12 @@ public class DOM(
      * Sets attributes on element with given id. This method is useful when user edits some existing
      * attribute value and types in several attribute name/value pairs.
      */
-    public suspend fun setAttributesAsText(args: SetAttributesAsTextParameter) {
+    public suspend fun setAttributesAsText(
+        args: SetAttributesAsTextParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.setAttributesAsText", parameter)
+        cdp.callCommand("DOM.setAttributesAsText", parameter, mode)
     }
 
     /**
@@ -1013,9 +1079,9 @@ public class DOM(
     /**
      * Sets files for the given file input element.
      */
-    public suspend fun setFileInputFiles(args: SetFileInputFilesParameter) {
+    public suspend fun setFileInputFiles(args: SetFileInputFilesParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.setFileInputFiles", parameter)
+        cdp.callCommand("DOM.setFileInputFiles", parameter, mode)
     }
 
     /**
@@ -1044,9 +1110,12 @@ public class DOM(
     /**
      * Sets if stack traces should be captured for Nodes. See `Node.getNodeStackTraces`. Default is disabled.
      */
-    public suspend fun setNodeStackTracesEnabled(args: SetNodeStackTracesEnabledParameter) {
+    public suspend fun setNodeStackTracesEnabled(
+        args: SetNodeStackTracesEnabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.setNodeStackTracesEnabled", parameter)
+        cdp.callCommand("DOM.setNodeStackTracesEnabled", parameter, mode)
     }
 
     /**
@@ -1062,9 +1131,12 @@ public class DOM(
     /**
      * Gets stack traces associated with a Node. As of now, only provides stack trace for Node creation.
      */
-    public suspend fun getNodeStackTraces(args: GetNodeStackTracesParameter): GetNodeStackTracesReturn {
+    public suspend fun getNodeStackTraces(
+        args: GetNodeStackTracesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetNodeStackTracesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getNodeStackTraces", parameter)
+        val result = cdp.callCommand("DOM.getNodeStackTraces", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1082,9 +1154,12 @@ public class DOM(
      * Returns file information for the given
      * File wrapper.
      */
-    public suspend fun getFileInfo(args: GetFileInfoParameter): GetFileInfoReturn {
+    public suspend fun getFileInfo(
+        args: GetFileInfoParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetFileInfoReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getFileInfo", parameter)
+        val result = cdp.callCommand("DOM.getFileInfo", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1102,9 +1177,9 @@ public class DOM(
     /**
      * Returns list of detached nodes
      */
-    public suspend fun getDetachedDomNodes(): GetDetachedDomNodesReturn {
+    public suspend fun getDetachedDomNodes(mode: CommandMode = CommandMode.DEFAULT): GetDetachedDomNodesReturn {
         val parameter = null
-        val result = cdp.callCommand("DOM.getDetachedDomNodes", parameter)
+        val result = cdp.callCommand("DOM.getDetachedDomNodes", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1112,9 +1187,9 @@ public class DOM(
      * Enables console to refer to the node with given id via $x (see Command Line API for more details
      * $x functions).
      */
-    public suspend fun setInspectedNode(args: SetInspectedNodeParameter) {
+    public suspend fun setInspectedNode(args: SetInspectedNodeParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.setInspectedNode", parameter)
+        cdp.callCommand("DOM.setInspectedNode", parameter, mode)
     }
 
     /**
@@ -1131,9 +1206,12 @@ public class DOM(
     /**
      * Sets node name for a node with given id.
      */
-    public suspend fun setNodeName(args: SetNodeNameParameter): SetNodeNameReturn {
+    public suspend fun setNodeName(
+        args: SetNodeNameParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetNodeNameReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.setNodeName", parameter)
+        val result = cdp.callCommand("DOM.setNodeName", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1151,9 +1229,9 @@ public class DOM(
     /**
      * Sets node value for a node with given id.
      */
-    public suspend fun setNodeValue(args: SetNodeValueParameter) {
+    public suspend fun setNodeValue(args: SetNodeValueParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.setNodeValue", parameter)
+        cdp.callCommand("DOM.setNodeValue", parameter, mode)
     }
 
     /**
@@ -1170,9 +1248,9 @@ public class DOM(
     /**
      * Sets node HTML markup, returns new node id.
      */
-    public suspend fun setOuterHTML(args: SetOuterHTMLParameter) {
+    public suspend fun setOuterHTML(args: SetOuterHTMLParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOM.setOuterHTML", parameter)
+        cdp.callCommand("DOM.setOuterHTML", parameter, mode)
     }
 
     /**
@@ -1189,17 +1267,20 @@ public class DOM(
     /**
      * Undoes the last performed action.
      */
-    public suspend fun undo() {
+    public suspend fun undo(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOM.undo", parameter)
+        cdp.callCommand("DOM.undo", parameter, mode)
     }
 
     /**
      * Returns iframe node that owns iframe with the given domain.
      */
-    public suspend fun getFrameOwner(args: GetFrameOwnerParameter): GetFrameOwnerReturn {
+    public suspend fun getFrameOwner(
+        args: GetFrameOwnerParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetFrameOwnerReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getFrameOwner", parameter)
+        val result = cdp.callCommand("DOM.getFrameOwner", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1220,9 +1301,12 @@ public class DOM(
      * style container is returned, which is the direct parent or the closest
      * element with a matching container-name.
      */
-    public suspend fun getContainerForNode(args: GetContainerForNodeParameter): GetContainerForNodeReturn {
+    public suspend fun getContainerForNode(
+        args: GetContainerForNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetContainerForNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getContainerForNode", parameter)
+        val result = cdp.callCommand("DOM.getContainerForNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1260,9 +1344,12 @@ public class DOM(
      * Returns the descendants of a container query container that have
      * container queries against this container.
      */
-    public suspend fun getQueryingDescendantsForContainer(args: GetQueryingDescendantsForContainerParameter): GetQueryingDescendantsForContainerReturn {
+    public suspend fun getQueryingDescendantsForContainer(
+        args: GetQueryingDescendantsForContainerParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetQueryingDescendantsForContainerReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getQueryingDescendantsForContainer", parameter)
+        val result = cdp.callCommand("DOM.getQueryingDescendantsForContainer", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1281,9 +1368,12 @@ public class DOM(
      * Returns the target anchor element of the given anchor query according to
      * https://www.w3.org/TR/css-anchor-position-1/#target.
      */
-    public suspend fun getAnchorElement(args: GetAnchorElementParameter): GetAnchorElementReturn {
+    public suspend fun getAnchorElement(
+        args: GetAnchorElementParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetAnchorElementReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOM.getAnchorElement", parameter)
+        val result = cdp.callCommand("DOM.getAnchorElement", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

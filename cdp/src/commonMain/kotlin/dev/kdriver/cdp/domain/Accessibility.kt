@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -45,26 +42,29 @@ public class Accessibility(
     /**
      * Disables the accessibility domain.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Accessibility.disable", parameter)
+        cdp.callCommand("Accessibility.disable", parameter, mode)
     }
 
     /**
      * Enables the accessibility domain which causes `AXNodeId`s to remain consistent between method calls.
      * This turns on accessibility for the page, which can impact performance until accessibility is disabled.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Accessibility.enable", parameter)
+        cdp.callCommand("Accessibility.enable", parameter, mode)
     }
 
     /**
      * Fetches the accessibility node and partial accessibility tree for this DOM node, if it exists.
      */
-    public suspend fun getPartialAXTree(args: GetPartialAXTreeParameter): GetPartialAXTreeReturn {
+    public suspend fun getPartialAXTree(
+        args: GetPartialAXTreeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetPartialAXTreeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Accessibility.getPartialAXTree", parameter)
+        val result = cdp.callCommand("Accessibility.getPartialAXTree", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -94,9 +94,12 @@ public class Accessibility(
     /**
      * Fetches the entire accessibility tree for the root Document
      */
-    public suspend fun getFullAXTree(args: GetFullAXTreeParameter): GetFullAXTreeReturn {
+    public suspend fun getFullAXTree(
+        args: GetFullAXTreeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetFullAXTreeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Accessibility.getFullAXTree", parameter)
+        val result = cdp.callCommand("Accessibility.getFullAXTree", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -117,9 +120,12 @@ public class Accessibility(
      * Fetches the root node.
      * Requires `enable()` to have been called previously.
      */
-    public suspend fun getRootAXNode(args: GetRootAXNodeParameter): GetRootAXNodeReturn {
+    public suspend fun getRootAXNode(
+        args: GetRootAXNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetRootAXNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Accessibility.getRootAXNode", parameter)
+        val result = cdp.callCommand("Accessibility.getRootAXNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -139,9 +145,12 @@ public class Accessibility(
      * Fetches a node and all ancestors up to and including the root.
      * Requires `enable()` to have been called previously.
      */
-    public suspend fun getAXNodeAndAncestors(args: GetAXNodeAndAncestorsParameter): GetAXNodeAndAncestorsReturn {
+    public suspend fun getAXNodeAndAncestors(
+        args: GetAXNodeAndAncestorsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetAXNodeAndAncestorsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Accessibility.getAXNodeAndAncestors", parameter)
+        val result = cdp.callCommand("Accessibility.getAXNodeAndAncestors", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -167,9 +176,12 @@ public class Accessibility(
      * Fetches a particular accessibility node by AXNodeId.
      * Requires `enable()` to have been called previously.
      */
-    public suspend fun getChildAXNodes(args: GetChildAXNodesParameter): GetChildAXNodesReturn {
+    public suspend fun getChildAXNodes(
+        args: GetChildAXNodesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetChildAXNodesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Accessibility.getChildAXNodes", parameter)
+        val result = cdp.callCommand("Accessibility.getChildAXNodes", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -193,9 +205,12 @@ public class Accessibility(
      * node is specified, or the DOM node does not exist, the command returns an error. If neither
      * `accessibleName` or `role` is specified, it returns all the accessibility nodes in the subtree.
      */
-    public suspend fun queryAXTree(args: QueryAXTreeParameter): QueryAXTreeReturn {
+    public suspend fun queryAXTree(
+        args: QueryAXTreeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): QueryAXTreeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Accessibility.queryAXTree", parameter)
+        val result = cdp.callCommand("Accessibility.queryAXTree", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

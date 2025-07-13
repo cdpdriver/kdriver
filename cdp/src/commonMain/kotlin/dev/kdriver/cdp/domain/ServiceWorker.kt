@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -41,9 +38,9 @@ public class ServiceWorker(
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
 
-    public suspend fun deliverPushMessage(args: DeliverPushMessageParameter) {
+    public suspend fun deliverPushMessage(args: DeliverPushMessageParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.deliverPushMessage", parameter)
+        cdp.callCommand("ServiceWorker.deliverPushMessage", parameter, mode)
     }
 
     /**
@@ -62,14 +59,14 @@ public class ServiceWorker(
         deliverPushMessage(parameter)
     }
 
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("ServiceWorker.disable", parameter)
+        cdp.callCommand("ServiceWorker.disable", parameter, mode)
     }
 
-    public suspend fun dispatchSyncEvent(args: DispatchSyncEventParameter) {
+    public suspend fun dispatchSyncEvent(args: DispatchSyncEventParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.dispatchSyncEvent", parameter)
+        cdp.callCommand("ServiceWorker.dispatchSyncEvent", parameter, mode)
     }
 
     /**
@@ -95,9 +92,12 @@ public class ServiceWorker(
         dispatchSyncEvent(parameter)
     }
 
-    public suspend fun dispatchPeriodicSyncEvent(args: DispatchPeriodicSyncEventParameter) {
+    public suspend fun dispatchPeriodicSyncEvent(
+        args: DispatchPeriodicSyncEventParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.dispatchPeriodicSyncEvent", parameter)
+        cdp.callCommand("ServiceWorker.dispatchPeriodicSyncEvent", parameter, mode)
     }
 
     /**
@@ -116,14 +116,14 @@ public class ServiceWorker(
         dispatchPeriodicSyncEvent(parameter)
     }
 
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("ServiceWorker.enable", parameter)
+        cdp.callCommand("ServiceWorker.enable", parameter, mode)
     }
 
-    public suspend fun inspectWorker(args: InspectWorkerParameter) {
+    public suspend fun inspectWorker(args: InspectWorkerParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.inspectWorker", parameter)
+        cdp.callCommand("ServiceWorker.inspectWorker", parameter, mode)
     }
 
     /**
@@ -136,9 +136,12 @@ public class ServiceWorker(
         inspectWorker(parameter)
     }
 
-    public suspend fun setForceUpdateOnPageLoad(args: SetForceUpdateOnPageLoadParameter) {
+    public suspend fun setForceUpdateOnPageLoad(
+        args: SetForceUpdateOnPageLoadParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.setForceUpdateOnPageLoad", parameter)
+        cdp.callCommand("ServiceWorker.setForceUpdateOnPageLoad", parameter, mode)
     }
 
     /**
@@ -151,9 +154,9 @@ public class ServiceWorker(
         setForceUpdateOnPageLoad(parameter)
     }
 
-    public suspend fun skipWaiting(args: SkipWaitingParameter) {
+    public suspend fun skipWaiting(args: SkipWaitingParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.skipWaiting", parameter)
+        cdp.callCommand("ServiceWorker.skipWaiting", parameter, mode)
     }
 
     /**
@@ -166,9 +169,9 @@ public class ServiceWorker(
         skipWaiting(parameter)
     }
 
-    public suspend fun startWorker(args: StartWorkerParameter) {
+    public suspend fun startWorker(args: StartWorkerParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.startWorker", parameter)
+        cdp.callCommand("ServiceWorker.startWorker", parameter, mode)
     }
 
     /**
@@ -181,14 +184,14 @@ public class ServiceWorker(
         startWorker(parameter)
     }
 
-    public suspend fun stopAllWorkers() {
+    public suspend fun stopAllWorkers(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("ServiceWorker.stopAllWorkers", parameter)
+        cdp.callCommand("ServiceWorker.stopAllWorkers", parameter, mode)
     }
 
-    public suspend fun stopWorker(args: StopWorkerParameter) {
+    public suspend fun stopWorker(args: StopWorkerParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.stopWorker", parameter)
+        cdp.callCommand("ServiceWorker.stopWorker", parameter, mode)
     }
 
     /**
@@ -201,9 +204,9 @@ public class ServiceWorker(
         stopWorker(parameter)
     }
 
-    public suspend fun unregister(args: UnregisterParameter) {
+    public suspend fun unregister(args: UnregisterParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.unregister", parameter)
+        cdp.callCommand("ServiceWorker.unregister", parameter, mode)
     }
 
     /**
@@ -216,9 +219,9 @@ public class ServiceWorker(
         unregister(parameter)
     }
 
-    public suspend fun updateRegistration(args: UpdateRegistrationParameter) {
+    public suspend fun updateRegistration(args: UpdateRegistrationParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.updateRegistration", parameter)
+        cdp.callCommand("ServiceWorker.updateRegistration", parameter, mode)
     }
 
     /**

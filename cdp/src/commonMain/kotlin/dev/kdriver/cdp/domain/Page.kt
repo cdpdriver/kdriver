@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -316,9 +313,12 @@ public class Page(
      * Deprecated, please use addScriptToEvaluateOnNewDocument instead.
      */
     @Deprecated(message = "")
-    public suspend fun addScriptToEvaluateOnLoad(args: AddScriptToEvaluateOnLoadParameter): AddScriptToEvaluateOnLoadReturn {
+    public suspend fun addScriptToEvaluateOnLoad(
+        args: AddScriptToEvaluateOnLoadParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): AddScriptToEvaluateOnLoadReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.addScriptToEvaluateOnLoad", parameter)
+        val result = cdp.callCommand("Page.addScriptToEvaluateOnLoad", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -336,9 +336,12 @@ public class Page(
     /**
      * Evaluates given script in every frame upon creation (before loading frame's scripts).
      */
-    public suspend fun addScriptToEvaluateOnNewDocument(args: AddScriptToEvaluateOnNewDocumentParameter): AddScriptToEvaluateOnNewDocumentReturn {
+    public suspend fun addScriptToEvaluateOnNewDocument(
+        args: AddScriptToEvaluateOnNewDocumentParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): AddScriptToEvaluateOnNewDocumentReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.addScriptToEvaluateOnNewDocument", parameter)
+        val result = cdp.callCommand("Page.addScriptToEvaluateOnNewDocument", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -372,17 +375,20 @@ public class Page(
     /**
      * Brings page to front (activates tab).
      */
-    public suspend fun bringToFront() {
+    public suspend fun bringToFront(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.bringToFront", parameter)
+        cdp.callCommand("Page.bringToFront", parameter, mode)
     }
 
     /**
      * Capture page screenshot.
      */
-    public suspend fun captureScreenshot(args: CaptureScreenshotParameter): CaptureScreenshotReturn {
+    public suspend fun captureScreenshot(
+        args: CaptureScreenshotParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CaptureScreenshotReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.captureScreenshot", parameter)
+        val result = cdp.callCommand("Page.captureScreenshot", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -419,9 +425,12 @@ public class Page(
      * Returns a snapshot of the page as a string. For MHTML format, the serialization includes
      * iframes, shadow DOM, external resources, and element-inline styles.
      */
-    public suspend fun captureSnapshot(args: CaptureSnapshotParameter): CaptureSnapshotReturn {
+    public suspend fun captureSnapshot(
+        args: CaptureSnapshotParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CaptureSnapshotReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.captureSnapshot", parameter)
+        val result = cdp.callCommand("Page.captureSnapshot", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -440,35 +449,38 @@ public class Page(
      * Clears the overridden device metrics.
      */
     @Deprecated(message = "")
-    public suspend fun clearDeviceMetricsOverride() {
+    public suspend fun clearDeviceMetricsOverride(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.clearDeviceMetricsOverride", parameter)
+        cdp.callCommand("Page.clearDeviceMetricsOverride", parameter, mode)
     }
 
     /**
      * Clears the overridden Device Orientation.
      */
     @Deprecated(message = "")
-    public suspend fun clearDeviceOrientationOverride() {
+    public suspend fun clearDeviceOrientationOverride(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.clearDeviceOrientationOverride", parameter)
+        cdp.callCommand("Page.clearDeviceOrientationOverride", parameter, mode)
     }
 
     /**
      * Clears the overridden Geolocation Position and Error.
      */
     @Deprecated(message = "")
-    public suspend fun clearGeolocationOverride() {
+    public suspend fun clearGeolocationOverride(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.clearGeolocationOverride", parameter)
+        cdp.callCommand("Page.clearGeolocationOverride", parameter, mode)
     }
 
     /**
      * Creates an isolated world for the given frame.
      */
-    public suspend fun createIsolatedWorld(args: CreateIsolatedWorldParameter): CreateIsolatedWorldReturn {
+    public suspend fun createIsolatedWorld(
+        args: CreateIsolatedWorldParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CreateIsolatedWorldReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.createIsolatedWorld", parameter)
+        val result = cdp.callCommand("Page.createIsolatedWorld", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -497,9 +509,9 @@ public class Page(
      * Deletes browser cookie with given name, domain and path.
      */
     @Deprecated(message = "")
-    public suspend fun deleteCookie(args: DeleteCookieParameter) {
+    public suspend fun deleteCookie(args: DeleteCookieParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.deleteCookie", parameter)
+        cdp.callCommand("Page.deleteCookie", parameter, mode)
     }
 
     /**
@@ -517,17 +529,17 @@ public class Page(
     /**
      * Disables page domain notifications.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.disable", parameter)
+        cdp.callCommand("Page.disable", parameter, mode)
     }
 
     /**
      * Enables page domain notifications.
      */
-    public suspend fun enable(args: EnableParameter) {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.enable", parameter)
+        cdp.callCommand("Page.enable", parameter, mode)
     }
 
     /**
@@ -548,9 +560,12 @@ public class Page(
      *     current document, this API errors out.
      *   If there is not a loaded page, this API errors out immediately.
      */
-    public suspend fun getAppManifest(args: GetAppManifestParameter): GetAppManifestReturn {
+    public suspend fun getAppManifest(
+        args: GetAppManifestParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetAppManifestReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.getAppManifest", parameter)
+        val result = cdp.callCommand("Page.getAppManifest", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -568,9 +583,9 @@ public class Page(
         return getAppManifest(parameter)
     }
 
-    public suspend fun getInstallabilityErrors(): GetInstallabilityErrorsReturn {
+    public suspend fun getInstallabilityErrors(mode: CommandMode = CommandMode.DEFAULT): GetInstallabilityErrorsReturn {
         val parameter = null
-        val result = cdp.callCommand("Page.getInstallabilityErrors", parameter)
+        val result = cdp.callCommand("Page.getInstallabilityErrors", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -578,9 +593,9 @@ public class Page(
      * Deprecated because it's not guaranteed that the returned icon is in fact the one used for PWA installation.
      */
     @Deprecated(message = "")
-    public suspend fun getManifestIcons(): GetManifestIconsReturn {
+    public suspend fun getManifestIcons(mode: CommandMode = CommandMode.DEFAULT): GetManifestIconsReturn {
         val parameter = null
-        val result = cdp.callCommand("Page.getManifestIcons", parameter)
+        val result = cdp.callCommand("Page.getManifestIcons", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -588,15 +603,18 @@ public class Page(
      * Returns the unique (PWA) app id.
      * Only returns values if the feature flag 'WebAppEnableManifestId' is enabled
      */
-    public suspend fun getAppId(): GetAppIdReturn {
+    public suspend fun getAppId(mode: CommandMode = CommandMode.DEFAULT): GetAppIdReturn {
         val parameter = null
-        val result = cdp.callCommand("Page.getAppId", parameter)
+        val result = cdp.callCommand("Page.getAppId", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
-    public suspend fun getAdScriptAncestry(args: GetAdScriptAncestryParameter): GetAdScriptAncestryReturn {
+    public suspend fun getAdScriptAncestry(
+        args: GetAdScriptAncestryParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetAdScriptAncestryReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.getAdScriptAncestry", parameter)
+        val result = cdp.callCommand("Page.getAdScriptAncestry", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -613,44 +631,47 @@ public class Page(
     /**
      * Returns present frame tree structure.
      */
-    public suspend fun getFrameTree(): GetFrameTreeReturn {
+    public suspend fun getFrameTree(mode: CommandMode = CommandMode.DEFAULT): GetFrameTreeReturn {
         val parameter = null
-        val result = cdp.callCommand("Page.getFrameTree", parameter)
+        val result = cdp.callCommand("Page.getFrameTree", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Returns metrics relating to the layouting of the page, such as viewport bounds/scale.
      */
-    public suspend fun getLayoutMetrics(): GetLayoutMetricsReturn {
+    public suspend fun getLayoutMetrics(mode: CommandMode = CommandMode.DEFAULT): GetLayoutMetricsReturn {
         val parameter = null
-        val result = cdp.callCommand("Page.getLayoutMetrics", parameter)
+        val result = cdp.callCommand("Page.getLayoutMetrics", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Returns navigation history for the current page.
      */
-    public suspend fun getNavigationHistory(): GetNavigationHistoryReturn {
+    public suspend fun getNavigationHistory(mode: CommandMode = CommandMode.DEFAULT): GetNavigationHistoryReturn {
         val parameter = null
-        val result = cdp.callCommand("Page.getNavigationHistory", parameter)
+        val result = cdp.callCommand("Page.getNavigationHistory", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Resets navigation history for the current page.
      */
-    public suspend fun resetNavigationHistory() {
+    public suspend fun resetNavigationHistory(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.resetNavigationHistory", parameter)
+        cdp.callCommand("Page.resetNavigationHistory", parameter, mode)
     }
 
     /**
      * Returns content of the given resource.
      */
-    public suspend fun getResourceContent(args: GetResourceContentParameter): GetResourceContentReturn {
+    public suspend fun getResourceContent(
+        args: GetResourceContentParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetResourceContentReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.getResourceContent", parameter)
+        val result = cdp.callCommand("Page.getResourceContent", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -668,18 +689,21 @@ public class Page(
     /**
      * Returns present frame / resource tree structure.
      */
-    public suspend fun getResourceTree(): GetResourceTreeReturn {
+    public suspend fun getResourceTree(mode: CommandMode = CommandMode.DEFAULT): GetResourceTreeReturn {
         val parameter = null
-        val result = cdp.callCommand("Page.getResourceTree", parameter)
+        val result = cdp.callCommand("Page.getResourceTree", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Accepts or dismisses a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload).
      */
-    public suspend fun handleJavaScriptDialog(args: HandleJavaScriptDialogParameter) {
+    public suspend fun handleJavaScriptDialog(
+        args: HandleJavaScriptDialogParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.handleJavaScriptDialog", parameter)
+        cdp.callCommand("Page.handleJavaScriptDialog", parameter, mode)
     }
 
     /**
@@ -697,9 +721,9 @@ public class Page(
     /**
      * Navigates current page to the given URL.
      */
-    public suspend fun navigate(args: NavigateParameter): NavigateReturn {
+    public suspend fun navigate(args: NavigateParameter, mode: CommandMode = CommandMode.DEFAULT): NavigateReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.navigate", parameter)
+        val result = cdp.callCommand("Page.navigate", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -732,9 +756,12 @@ public class Page(
     /**
      * Navigates current page to the given history entry.
      */
-    public suspend fun navigateToHistoryEntry(args: NavigateToHistoryEntryParameter) {
+    public suspend fun navigateToHistoryEntry(
+        args: NavigateToHistoryEntryParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.navigateToHistoryEntry", parameter)
+        cdp.callCommand("Page.navigateToHistoryEntry", parameter, mode)
     }
 
     /**
@@ -750,9 +777,12 @@ public class Page(
     /**
      * Print page as PDF.
      */
-    public suspend fun printToPDF(args: PrintToPDFParameter): PrintToPDFReturn {
+    public suspend fun printToPDF(
+        args: PrintToPDFParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): PrintToPDFReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.printToPDF", parameter)
+        val result = cdp.callCommand("Page.printToPDF", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -837,9 +867,9 @@ public class Page(
     /**
      * Reloads given page optionally ignoring the cache.
      */
-    public suspend fun reload(args: ReloadParameter) {
+    public suspend fun reload(args: ReloadParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.reload", parameter)
+        cdp.callCommand("Page.reload", parameter, mode)
     }
 
     /**
@@ -869,9 +899,12 @@ public class Page(
      * Deprecated, please use removeScriptToEvaluateOnNewDocument instead.
      */
     @Deprecated(message = "")
-    public suspend fun removeScriptToEvaluateOnLoad(args: RemoveScriptToEvaluateOnLoadParameter) {
+    public suspend fun removeScriptToEvaluateOnLoad(
+        args: RemoveScriptToEvaluateOnLoadParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.removeScriptToEvaluateOnLoad", parameter)
+        cdp.callCommand("Page.removeScriptToEvaluateOnLoad", parameter, mode)
     }
 
     /**
@@ -888,9 +921,12 @@ public class Page(
     /**
      * Removes given script from the list.
      */
-    public suspend fun removeScriptToEvaluateOnNewDocument(args: RemoveScriptToEvaluateOnNewDocumentParameter) {
+    public suspend fun removeScriptToEvaluateOnNewDocument(
+        args: RemoveScriptToEvaluateOnNewDocumentParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.removeScriptToEvaluateOnNewDocument", parameter)
+        cdp.callCommand("Page.removeScriptToEvaluateOnNewDocument", parameter, mode)
     }
 
     /**
@@ -906,9 +942,9 @@ public class Page(
     /**
      * Acknowledges that a screencast frame has been received by the frontend.
      */
-    public suspend fun screencastFrameAck(args: ScreencastFrameAckParameter) {
+    public suspend fun screencastFrameAck(args: ScreencastFrameAckParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.screencastFrameAck", parameter)
+        cdp.callCommand("Page.screencastFrameAck", parameter, mode)
     }
 
     /**
@@ -924,9 +960,12 @@ public class Page(
     /**
      * Searches for given string in resource content.
      */
-    public suspend fun searchInResource(args: SearchInResourceParameter): SearchInResourceReturn {
+    public suspend fun searchInResource(
+        args: SearchInResourceParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SearchInResourceReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.searchInResource", parameter)
+        val result = cdp.callCommand("Page.searchInResource", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -959,9 +998,12 @@ public class Page(
     /**
      * Enable Chrome's experimental ad filter on all sites.
      */
-    public suspend fun setAdBlockingEnabled(args: SetAdBlockingEnabledParameter) {
+    public suspend fun setAdBlockingEnabled(
+        args: SetAdBlockingEnabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setAdBlockingEnabled", parameter)
+        cdp.callCommand("Page.setAdBlockingEnabled", parameter, mode)
     }
 
     /**
@@ -977,9 +1019,9 @@ public class Page(
     /**
      * Enable page Content Security Policy by-passing.
      */
-    public suspend fun setBypassCSP(args: SetBypassCSPParameter) {
+    public suspend fun setBypassCSP(args: SetBypassCSPParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setBypassCSP", parameter)
+        cdp.callCommand("Page.setBypassCSP", parameter, mode)
     }
 
     /**
@@ -995,9 +1037,12 @@ public class Page(
     /**
      * Get Permissions Policy state on given frame.
      */
-    public suspend fun getPermissionsPolicyState(args: GetPermissionsPolicyStateParameter): GetPermissionsPolicyStateReturn {
+    public suspend fun getPermissionsPolicyState(
+        args: GetPermissionsPolicyStateParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetPermissionsPolicyStateReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.getPermissionsPolicyState", parameter)
+        val result = cdp.callCommand("Page.getPermissionsPolicyState", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1014,9 +1059,12 @@ public class Page(
     /**
      * Get Origin Trials on given frame.
      */
-    public suspend fun getOriginTrials(args: GetOriginTrialsParameter): GetOriginTrialsReturn {
+    public suspend fun getOriginTrials(
+        args: GetOriginTrialsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetOriginTrialsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Page.getOriginTrials", parameter)
+        val result = cdp.callCommand("Page.getOriginTrials", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1036,9 +1084,12 @@ public class Page(
      * query results).
      */
     @Deprecated(message = "")
-    public suspend fun setDeviceMetricsOverride(args: SetDeviceMetricsOverrideParameter) {
+    public suspend fun setDeviceMetricsOverride(
+        args: SetDeviceMetricsOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setDeviceMetricsOverride", parameter)
+        cdp.callCommand("Page.setDeviceMetricsOverride", parameter, mode)
     }
 
     /**
@@ -1096,9 +1147,12 @@ public class Page(
      * Overrides the Device Orientation.
      */
     @Deprecated(message = "")
-    public suspend fun setDeviceOrientationOverride(args: SetDeviceOrientationOverrideParameter) {
+    public suspend fun setDeviceOrientationOverride(
+        args: SetDeviceOrientationOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setDeviceOrientationOverride", parameter)
+        cdp.callCommand("Page.setDeviceOrientationOverride", parameter, mode)
     }
 
     /**
@@ -1121,9 +1175,9 @@ public class Page(
     /**
      * Set generic font families.
      */
-    public suspend fun setFontFamilies(args: SetFontFamiliesParameter) {
+    public suspend fun setFontFamilies(args: SetFontFamiliesParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setFontFamilies", parameter)
+        cdp.callCommand("Page.setFontFamilies", parameter, mode)
     }
 
     /**
@@ -1140,9 +1194,9 @@ public class Page(
     /**
      * Set default font sizes.
      */
-    public suspend fun setFontSizes(args: SetFontSizesParameter) {
+    public suspend fun setFontSizes(args: SetFontSizesParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setFontSizes", parameter)
+        cdp.callCommand("Page.setFontSizes", parameter, mode)
     }
 
     /**
@@ -1158,9 +1212,9 @@ public class Page(
     /**
      * Sets given markup as the document's HTML.
      */
-    public suspend fun setDocumentContent(args: SetDocumentContentParameter) {
+    public suspend fun setDocumentContent(args: SetDocumentContentParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setDocumentContent", parameter)
+        cdp.callCommand("Page.setDocumentContent", parameter, mode)
     }
 
     /**
@@ -1178,9 +1232,12 @@ public class Page(
      * Set the behavior when downloading a file.
      */
     @Deprecated(message = "")
-    public suspend fun setDownloadBehavior(args: SetDownloadBehaviorParameter) {
+    public suspend fun setDownloadBehavior(
+        args: SetDownloadBehaviorParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setDownloadBehavior", parameter)
+        cdp.callCommand("Page.setDownloadBehavior", parameter, mode)
     }
 
     /**
@@ -1201,9 +1258,12 @@ public class Page(
      * unavailable.
      */
     @Deprecated(message = "")
-    public suspend fun setGeolocationOverride(args: SetGeolocationOverrideParameter) {
+    public suspend fun setGeolocationOverride(
+        args: SetGeolocationOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setGeolocationOverride", parameter)
+        cdp.callCommand("Page.setGeolocationOverride", parameter, mode)
     }
 
     /**
@@ -1227,9 +1287,12 @@ public class Page(
     /**
      * Controls whether page will emit lifecycle events.
      */
-    public suspend fun setLifecycleEventsEnabled(args: SetLifecycleEventsEnabledParameter) {
+    public suspend fun setLifecycleEventsEnabled(
+        args: SetLifecycleEventsEnabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setLifecycleEventsEnabled", parameter)
+        cdp.callCommand("Page.setLifecycleEventsEnabled", parameter, mode)
     }
 
     /**
@@ -1246,9 +1309,12 @@ public class Page(
      * Toggles mouse event-based touch event emulation.
      */
     @Deprecated(message = "")
-    public suspend fun setTouchEmulationEnabled(args: SetTouchEmulationEnabledParameter) {
+    public suspend fun setTouchEmulationEnabled(
+        args: SetTouchEmulationEnabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setTouchEmulationEnabled", parameter)
+        cdp.callCommand("Page.setTouchEmulationEnabled", parameter, mode)
     }
 
     /**
@@ -1266,9 +1332,9 @@ public class Page(
     /**
      * Starts sending each frame using the `screencastFrame` event.
      */
-    public suspend fun startScreencast(args: StartScreencastParameter) {
+    public suspend fun startScreencast(args: StartScreencastParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.startScreencast", parameter)
+        cdp.callCommand("Page.startScreencast", parameter, mode)
     }
 
     /**
@@ -1300,25 +1366,25 @@ public class Page(
     /**
      * Force the page stop all navigations and pending resource fetches.
      */
-    public suspend fun stopLoading() {
+    public suspend fun stopLoading(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.stopLoading", parameter)
+        cdp.callCommand("Page.stopLoading", parameter, mode)
     }
 
     /**
      * Crashes renderer on the IO thread, generates minidumps.
      */
-    public suspend fun crash() {
+    public suspend fun crash(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.crash", parameter)
+        cdp.callCommand("Page.crash", parameter, mode)
     }
 
     /**
      * Tries to close page, running its beforeunload hooks, if any.
      */
-    public suspend fun close() {
+    public suspend fun close(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.close", parameter)
+        cdp.callCommand("Page.close", parameter, mode)
     }
 
     /**
@@ -1326,9 +1392,12 @@ public class Page(
      * It will transition the page to the given state according to:
      * https://github.com/WICG/web-lifecycle/
      */
-    public suspend fun setWebLifecycleState(args: SetWebLifecycleStateParameter) {
+    public suspend fun setWebLifecycleState(
+        args: SetWebLifecycleStateParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setWebLifecycleState", parameter)
+        cdp.callCommand("Page.setWebLifecycleState", parameter, mode)
     }
 
     /**
@@ -1346,9 +1415,9 @@ public class Page(
     /**
      * Stops sending each frame in the `screencastFrame`.
      */
-    public suspend fun stopScreencast() {
+    public suspend fun stopScreencast(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.stopScreencast", parameter)
+        cdp.callCommand("Page.stopScreencast", parameter, mode)
     }
 
     /**
@@ -1359,9 +1428,12 @@ public class Page(
      * produced upon backend discretion, based on internal heuristics.
      * See also: `Page.compilationCacheProduced`.
      */
-    public suspend fun produceCompilationCache(args: ProduceCompilationCacheParameter) {
+    public suspend fun produceCompilationCache(
+        args: ProduceCompilationCacheParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.produceCompilationCache", parameter)
+        cdp.callCommand("Page.produceCompilationCache", parameter, mode)
     }
 
     /**
@@ -1383,9 +1455,12 @@ public class Page(
      * Seeds compilation cache for given url. Compilation cache does not survive
      * cross-process navigation.
      */
-    public suspend fun addCompilationCache(args: AddCompilationCacheParameter) {
+    public suspend fun addCompilationCache(
+        args: AddCompilationCacheParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.addCompilationCache", parameter)
+        cdp.callCommand("Page.addCompilationCache", parameter, mode)
     }
 
     /**
@@ -1403,18 +1478,21 @@ public class Page(
     /**
      * Clears seeded compilation cache.
      */
-    public suspend fun clearCompilationCache() {
+    public suspend fun clearCompilationCache(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.clearCompilationCache", parameter)
+        cdp.callCommand("Page.clearCompilationCache", parameter, mode)
     }
 
     /**
      * Sets the Secure Payment Confirmation transaction mode.
      * https://w3c.github.io/secure-payment-confirmation/#sctn-automation-set-spc-transaction-mode
      */
-    public suspend fun setSPCTransactionMode(args: SetSPCTransactionModeParameter) {
+    public suspend fun setSPCTransactionMode(
+        args: SetSPCTransactionModeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setSPCTransactionMode", parameter)
+        cdp.callCommand("Page.setSPCTransactionMode", parameter, mode)
     }
 
     /**
@@ -1432,9 +1510,12 @@ public class Page(
      * Extensions for Custom Handlers API:
      * https://html.spec.whatwg.org/multipage/system-state.html#rph-automation
      */
-    public suspend fun setRPHRegistrationMode(args: SetRPHRegistrationModeParameter) {
+    public suspend fun setRPHRegistrationMode(
+        args: SetRPHRegistrationModeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setRPHRegistrationMode", parameter)
+        cdp.callCommand("Page.setRPHRegistrationMode", parameter, mode)
     }
 
     /**
@@ -1451,9 +1532,9 @@ public class Page(
     /**
      * Generates a report for testing.
      */
-    public suspend fun generateTestReport(args: GenerateTestReportParameter) {
+    public suspend fun generateTestReport(args: GenerateTestReportParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.generateTestReport", parameter)
+        cdp.callCommand("Page.generateTestReport", parameter, mode)
     }
 
     /**
@@ -1470,9 +1551,9 @@ public class Page(
     /**
      * Pauses page execution. Can be resumed using generic Runtime.runIfWaitingForDebugger.
      */
-    public suspend fun waitForDebugger() {
+    public suspend fun waitForDebugger(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Page.waitForDebugger", parameter)
+        cdp.callCommand("Page.waitForDebugger", parameter, mode)
     }
 
     /**
@@ -1480,9 +1561,12 @@ public class Page(
      * When file chooser interception is enabled, native file chooser dialog is not shown.
      * Instead, a protocol event `Page.fileChooserOpened` is emitted.
      */
-    public suspend fun setInterceptFileChooserDialog(args: SetInterceptFileChooserDialogParameter) {
+    public suspend fun setInterceptFileChooserDialog(
+        args: SetInterceptFileChooserDialogParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setInterceptFileChooserDialog", parameter)
+        cdp.callCommand("Page.setInterceptFileChooserDialog", parameter, mode)
     }
 
     /**
@@ -1509,9 +1593,12 @@ public class Page(
      *
      * TODO(https://crbug.com/1440085): Remove this once Puppeteer supports tab targets.
      */
-    public suspend fun setPrerenderingAllowed(args: SetPrerenderingAllowedParameter) {
+    public suspend fun setPrerenderingAllowed(
+        args: SetPrerenderingAllowedParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Page.setPrerenderingAllowed", parameter)
+        cdp.callCommand("Page.setPrerenderingAllowed", parameter, mode)
     }
 
     /**

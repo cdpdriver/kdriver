@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -18,9 +15,9 @@ public class IndexedDB(
     /**
      * Clears all entries from an object store.
      */
-    public suspend fun clearObjectStore(args: ClearObjectStoreParameter) {
+    public suspend fun clearObjectStore(args: ClearObjectStoreParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("IndexedDB.clearObjectStore", parameter)
+        cdp.callCommand("IndexedDB.clearObjectStore", parameter, mode)
     }
 
     /**
@@ -53,9 +50,9 @@ public class IndexedDB(
     /**
      * Deletes a database.
      */
-    public suspend fun deleteDatabase(args: DeleteDatabaseParameter) {
+    public suspend fun deleteDatabase(args: DeleteDatabaseParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("IndexedDB.deleteDatabase", parameter)
+        cdp.callCommand("IndexedDB.deleteDatabase", parameter, mode)
     }
 
     /**
@@ -85,9 +82,12 @@ public class IndexedDB(
     /**
      * Delete a range of entries from an object store
      */
-    public suspend fun deleteObjectStoreEntries(args: DeleteObjectStoreEntriesParameter) {
+    public suspend fun deleteObjectStoreEntries(
+        args: DeleteObjectStoreEntriesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("IndexedDB.deleteObjectStoreEntries", parameter)
+        cdp.callCommand("IndexedDB.deleteObjectStoreEntries", parameter, mode)
     }
 
     /**
@@ -123,25 +123,28 @@ public class IndexedDB(
     /**
      * Disables events from backend.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("IndexedDB.disable", parameter)
+        cdp.callCommand("IndexedDB.disable", parameter, mode)
     }
 
     /**
      * Enables events from backend.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("IndexedDB.enable", parameter)
+        cdp.callCommand("IndexedDB.enable", parameter, mode)
     }
 
     /**
      * Requests data from object store or index.
      */
-    public suspend fun requestData(args: RequestDataParameter): RequestDataReturn {
+    public suspend fun requestData(
+        args: RequestDataParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): RequestDataReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("IndexedDB.requestData", parameter)
+        val result = cdp.callCommand("IndexedDB.requestData", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -187,9 +190,12 @@ public class IndexedDB(
     /**
      * Gets metadata of an object store.
      */
-    public suspend fun getMetadata(args: GetMetadataParameter): GetMetadataReturn {
+    public suspend fun getMetadata(
+        args: GetMetadataParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetMetadataReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("IndexedDB.getMetadata", parameter)
+        val result = cdp.callCommand("IndexedDB.getMetadata", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -223,9 +229,12 @@ public class IndexedDB(
     /**
      * Requests database with given name in given frame.
      */
-    public suspend fun requestDatabase(args: RequestDatabaseParameter): RequestDatabaseReturn {
+    public suspend fun requestDatabase(
+        args: RequestDatabaseParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): RequestDatabaseReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("IndexedDB.requestDatabase", parameter)
+        val result = cdp.callCommand("IndexedDB.requestDatabase", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -256,9 +265,12 @@ public class IndexedDB(
     /**
      * Requests database names for given security origin.
      */
-    public suspend fun requestDatabaseNames(args: RequestDatabaseNamesParameter): RequestDatabaseNamesReturn {
+    public suspend fun requestDatabaseNames(
+        args: RequestDatabaseNamesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): RequestDatabaseNamesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("IndexedDB.requestDatabaseNames", parameter)
+        val result = cdp.callCommand("IndexedDB.requestDatabaseNames", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

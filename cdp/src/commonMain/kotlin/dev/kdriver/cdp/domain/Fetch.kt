@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -57,18 +54,18 @@ public class Fetch(
     /**
      * Disables the fetch domain.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Fetch.disable", parameter)
+        cdp.callCommand("Fetch.disable", parameter, mode)
     }
 
     /**
      * Enables issuing of requestPaused events. A request will be paused until client
      * calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth.
      */
-    public suspend fun enable(args: EnableParameter) {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Fetch.enable", parameter)
+        cdp.callCommand("Fetch.enable", parameter, mode)
     }
 
     /**
@@ -89,9 +86,9 @@ public class Fetch(
     /**
      * Causes the request to fail with specified reason.
      */
-    public suspend fun failRequest(args: FailRequestParameter) {
+    public suspend fun failRequest(args: FailRequestParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Fetch.failRequest", parameter)
+        cdp.callCommand("Fetch.failRequest", parameter, mode)
     }
 
     /**
@@ -108,9 +105,9 @@ public class Fetch(
     /**
      * Provides response to the request.
      */
-    public suspend fun fulfillRequest(args: FulfillRequestParameter) {
+    public suspend fun fulfillRequest(args: FulfillRequestParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Fetch.fulfillRequest", parameter)
+        cdp.callCommand("Fetch.fulfillRequest", parameter, mode)
     }
 
     /**
@@ -151,9 +148,9 @@ public class Fetch(
     /**
      * Continues the request, optionally modifying some of its parameters.
      */
-    public suspend fun continueRequest(args: ContinueRequestParameter) {
+    public suspend fun continueRequest(args: ContinueRequestParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Fetch.continueRequest", parameter)
+        cdp.callCommand("Fetch.continueRequest", parameter, mode)
     }
 
     /**
@@ -190,9 +187,9 @@ public class Fetch(
     /**
      * Continues a request supplying authChallengeResponse following authRequired event.
      */
-    public suspend fun continueWithAuth(args: ContinueWithAuthParameter) {
+    public suspend fun continueWithAuth(args: ContinueWithAuthParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Fetch.continueWithAuth", parameter)
+        cdp.callCommand("Fetch.continueWithAuth", parameter, mode)
     }
 
     /**
@@ -211,9 +208,9 @@ public class Fetch(
      * response headers. If either responseCode or headers are modified, all of them
      * must be present.
      */
-    public suspend fun continueResponse(args: ContinueResponseParameter) {
+    public suspend fun continueResponse(args: ContinueResponseParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Fetch.continueResponse", parameter)
+        cdp.callCommand("Fetch.continueResponse", parameter, mode)
     }
 
     /**
@@ -260,9 +257,12 @@ public class Fetch(
      * `responseCode` and presence of `location` response header, see
      * comments to `requestPaused` for details.
      */
-    public suspend fun getResponseBody(args: GetResponseBodyParameter): GetResponseBodyReturn {
+    public suspend fun getResponseBody(
+        args: GetResponseBodyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetResponseBodyReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Fetch.getResponseBody", parameter)
+        val result = cdp.callCommand("Fetch.getResponseBody", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -297,9 +297,12 @@ public class Fetch(
      * Calling other methods that affect the request or disabling fetch
      * domain before body is received results in an undefined behavior.
      */
-    public suspend fun takeResponseBodyAsStream(args: TakeResponseBodyAsStreamParameter): TakeResponseBodyAsStreamReturn {
+    public suspend fun takeResponseBodyAsStream(
+        args: TakeResponseBodyAsStreamParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): TakeResponseBodyAsStreamReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Fetch.takeResponseBodyAsStream", parameter)
+        val result = cdp.callCommand("Fetch.takeResponseBodyAsStream", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

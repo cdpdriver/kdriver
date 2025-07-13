@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -37,9 +34,9 @@ public class Autofill(
      * Trigger autofill on a form identified by the fieldId.
      * If the field and related form cannot be autofilled, returns an error.
      */
-    public suspend fun trigger(args: TriggerParameter) {
+    public suspend fun trigger(args: TriggerParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Autofill.trigger", parameter)
+        cdp.callCommand("Autofill.trigger", parameter, mode)
     }
 
     /**
@@ -62,9 +59,9 @@ public class Autofill(
     /**
      * Set addresses so that developers can verify their forms implementation.
      */
-    public suspend fun setAddresses(args: SetAddressesParameter) {
+    public suspend fun setAddresses(args: SetAddressesParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Autofill.setAddresses", parameter)
+        cdp.callCommand("Autofill.setAddresses", parameter, mode)
     }
 
     /**
@@ -80,17 +77,17 @@ public class Autofill(
     /**
      * Disables autofill domain notifications.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Autofill.disable", parameter)
+        cdp.callCommand("Autofill.disable", parameter, mode)
     }
 
     /**
      * Enables autofill domain notifications.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Autofill.enable", parameter)
+        cdp.callCommand("Autofill.enable", parameter, mode)
     }
 
     @Serializable

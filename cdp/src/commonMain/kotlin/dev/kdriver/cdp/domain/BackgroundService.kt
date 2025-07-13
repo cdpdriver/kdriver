@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -47,9 +44,9 @@ public class BackgroundService(
     /**
      * Enables event updates for the service.
      */
-    public suspend fun startObserving(args: StartObservingParameter) {
+    public suspend fun startObserving(args: StartObservingParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BackgroundService.startObserving", parameter)
+        cdp.callCommand("BackgroundService.startObserving", parameter, mode)
     }
 
     /**
@@ -65,9 +62,9 @@ public class BackgroundService(
     /**
      * Disables event updates for the service.
      */
-    public suspend fun stopObserving(args: StopObservingParameter) {
+    public suspend fun stopObserving(args: StopObservingParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BackgroundService.stopObserving", parameter)
+        cdp.callCommand("BackgroundService.stopObserving", parameter, mode)
     }
 
     /**
@@ -83,9 +80,9 @@ public class BackgroundService(
     /**
      * Set the recording state for the service.
      */
-    public suspend fun setRecording(args: SetRecordingParameter) {
+    public suspend fun setRecording(args: SetRecordingParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BackgroundService.setRecording", parameter)
+        cdp.callCommand("BackgroundService.setRecording", parameter, mode)
     }
 
     /**
@@ -102,9 +99,9 @@ public class BackgroundService(
     /**
      * Clears all stored data for the service.
      */
-    public suspend fun clearEvents(args: ClearEventsParameter) {
+    public suspend fun clearEvents(args: ClearEventsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BackgroundService.clearEvents", parameter)
+        cdp.callCommand("BackgroundService.clearEvents", parameter, mode)
     }
 
     /**

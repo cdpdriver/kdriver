@@ -2,8 +2,7 @@ package dev.kdriver.core.connection
 
 import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.*
-import dev.kdriver.cdp.domain.Target
-import dev.kdriver.cdp.domain.target
+import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.BrowserTarget
 import dev.kdriver.core.utils.getWebSocketClientEngine
@@ -21,8 +20,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.reflect.KClass
 
 open class Connection(
@@ -47,7 +46,10 @@ open class Connection(
     private val currentIdMutex = Mutex()
     private var currentId = 0L
 
-    private var allMessages = MutableSharedFlow<Message>(extraBufferCapacity = eventsBufferSize)
+    private var prepareHeadlessDone = false
+    private var prepareExpertDone = false
+
+    private val allMessages = MutableSharedFlow<Message>(extraBufferCapacity = eventsBufferSize)
 
     @InternalCdpApi
     override val events: Flow<Message.Event> = allMessages.filterIsInstance()
@@ -100,12 +102,19 @@ open class Connection(
      * This should not be called directly, but rather through typed methods (like `cdp.network.enable()`).
      */
     @InternalCdpApi
-    override suspend fun callCommand(method: String, parameter: JsonElement?): JsonElement? {
+    override suspend fun callCommand(method: String, parameter: JsonElement?, mode: CommandMode): JsonElement? {
         connect()
+
+        if (mode == CommandMode.DEFAULT) owner?.let { browser ->
+            if (browser.config.expert) prepareExpert()
+            if (browser.config.headless) prepareHeadless()
+        }
+
         val requestId = currentIdMutex.withLock { currentId++ }
-        val jsonString = Json.encodeToString(Request(requestId, method, parameter))
+        val jsonString = Serialization.json.encodeToString(Request(requestId, method, parameter))
         wsSession?.send(jsonString)
         logger.debug("WS > CDP: ${jsonString.take(debugStringLimit)}")
+
         val result = responses.first { it.id == requestId }
         result.error?.throwAsException(method)
         return result.result
@@ -175,6 +184,51 @@ open class Connection(
     suspend fun sleep(t: Long) {
         updateTarget()
         delay(t)
+    }
+
+    private suspend fun prepareHeadless() = runCatching {
+        if (prepareHeadlessDone) return@runCatching
+        val response = runtime.evaluate(
+            Runtime.EvaluateParameter(
+                expression = "navigator.userAgent",
+                userGesture = true,
+                awaitPromise = true,
+                returnByValue = true,
+                allowUnsafeEvalBlockedByCSP = true
+            ),
+            CommandMode.ONE_SHOT
+        )
+        response.result.value?.jsonPrimitive?.content?.let { ua ->
+            network.setUserAgentOverride(
+                Network.SetUserAgentOverrideParameter(
+                    userAgent = ua.replace("Headless", "")
+                ),
+                CommandMode.ONE_SHOT
+            )
+        }
+        prepareHeadlessDone = true
+    }
+
+    private suspend fun prepareExpert() = runCatching {
+        if (prepareExpertDone) return@runCatching
+        owner?.let {
+            page.addScriptToEvaluateOnNewDocument(
+                Page.AddScriptToEvaluateOnNewDocumentParameter(
+                    source = """
+                    Element.prototype._attachShadow = Element.prototype.attachShadow;
+                    Element.prototype.attachShadow = function () {
+                        return this._attachShadow( { mode: "open" } );
+                    };
+                    """.trimIndent()
+                ),
+                CommandMode.ONE_SHOT
+            )
+            page.enable(
+                Page.EnableParameter(),
+                CommandMode.ONE_SHOT
+            )
+        }
+        prepareExpertDone = true
     }
 
     /**

@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -484,9 +481,12 @@ public class Network(
     /**
      * Sets a list of content encodings that will be accepted. Empty list means no encoding is accepted.
      */
-    public suspend fun setAcceptedEncodings(args: SetAcceptedEncodingsParameter) {
+    public suspend fun setAcceptedEncodings(
+        args: SetAcceptedEncodingsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.setAcceptedEncodings", parameter)
+        cdp.callCommand("Network.setAcceptedEncodings", parameter, mode)
     }
 
     /**
@@ -502,18 +502,18 @@ public class Network(
     /**
      * Clears accepted encodings set by setAcceptedEncodings
      */
-    public suspend fun clearAcceptedEncodingsOverride() {
+    public suspend fun clearAcceptedEncodingsOverride(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Network.clearAcceptedEncodingsOverride", parameter)
+        cdp.callCommand("Network.clearAcceptedEncodingsOverride", parameter, mode)
     }
 
     /**
      * Tells whether clearing browser cache is supported.
      */
     @Deprecated(message = "")
-    public suspend fun canClearBrowserCache(): CanClearBrowserCacheReturn {
+    public suspend fun canClearBrowserCache(mode: CommandMode = CommandMode.DEFAULT): CanClearBrowserCacheReturn {
         val parameter = null
-        val result = cdp.callCommand("Network.canClearBrowserCache", parameter)
+        val result = cdp.callCommand("Network.canClearBrowserCache", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -521,9 +521,9 @@ public class Network(
      * Tells whether clearing browser cookies is supported.
      */
     @Deprecated(message = "")
-    public suspend fun canClearBrowserCookies(): CanClearBrowserCookiesReturn {
+    public suspend fun canClearBrowserCookies(mode: CommandMode = CommandMode.DEFAULT): CanClearBrowserCookiesReturn {
         val parameter = null
-        val result = cdp.callCommand("Network.canClearBrowserCookies", parameter)
+        val result = cdp.callCommand("Network.canClearBrowserCookies", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -531,26 +531,26 @@ public class Network(
      * Tells whether emulation of network conditions is supported.
      */
     @Deprecated(message = "")
-    public suspend fun canEmulateNetworkConditions(): CanEmulateNetworkConditionsReturn {
+    public suspend fun canEmulateNetworkConditions(mode: CommandMode = CommandMode.DEFAULT): CanEmulateNetworkConditionsReturn {
         val parameter = null
-        val result = cdp.callCommand("Network.canEmulateNetworkConditions", parameter)
+        val result = cdp.callCommand("Network.canEmulateNetworkConditions", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Clears browser cache.
      */
-    public suspend fun clearBrowserCache() {
+    public suspend fun clearBrowserCache(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Network.clearBrowserCache", parameter)
+        cdp.callCommand("Network.clearBrowserCache", parameter, mode)
     }
 
     /**
      * Clears browser cookies.
      */
-    public suspend fun clearBrowserCookies() {
+    public suspend fun clearBrowserCookies(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Network.clearBrowserCookies", parameter)
+        cdp.callCommand("Network.clearBrowserCookies", parameter, mode)
     }
 
     /**
@@ -561,9 +561,12 @@ public class Network(
      * Deprecated, use Fetch.continueRequest, Fetch.fulfillRequest and Fetch.failRequest instead.
      */
     @Deprecated(message = "")
-    public suspend fun continueInterceptedRequest(args: ContinueInterceptedRequestParameter) {
+    public suspend fun continueInterceptedRequest(
+        args: ContinueInterceptedRequestParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.continueInterceptedRequest", parameter)
+        cdp.callCommand("Network.continueInterceptedRequest", parameter, mode)
     }
 
     /**
@@ -615,9 +618,9 @@ public class Network(
     /**
      * Deletes browser cookies with matching name and url or domain/path/partitionKey pair.
      */
-    public suspend fun deleteCookies(args: DeleteCookiesParameter) {
+    public suspend fun deleteCookies(args: DeleteCookiesParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.deleteCookies", parameter)
+        cdp.callCommand("Network.deleteCookies", parameter, mode)
     }
 
     /**
@@ -646,17 +649,20 @@ public class Network(
     /**
      * Disables network tracking, prevents network events from being sent to the client.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Network.disable", parameter)
+        cdp.callCommand("Network.disable", parameter, mode)
     }
 
     /**
      * Activates emulation of network conditions.
      */
-    public suspend fun emulateNetworkConditions(args: EmulateNetworkConditionsParameter) {
+    public suspend fun emulateNetworkConditions(
+        args: EmulateNetworkConditionsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.emulateNetworkConditions", parameter)
+        cdp.callCommand("Network.emulateNetworkConditions", parameter, mode)
     }
 
     /**
@@ -697,9 +703,9 @@ public class Network(
     /**
      * Enables network tracking, network events will now be delivered to the client.
      */
-    public suspend fun enable(args: EnableParameter) {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.enable", parameter)
+        cdp.callCommand("Network.enable", parameter, mode)
     }
 
     /**
@@ -731,18 +737,21 @@ public class Network(
      * Deprecated. Use Storage.getCookies instead.
      */
     @Deprecated(message = "")
-    public suspend fun getAllCookies(): GetAllCookiesReturn {
+    public suspend fun getAllCookies(mode: CommandMode = CommandMode.DEFAULT): GetAllCookiesReturn {
         val parameter = null
-        val result = cdp.callCommand("Network.getAllCookies", parameter)
+        val result = cdp.callCommand("Network.getAllCookies", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Returns the DER-encoded certificate.
      */
-    public suspend fun getCertificate(args: GetCertificateParameter): GetCertificateReturn {
+    public suspend fun getCertificate(
+        args: GetCertificateParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetCertificateReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.getCertificate", parameter)
+        val result = cdp.callCommand("Network.getCertificate", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -760,9 +769,12 @@ public class Network(
      * Returns all browser cookies for the current URL. Depending on the backend support, will return
      * detailed cookie information in the `cookies` field.
      */
-    public suspend fun getCookies(args: GetCookiesParameter): GetCookiesReturn {
+    public suspend fun getCookies(
+        args: GetCookiesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetCookiesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.getCookies", parameter)
+        val result = cdp.callCommand("Network.getCookies", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -782,9 +794,12 @@ public class Network(
     /**
      * Returns content served for the given request.
      */
-    public suspend fun getResponseBody(args: GetResponseBodyParameter): GetResponseBodyReturn {
+    public suspend fun getResponseBody(
+        args: GetResponseBodyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetResponseBodyReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.getResponseBody", parameter)
+        val result = cdp.callCommand("Network.getResponseBody", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -801,9 +816,12 @@ public class Network(
     /**
      * Returns post data sent with the request. Returns an error when no data was sent with the request.
      */
-    public suspend fun getRequestPostData(args: GetRequestPostDataParameter): GetRequestPostDataReturn {
+    public suspend fun getRequestPostData(
+        args: GetRequestPostDataParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetRequestPostDataReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.getRequestPostData", parameter)
+        val result = cdp.callCommand("Network.getRequestPostData", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -820,9 +838,12 @@ public class Network(
     /**
      * Returns content served for the given currently intercepted request.
      */
-    public suspend fun getResponseBodyForInterception(args: GetResponseBodyForInterceptionParameter): GetResponseBodyForInterceptionReturn {
+    public suspend fun getResponseBodyForInterception(
+        args: GetResponseBodyForInterceptionParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetResponseBodyForInterceptionReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.getResponseBodyForInterception", parameter)
+        val result = cdp.callCommand("Network.getResponseBodyForInterception", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -842,9 +863,12 @@ public class Network(
      * the response body. The stream only supports sequential read, IO.read will fail if the position
      * is specified.
      */
-    public suspend fun takeResponseBodyForInterceptionAsStream(args: TakeResponseBodyForInterceptionAsStreamParameter): TakeResponseBodyForInterceptionAsStreamReturn {
+    public suspend fun takeResponseBodyForInterceptionAsStream(
+        args: TakeResponseBodyForInterceptionAsStreamParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): TakeResponseBodyForInterceptionAsStreamReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.takeResponseBodyForInterceptionAsStream", parameter)
+        val result = cdp.callCommand("Network.takeResponseBodyForInterceptionAsStream", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -866,9 +890,9 @@ public class Network(
      * parameters should be identical: method, url, async, request body, extra headers, withCredentials
      * attribute, user, password.
      */
-    public suspend fun replayXHR(args: ReplayXHRParameter) {
+    public suspend fun replayXHR(args: ReplayXHRParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.replayXHR", parameter)
+        cdp.callCommand("Network.replayXHR", parameter, mode)
     }
 
     /**
@@ -886,9 +910,12 @@ public class Network(
     /**
      * Searches for given string in response content.
      */
-    public suspend fun searchInResponseBody(args: SearchInResponseBodyParameter): SearchInResponseBodyReturn {
+    public suspend fun searchInResponseBody(
+        args: SearchInResponseBodyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SearchInResponseBodyReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.searchInResponseBody", parameter)
+        val result = cdp.callCommand("Network.searchInResponseBody", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -918,9 +945,9 @@ public class Network(
     /**
      * Blocks URLs from loading.
      */
-    public suspend fun setBlockedURLs(args: SetBlockedURLsParameter) {
+    public suspend fun setBlockedURLs(args: SetBlockedURLsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.setBlockedURLs", parameter)
+        cdp.callCommand("Network.setBlockedURLs", parameter, mode)
     }
 
     /**
@@ -936,9 +963,12 @@ public class Network(
     /**
      * Toggles ignoring of service worker for each request.
      */
-    public suspend fun setBypassServiceWorker(args: SetBypassServiceWorkerParameter) {
+    public suspend fun setBypassServiceWorker(
+        args: SetBypassServiceWorkerParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.setBypassServiceWorker", parameter)
+        cdp.callCommand("Network.setBypassServiceWorker", parameter, mode)
     }
 
     /**
@@ -954,9 +984,9 @@ public class Network(
     /**
      * Toggles ignoring cache for each request. If `true`, cache will not be used.
      */
-    public suspend fun setCacheDisabled(args: SetCacheDisabledParameter) {
+    public suspend fun setCacheDisabled(args: SetCacheDisabledParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.setCacheDisabled", parameter)
+        cdp.callCommand("Network.setCacheDisabled", parameter, mode)
     }
 
     /**
@@ -972,9 +1002,9 @@ public class Network(
     /**
      * Sets a cookie with the given cookie data; may overwrite equivalent cookies if they exist.
      */
-    public suspend fun setCookie(args: SetCookieParameter): SetCookieReturn {
+    public suspend fun setCookie(args: SetCookieParameter, mode: CommandMode = CommandMode.DEFAULT): SetCookieReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.setCookie", parameter)
+        val result = cdp.callCommand("Network.setCookie", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1037,9 +1067,9 @@ public class Network(
     /**
      * Sets given cookies.
      */
-    public suspend fun setCookies(args: SetCookiesParameter) {
+    public suspend fun setCookies(args: SetCookiesParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.setCookies", parameter)
+        cdp.callCommand("Network.setCookies", parameter, mode)
     }
 
     /**
@@ -1055,9 +1085,12 @@ public class Network(
     /**
      * Specifies whether to always send extra HTTP headers with the requests from this page.
      */
-    public suspend fun setExtraHTTPHeaders(args: SetExtraHTTPHeadersParameter) {
+    public suspend fun setExtraHTTPHeaders(
+        args: SetExtraHTTPHeadersParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.setExtraHTTPHeaders", parameter)
+        cdp.callCommand("Network.setExtraHTTPHeaders", parameter, mode)
     }
 
     /**
@@ -1073,9 +1106,12 @@ public class Network(
     /**
      * Specifies whether to attach a page script stack id in requests
      */
-    public suspend fun setAttachDebugStack(args: SetAttachDebugStackParameter) {
+    public suspend fun setAttachDebugStack(
+        args: SetAttachDebugStackParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.setAttachDebugStack", parameter)
+        cdp.callCommand("Network.setAttachDebugStack", parameter, mode)
     }
 
     /**
@@ -1093,9 +1129,12 @@ public class Network(
      * Deprecated, please use Fetch.enable instead.
      */
     @Deprecated(message = "")
-    public suspend fun setRequestInterception(args: SetRequestInterceptionParameter) {
+    public suspend fun setRequestInterception(
+        args: SetRequestInterceptionParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.setRequestInterception", parameter)
+        cdp.callCommand("Network.setRequestInterception", parameter, mode)
     }
 
     /**
@@ -1114,9 +1153,12 @@ public class Network(
     /**
      * Allows overriding user agent with the given string.
      */
-    public suspend fun setUserAgentOverride(args: SetUserAgentOverrideParameter) {
+    public suspend fun setUserAgentOverride(
+        args: SetUserAgentOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.setUserAgentOverride", parameter)
+        cdp.callCommand("Network.setUserAgentOverride", parameter, mode)
     }
 
     /**
@@ -1146,9 +1188,12 @@ public class Network(
      * Enables streaming of the response for the given requestId.
      * If enabled, the dataReceived event contains the data that was received during streaming.
      */
-    public suspend fun streamResourceContent(args: StreamResourceContentParameter): StreamResourceContentReturn {
+    public suspend fun streamResourceContent(
+        args: StreamResourceContentParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): StreamResourceContentReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.streamResourceContent", parameter)
+        val result = cdp.callCommand("Network.streamResourceContent", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1166,9 +1211,12 @@ public class Network(
     /**
      * Returns information about the COEP/COOP isolation status.
      */
-    public suspend fun getSecurityIsolationStatus(args: GetSecurityIsolationStatusParameter): GetSecurityIsolationStatusReturn {
+    public suspend fun getSecurityIsolationStatus(
+        args: GetSecurityIsolationStatusParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetSecurityIsolationStatusReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.getSecurityIsolationStatus", parameter)
+        val result = cdp.callCommand("Network.getSecurityIsolationStatus", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1186,9 +1234,9 @@ public class Network(
      * Enables tracking for the Reporting API, events generated by the Reporting API will now be delivered to the client.
      * Enabling triggers 'reportingApiReportAdded' for all existing reports.
      */
-    public suspend fun enableReportingApi(args: EnableReportingApiParameter) {
+    public suspend fun enableReportingApi(args: EnableReportingApiParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.enableReportingApi", parameter)
+        cdp.callCommand("Network.enableReportingApi", parameter, mode)
     }
 
     /**
@@ -1205,9 +1253,12 @@ public class Network(
     /**
      * Fetches the resource and returns the content.
      */
-    public suspend fun loadNetworkResource(args: LoadNetworkResourceParameter): LoadNetworkResourceReturn {
+    public suspend fun loadNetworkResource(
+        args: LoadNetworkResourceParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): LoadNetworkResourceReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Network.loadNetworkResource", parameter)
+        val result = cdp.callCommand("Network.loadNetworkResource", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -1232,9 +1283,9 @@ public class Network(
      * Sets Controls for third-party cookie access
      * Page reload is required before the new cookie behavior will be observed
      */
-    public suspend fun setCookieControls(args: SetCookieControlsParameter) {
+    public suspend fun setCookieControls(args: SetCookieControlsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Network.setCookieControls", parameter)
+        cdp.callCommand("Network.setCookieControls", parameter, mode)
     }
 
     /**

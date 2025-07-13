@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -62,9 +59,9 @@ public class BluetoothEmulation(
     /**
      * Enable the BluetoothEmulation domain.
      */
-    public suspend fun enable(args: EnableParameter) {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.enable", parameter)
+        cdp.callCommand("BluetoothEmulation.enable", parameter, mode)
     }
 
     /**
@@ -81,9 +78,12 @@ public class BluetoothEmulation(
     /**
      * Set the state of the simulated central.
      */
-    public suspend fun setSimulatedCentralState(args: SetSimulatedCentralStateParameter) {
+    public suspend fun setSimulatedCentralState(
+        args: SetSimulatedCentralStateParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.setSimulatedCentralState", parameter)
+        cdp.callCommand("BluetoothEmulation.setSimulatedCentralState", parameter, mode)
     }
 
     /**
@@ -99,18 +99,21 @@ public class BluetoothEmulation(
     /**
      * Disable the BluetoothEmulation domain.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("BluetoothEmulation.disable", parameter)
+        cdp.callCommand("BluetoothEmulation.disable", parameter, mode)
     }
 
     /**
      * Simulates a peripheral with |address|, |name| and |knownServiceUuids|
      * that has already been connected to the system.
      */
-    public suspend fun simulatePreconnectedPeripheral(args: SimulatePreconnectedPeripheralParameter) {
+    public suspend fun simulatePreconnectedPeripheral(
+        args: SimulatePreconnectedPeripheralParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.simulatePreconnectedPeripheral", parameter)
+        cdp.callCommand("BluetoothEmulation.simulatePreconnectedPeripheral", parameter, mode)
     }
 
     /**
@@ -141,9 +144,12 @@ public class BluetoothEmulation(
      * Simulates an advertisement packet described in |entry| being received by
      * the central.
      */
-    public suspend fun simulateAdvertisement(args: SimulateAdvertisementParameter) {
+    public suspend fun simulateAdvertisement(
+        args: SimulateAdvertisementParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.simulateAdvertisement", parameter)
+        cdp.callCommand("BluetoothEmulation.simulateAdvertisement", parameter, mode)
     }
 
     /**
@@ -162,9 +168,12 @@ public class BluetoothEmulation(
      * GATT operation of |type|. The |code| value follows the HCI Error Codes from
      * Bluetooth Core Specification Vol 2 Part D 1.3 List Of Error Codes.
      */
-    public suspend fun simulateGATTOperationResponse(args: SimulateGATTOperationResponseParameter) {
+    public suspend fun simulateGATTOperationResponse(
+        args: SimulateGATTOperationResponseParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.simulateGATTOperationResponse", parameter)
+        cdp.callCommand("BluetoothEmulation.simulateGATTOperationResponse", parameter, mode)
     }
 
     /**
@@ -192,9 +201,12 @@ public class BluetoothEmulation(
      * The |data| is expected to exist when simulating a successful read operation
      * response.
      */
-    public suspend fun simulateCharacteristicOperationResponse(args: SimulateCharacteristicOperationResponseParameter) {
+    public suspend fun simulateCharacteristicOperationResponse(
+        args: SimulateCharacteristicOperationResponseParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.simulateCharacteristicOperationResponse", parameter)
+        cdp.callCommand("BluetoothEmulation.simulateCharacteristicOperationResponse", parameter, mode)
     }
 
     /**
@@ -231,9 +243,12 @@ public class BluetoothEmulation(
      * The |data| is expected to exist when simulating a successful read operation
      * response.
      */
-    public suspend fun simulateDescriptorOperationResponse(args: SimulateDescriptorOperationResponseParameter) {
+    public suspend fun simulateDescriptorOperationResponse(
+        args: SimulateDescriptorOperationResponseParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.simulateDescriptorOperationResponse", parameter)
+        cdp.callCommand("BluetoothEmulation.simulateDescriptorOperationResponse", parameter, mode)
     }
 
     /**
@@ -266,9 +281,12 @@ public class BluetoothEmulation(
     /**
      * Adds a service with |serviceUuid| to the peripheral with |address|.
      */
-    public suspend fun addService(args: AddServiceParameter): AddServiceReturn {
+    public suspend fun addService(
+        args: AddServiceParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): AddServiceReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("BluetoothEmulation.addService", parameter)
+        val result = cdp.callCommand("BluetoothEmulation.addService", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -286,9 +304,9 @@ public class BluetoothEmulation(
     /**
      * Removes the service respresented by |serviceId| from the simulated central.
      */
-    public suspend fun removeService(args: RemoveServiceParameter) {
+    public suspend fun removeService(args: RemoveServiceParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.removeService", parameter)
+        cdp.callCommand("BluetoothEmulation.removeService", parameter, mode)
     }
 
     /**
@@ -305,9 +323,12 @@ public class BluetoothEmulation(
      * Adds a characteristic with |characteristicUuid| and |properties| to the
      * service represented by |serviceId|.
      */
-    public suspend fun addCharacteristic(args: AddCharacteristicParameter): AddCharacteristicReturn {
+    public suspend fun addCharacteristic(
+        args: AddCharacteristicParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): AddCharacteristicReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("BluetoothEmulation.addCharacteristic", parameter)
+        val result = cdp.callCommand("BluetoothEmulation.addCharacteristic", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -336,9 +357,12 @@ public class BluetoothEmulation(
      * Removes the characteristic respresented by |characteristicId| from the
      * simulated central.
      */
-    public suspend fun removeCharacteristic(args: RemoveCharacteristicParameter) {
+    public suspend fun removeCharacteristic(
+        args: RemoveCharacteristicParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.removeCharacteristic", parameter)
+        cdp.callCommand("BluetoothEmulation.removeCharacteristic", parameter, mode)
     }
 
     /**
@@ -356,9 +380,12 @@ public class BluetoothEmulation(
      * Adds a descriptor with |descriptorUuid| to the characteristic respresented
      * by |characteristicId|.
      */
-    public suspend fun addDescriptor(args: AddDescriptorParameter): AddDescriptorReturn {
+    public suspend fun addDescriptor(
+        args: AddDescriptorParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): AddDescriptorReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("BluetoothEmulation.addDescriptor", parameter)
+        val result = cdp.callCommand("BluetoothEmulation.addDescriptor", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -377,9 +404,9 @@ public class BluetoothEmulation(
     /**
      * Removes the descriptor with |descriptorId| from the simulated central.
      */
-    public suspend fun removeDescriptor(args: RemoveDescriptorParameter) {
+    public suspend fun removeDescriptor(args: RemoveDescriptorParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.removeDescriptor", parameter)
+        cdp.callCommand("BluetoothEmulation.removeDescriptor", parameter, mode)
     }
 
     /**
@@ -395,9 +422,12 @@ public class BluetoothEmulation(
     /**
      * Simulates a GATT disconnection from the peripheral with |address|.
      */
-    public suspend fun simulateGATTDisconnection(args: SimulateGATTDisconnectionParameter) {
+    public suspend fun simulateGATTDisconnection(
+        args: SimulateGATTDisconnectionParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("BluetoothEmulation.simulateGATTDisconnection", parameter)
+        cdp.callCommand("BluetoothEmulation.simulateGATTDisconnection", parameter, mode)
     }
 
     /**

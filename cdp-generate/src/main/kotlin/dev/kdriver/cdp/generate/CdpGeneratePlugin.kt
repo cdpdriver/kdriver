@@ -16,6 +16,9 @@ class CdpGeneratePlugin : Plugin<Project> {
             group = "kdriver"
 
             doLast {
+                val destination = File(listOf(project.projectDir.path, "src", "commonMain", "kotlin").joinToString("/"))
+                File(destination, listOf("dev", "kdriver", "cdp", "domain").joinToString("/")).deleteRecursively()
+
                 val json = JsonSlurper().parse(URL(schemaUrl)) as Map<*, *>
                 val domains = json["domains"] as List<Map<String, *>>
                 val parsed = domains.map { domain ->
@@ -90,15 +93,8 @@ class CdpGeneratePlugin : Plugin<Project> {
                         } ?: emptyList()
                     )
                 }
-                parsed.forEach {
-                    val destination = listOf(
-                        project.projectDir.path,
-                        "src",
-                        "commonMain",
-                        "kotlin"
-                    ).joinToString("/")
-                    it.generateClassFile(parsed).writeTo(File(destination))
-                }
+
+                parsed.forEach { it.generateClassFile(parsed).writeTo(destination) }
             }
         }
     }

@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -53,26 +50,29 @@ public class Tracing(
     /**
      * Stop trace events collection.
      */
-    public suspend fun end() {
+    public suspend fun end(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Tracing.end", parameter)
+        cdp.callCommand("Tracing.end", parameter, mode)
     }
 
     /**
      * Gets supported tracing categories.
      */
-    public suspend fun getCategories(): GetCategoriesReturn {
+    public suspend fun getCategories(mode: CommandMode = CommandMode.DEFAULT): GetCategoriesReturn {
         val parameter = null
-        val result = cdp.callCommand("Tracing.getCategories", parameter)
+        val result = cdp.callCommand("Tracing.getCategories", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Record a clock sync marker in the trace.
      */
-    public suspend fun recordClockSyncMarker(args: RecordClockSyncMarkerParameter) {
+    public suspend fun recordClockSyncMarker(
+        args: RecordClockSyncMarkerParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Tracing.recordClockSyncMarker", parameter)
+        cdp.callCommand("Tracing.recordClockSyncMarker", parameter, mode)
     }
 
     /**
@@ -88,9 +88,12 @@ public class Tracing(
     /**
      * Request a global memory dump.
      */
-    public suspend fun requestMemoryDump(args: RequestMemoryDumpParameter): RequestMemoryDumpReturn {
+    public suspend fun requestMemoryDump(
+        args: RequestMemoryDumpParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): RequestMemoryDumpReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Tracing.requestMemoryDump", parameter)
+        val result = cdp.callCommand("Tracing.requestMemoryDump", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -111,9 +114,9 @@ public class Tracing(
     /**
      * Start trace events collection.
      */
-    public suspend fun start(args: StartParameter) {
+    public suspend fun start(args: StartParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Tracing.start", parameter)
+        cdp.callCommand("Tracing.start", parameter, mode)
     }
 
     /**

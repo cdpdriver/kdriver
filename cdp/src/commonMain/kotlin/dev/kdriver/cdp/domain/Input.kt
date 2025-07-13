@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -34,9 +31,9 @@ public class Input(
     /**
      * Dispatches a drag event into the page.
      */
-    public suspend fun dispatchDragEvent(args: DispatchDragEventParameter) {
+    public suspend fun dispatchDragEvent(args: DispatchDragEventParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.dispatchDragEvent", parameter)
+        cdp.callCommand("Input.dispatchDragEvent", parameter, mode)
     }
 
     /**
@@ -64,9 +61,9 @@ public class Input(
     /**
      * Dispatches a key event to the page.
      */
-    public suspend fun dispatchKeyEvent(args: DispatchKeyEventParameter) {
+    public suspend fun dispatchKeyEvent(args: DispatchKeyEventParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.dispatchKeyEvent", parameter)
+        cdp.callCommand("Input.dispatchKeyEvent", parameter, mode)
     }
 
     /**
@@ -136,9 +133,9 @@ public class Input(
      * This method emulates inserting text that doesn't come from a key press,
      * for example an emoji keyboard or an IME.
      */
-    public suspend fun insertText(args: InsertTextParameter) {
+    public suspend fun insertText(args: InsertTextParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.insertText", parameter)
+        cdp.callCommand("Input.insertText", parameter, mode)
     }
 
     /**
@@ -157,9 +154,9 @@ public class Input(
      * Use imeCommitComposition to commit the final text.
      * Use imeSetComposition with empty string as text to cancel composition.
      */
-    public suspend fun imeSetComposition(args: ImeSetCompositionParameter) {
+    public suspend fun imeSetComposition(args: ImeSetCompositionParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.imeSetComposition", parameter)
+        cdp.callCommand("Input.imeSetComposition", parameter, mode)
     }
 
     /**
@@ -193,9 +190,9 @@ public class Input(
     /**
      * Dispatches a mouse event to the page.
      */
-    public suspend fun dispatchMouseEvent(args: DispatchMouseEventParameter) {
+    public suspend fun dispatchMouseEvent(args: DispatchMouseEventParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.dispatchMouseEvent", parameter)
+        cdp.callCommand("Input.dispatchMouseEvent", parameter, mode)
     }
 
     /**
@@ -263,9 +260,9 @@ public class Input(
     /**
      * Dispatches a touch event to the page.
      */
-    public suspend fun dispatchTouchEvent(args: DispatchTouchEventParameter) {
+    public suspend fun dispatchTouchEvent(args: DispatchTouchEventParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.dispatchTouchEvent", parameter)
+        cdp.callCommand("Input.dispatchTouchEvent", parameter, mode)
     }
 
     /**
@@ -298,17 +295,20 @@ public class Input(
     /**
      * Cancels any active dragging in the page.
      */
-    public suspend fun cancelDragging() {
+    public suspend fun cancelDragging(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Input.cancelDragging", parameter)
+        cdp.callCommand("Input.cancelDragging", parameter, mode)
     }
 
     /**
      * Emulates touch event from the mouse event parameters.
      */
-    public suspend fun emulateTouchFromMouseEvent(args: EmulateTouchFromMouseEventParameter) {
+    public suspend fun emulateTouchFromMouseEvent(
+        args: EmulateTouchFromMouseEventParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.emulateTouchFromMouseEvent", parameter)
+        cdp.callCommand("Input.emulateTouchFromMouseEvent", parameter, mode)
     }
 
     /**
@@ -353,9 +353,12 @@ public class Input(
     /**
      * Ignores input events (useful while auditing page).
      */
-    public suspend fun setIgnoreInputEvents(args: SetIgnoreInputEventsParameter) {
+    public suspend fun setIgnoreInputEvents(
+        args: SetIgnoreInputEventsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.setIgnoreInputEvents", parameter)
+        cdp.callCommand("Input.setIgnoreInputEvents", parameter, mode)
     }
 
     /**
@@ -372,9 +375,9 @@ public class Input(
      * Prevents default drag and drop behavior and instead emits `Input.dragIntercepted` events.
      * Drag and drop behavior can be directly controlled via `Input.dispatchDragEvent`.
      */
-    public suspend fun setInterceptDrags(args: SetInterceptDragsParameter) {
+    public suspend fun setInterceptDrags(args: SetInterceptDragsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.setInterceptDrags", parameter)
+        cdp.callCommand("Input.setInterceptDrags", parameter, mode)
     }
 
     /**
@@ -391,9 +394,12 @@ public class Input(
     /**
      * Synthesizes a pinch gesture over a time period by issuing appropriate touch events.
      */
-    public suspend fun synthesizePinchGesture(args: SynthesizePinchGestureParameter) {
+    public suspend fun synthesizePinchGesture(
+        args: SynthesizePinchGestureParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.synthesizePinchGesture", parameter)
+        cdp.callCommand("Input.synthesizePinchGesture", parameter, mode)
     }
 
     /**
@@ -426,9 +432,12 @@ public class Input(
     /**
      * Synthesizes a scroll gesture over a time period by issuing appropriate touch events.
      */
-    public suspend fun synthesizeScrollGesture(args: SynthesizeScrollGestureParameter) {
+    public suspend fun synthesizeScrollGesture(
+        args: SynthesizeScrollGestureParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.synthesizeScrollGesture", parameter)
+        cdp.callCommand("Input.synthesizeScrollGesture", parameter, mode)
     }
 
     /**
@@ -484,9 +493,12 @@ public class Input(
     /**
      * Synthesizes a tap gesture over a time period by issuing appropriate touch events.
      */
-    public suspend fun synthesizeTapGesture(args: SynthesizeTapGestureParameter) {
+    public suspend fun synthesizeTapGesture(
+        args: SynthesizeTapGestureParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Input.synthesizeTapGesture", parameter)
+        cdp.callCommand("Input.synthesizeTapGesture", parameter, mode)
     }
 
     /**

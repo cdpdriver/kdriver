@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -62,25 +59,28 @@ public class Animation(
     /**
      * Disables animation domain notifications.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Animation.disable", parameter)
+        cdp.callCommand("Animation.disable", parameter, mode)
     }
 
     /**
      * Enables animation domain notifications.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Animation.enable", parameter)
+        cdp.callCommand("Animation.enable", parameter, mode)
     }
 
     /**
      * Returns the current time of the an animation.
      */
-    public suspend fun getCurrentTime(args: GetCurrentTimeParameter): GetCurrentTimeReturn {
+    public suspend fun getCurrentTime(
+        args: GetCurrentTimeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetCurrentTimeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Animation.getCurrentTime", parameter)
+        val result = cdp.callCommand("Animation.getCurrentTime", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -97,18 +97,18 @@ public class Animation(
     /**
      * Gets the playback rate of the document timeline.
      */
-    public suspend fun getPlaybackRate(): GetPlaybackRateReturn {
+    public suspend fun getPlaybackRate(mode: CommandMode = CommandMode.DEFAULT): GetPlaybackRateReturn {
         val parameter = null
-        val result = cdp.callCommand("Animation.getPlaybackRate", parameter)
+        val result = cdp.callCommand("Animation.getPlaybackRate", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Releases a set of animations to no longer be manipulated.
      */
-    public suspend fun releaseAnimations(args: ReleaseAnimationsParameter) {
+    public suspend fun releaseAnimations(args: ReleaseAnimationsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Animation.releaseAnimations", parameter)
+        cdp.callCommand("Animation.releaseAnimations", parameter, mode)
     }
 
     /**
@@ -124,9 +124,12 @@ public class Animation(
     /**
      * Gets the remote object of the Animation.
      */
-    public suspend fun resolveAnimation(args: ResolveAnimationParameter): ResolveAnimationReturn {
+    public suspend fun resolveAnimation(
+        args: ResolveAnimationParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): ResolveAnimationReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Animation.resolveAnimation", parameter)
+        val result = cdp.callCommand("Animation.resolveAnimation", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -143,9 +146,9 @@ public class Animation(
     /**
      * Seek a set of animations to a particular time within each animation.
      */
-    public suspend fun seekAnimations(args: SeekAnimationsParameter) {
+    public suspend fun seekAnimations(args: SeekAnimationsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Animation.seekAnimations", parameter)
+        cdp.callCommand("Animation.seekAnimations", parameter, mode)
     }
 
     /**
@@ -162,9 +165,9 @@ public class Animation(
     /**
      * Sets the paused state of a set of animations.
      */
-    public suspend fun setPaused(args: SetPausedParameter) {
+    public suspend fun setPaused(args: SetPausedParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Animation.setPaused", parameter)
+        cdp.callCommand("Animation.setPaused", parameter, mode)
     }
 
     /**
@@ -181,9 +184,9 @@ public class Animation(
     /**
      * Sets the playback rate of the document timeline.
      */
-    public suspend fun setPlaybackRate(args: SetPlaybackRateParameter) {
+    public suspend fun setPlaybackRate(args: SetPlaybackRateParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Animation.setPlaybackRate", parameter)
+        cdp.callCommand("Animation.setPlaybackRate", parameter, mode)
     }
 
     /**
@@ -199,9 +202,9 @@ public class Animation(
     /**
      * Sets the timing of an animation node.
      */
-    public suspend fun setTiming(args: SetTimingParameter) {
+    public suspend fun setTiming(args: SetTimingParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Animation.setTiming", parameter)
+        cdp.callCommand("Animation.setTiming", parameter, mode)
     }
 
     /**

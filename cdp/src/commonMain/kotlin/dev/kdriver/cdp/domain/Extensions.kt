@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -27,9 +24,12 @@ public class Extensions(
      * --remote-debugging-pipe flag and the --enable-unsafe-extension-debugging
      * flag is set.
      */
-    public suspend fun loadUnpacked(args: LoadUnpackedParameter): LoadUnpackedReturn {
+    public suspend fun loadUnpacked(
+        args: LoadUnpackedParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): LoadUnpackedReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Extensions.loadUnpacked", parameter)
+        val result = cdp.callCommand("Extensions.loadUnpacked", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -52,9 +52,9 @@ public class Extensions(
      * Available if the client is connected using the --remote-debugging-pipe flag
      * and the --enable-unsafe-extension-debugging.
      */
-    public suspend fun uninstall(args: UninstallParameter) {
+    public suspend fun uninstall(args: UninstallParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Extensions.uninstall", parameter)
+        cdp.callCommand("Extensions.uninstall", parameter, mode)
     }
 
     /**
@@ -73,9 +73,12 @@ public class Extensions(
      * Gets data from extension storage in the given `storageArea`. If `keys` is
      * specified, these are used to filter the result.
      */
-    public suspend fun getStorageItems(args: GetStorageItemsParameter): GetStorageItemsReturn {
+    public suspend fun getStorageItems(
+        args: GetStorageItemsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetStorageItemsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Extensions.getStorageItems", parameter)
+        val result = cdp.callCommand("Extensions.getStorageItems", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -99,9 +102,9 @@ public class Extensions(
     /**
      * Removes `keys` from extension storage in the given `storageArea`.
      */
-    public suspend fun removeStorageItems(args: RemoveStorageItemsParameter) {
+    public suspend fun removeStorageItems(args: RemoveStorageItemsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Extensions.removeStorageItems", parameter)
+        cdp.callCommand("Extensions.removeStorageItems", parameter, mode)
     }
 
     /**
@@ -123,9 +126,9 @@ public class Extensions(
     /**
      * Clears extension storage in the given `storageArea`.
      */
-    public suspend fun clearStorageItems(args: ClearStorageItemsParameter) {
+    public suspend fun clearStorageItems(args: ClearStorageItemsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Extensions.clearStorageItems", parameter)
+        cdp.callCommand("Extensions.clearStorageItems", parameter, mode)
     }
 
     /**
@@ -143,9 +146,9 @@ public class Extensions(
      * Sets `values` in extension storage in the given `storageArea`. The provided `values`
      * will be merged with existing values in the storage area.
      */
-    public suspend fun setStorageItems(args: SetStorageItemsParameter) {
+    public suspend fun setStorageItems(args: SetStorageItemsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Extensions.setStorageItems", parameter)
+        cdp.callCommand("Extensions.setStorageItems", parameter, mode)
     }
 
     /**

@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -99,9 +96,9 @@ public class Target(
     /**
      * Activates (focuses) the target.
      */
-    public suspend fun activateTarget(args: ActivateTargetParameter) {
+    public suspend fun activateTarget(args: ActivateTargetParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Target.activateTarget", parameter)
+        cdp.callCommand("Target.activateTarget", parameter, mode)
     }
 
     /**
@@ -117,9 +114,12 @@ public class Target(
     /**
      * Attaches to the target with given id.
      */
-    public suspend fun attachToTarget(args: AttachToTargetParameter): AttachToTargetReturn {
+    public suspend fun attachToTarget(
+        args: AttachToTargetParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): AttachToTargetReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Target.attachToTarget", parameter)
+        val result = cdp.callCommand("Target.attachToTarget", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -139,18 +139,21 @@ public class Target(
     /**
      * Attaches to the browser target, only uses flat sessionId mode.
      */
-    public suspend fun attachToBrowserTarget(): AttachToBrowserTargetReturn {
+    public suspend fun attachToBrowserTarget(mode: CommandMode = CommandMode.DEFAULT): AttachToBrowserTargetReturn {
         val parameter = null
-        val result = cdp.callCommand("Target.attachToBrowserTarget", parameter)
+        val result = cdp.callCommand("Target.attachToBrowserTarget", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Closes the target. If the target is a page that gets closed too.
      */
-    public suspend fun closeTarget(args: CloseTargetParameter): CloseTargetReturn {
+    public suspend fun closeTarget(
+        args: CloseTargetParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CloseTargetReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Target.closeTarget", parameter)
+        val result = cdp.callCommand("Target.closeTarget", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -174,9 +177,12 @@ public class Target(
      * - `binding.send(json)` - a method to send messages over the remote debugging protocol
      * - `binding.onmessage = json => handleMessage(json)` - a callback that will be called for the protocol notifications and command responses.
      */
-    public suspend fun exposeDevToolsProtocol(args: ExposeDevToolsProtocolParameter) {
+    public suspend fun exposeDevToolsProtocol(
+        args: ExposeDevToolsProtocolParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Target.exposeDevToolsProtocol", parameter)
+        cdp.callCommand("Target.exposeDevToolsProtocol", parameter, mode)
     }
 
     /**
@@ -210,9 +216,12 @@ public class Target(
      * Creates a new empty BrowserContext. Similar to an incognito profile but you can have more than
      * one.
      */
-    public suspend fun createBrowserContext(args: CreateBrowserContextParameter): CreateBrowserContextReturn {
+    public suspend fun createBrowserContext(
+        args: CreateBrowserContextParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CreateBrowserContextReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Target.createBrowserContext", parameter)
+        val result = cdp.callCommand("Target.createBrowserContext", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -244,18 +253,21 @@ public class Target(
     /**
      * Returns all browser contexts created with `Target.createBrowserContext` method.
      */
-    public suspend fun getBrowserContexts(): GetBrowserContextsReturn {
+    public suspend fun getBrowserContexts(mode: CommandMode = CommandMode.DEFAULT): GetBrowserContextsReturn {
         val parameter = null
-        val result = cdp.callCommand("Target.getBrowserContexts", parameter)
+        val result = cdp.callCommand("Target.getBrowserContexts", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Creates a new page.
      */
-    public suspend fun createTarget(args: CreateTargetParameter): CreateTargetReturn {
+    public suspend fun createTarget(
+        args: CreateTargetParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CreateTargetReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Target.createTarget", parameter)
+        val result = cdp.callCommand("Target.createTarget", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -314,9 +326,9 @@ public class Target(
     /**
      * Detaches session with given id.
      */
-    public suspend fun detachFromTarget(args: DetachFromTargetParameter) {
+    public suspend fun detachFromTarget(args: DetachFromTargetParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Target.detachFromTarget", parameter)
+        cdp.callCommand("Target.detachFromTarget", parameter, mode)
     }
 
     /**
@@ -334,9 +346,12 @@ public class Target(
      * Deletes a BrowserContext. All the belonging pages will be closed without calling their
      * beforeunload hooks.
      */
-    public suspend fun disposeBrowserContext(args: DisposeBrowserContextParameter) {
+    public suspend fun disposeBrowserContext(
+        args: DisposeBrowserContextParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Target.disposeBrowserContext", parameter)
+        cdp.callCommand("Target.disposeBrowserContext", parameter, mode)
     }
 
     /**
@@ -353,9 +368,12 @@ public class Target(
     /**
      * Returns information about a target.
      */
-    public suspend fun getTargetInfo(args: GetTargetInfoParameter): GetTargetInfoReturn {
+    public suspend fun getTargetInfo(
+        args: GetTargetInfoParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetTargetInfoReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Target.getTargetInfo", parameter)
+        val result = cdp.callCommand("Target.getTargetInfo", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -372,9 +390,12 @@ public class Target(
     /**
      * Retrieves a list of available targets.
      */
-    public suspend fun getTargets(args: GetTargetsParameter): GetTargetsReturn {
+    public suspend fun getTargets(
+        args: GetTargetsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetTargetsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Target.getTargets", parameter)
+        val result = cdp.callCommand("Target.getTargets", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -396,9 +417,12 @@ public class Target(
      * and crbug.com/991325.
      */
     @Deprecated(message = "")
-    public suspend fun sendMessageToTarget(args: SendMessageToTargetParameter) {
+    public suspend fun sendMessageToTarget(
+        args: SendMessageToTargetParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Target.sendMessageToTarget", parameter)
+        cdp.callCommand("Target.sendMessageToTarget", parameter, mode)
     }
 
     /**
@@ -430,9 +454,9 @@ public class Target(
      * You might want to call this recursively for auto-attached targets to attach
      * to all available targets.
      */
-    public suspend fun setAutoAttach(args: SetAutoAttachParameter) {
+    public suspend fun setAutoAttach(args: SetAutoAttachParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Target.setAutoAttach", parameter)
+        cdp.callCommand("Target.setAutoAttach", parameter, mode)
     }
 
     /**
@@ -475,9 +499,9 @@ public class Target(
      * This cancels the effect of any previous `setAutoAttach` and is also cancelled by subsequent
      * `setAutoAttach`. Only available at the Browser target.
      */
-    public suspend fun autoAttachRelated(args: AutoAttachRelatedParameter) {
+    public suspend fun autoAttachRelated(args: AutoAttachRelatedParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Target.autoAttachRelated", parameter)
+        cdp.callCommand("Target.autoAttachRelated", parameter, mode)
     }
 
     /**
@@ -509,9 +533,9 @@ public class Target(
      * Controls whether to discover available targets and notify via
      * `targetCreated/targetInfoChanged/targetDestroyed` events.
      */
-    public suspend fun setDiscoverTargets(args: SetDiscoverTargetsParameter) {
+    public suspend fun setDiscoverTargets(args: SetDiscoverTargetsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Target.setDiscoverTargets", parameter)
+        cdp.callCommand("Target.setDiscoverTargets", parameter, mode)
     }
 
     /**
@@ -531,9 +555,9 @@ public class Target(
      * Enables target discovery for the specified locations, when `setDiscoverTargets` was set to
      * `true`.
      */
-    public suspend fun setRemoteLocations(args: SetRemoteLocationsParameter) {
+    public suspend fun setRemoteLocations(args: SetRemoteLocationsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Target.setRemoteLocations", parameter)
+        cdp.callCommand("Target.setRemoteLocations", parameter, mode)
     }
 
     /**

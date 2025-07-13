@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -34,9 +31,12 @@ public class Audits(
      * Returns the response body and size if it were re-encoded with the specified settings. Only
      * applies to images.
      */
-    public suspend fun getEncodedResponse(args: GetEncodedResponseParameter): GetEncodedResponseReturn {
+    public suspend fun getEncodedResponse(
+        args: GetEncodedResponseParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetEncodedResponseReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Audits.getEncodedResponse", parameter)
+        val result = cdp.callCommand("Audits.getEncodedResponse", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -67,27 +67,27 @@ public class Audits(
     /**
      * Disables issues domain, prevents further issues from being reported to the client.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Audits.disable", parameter)
+        cdp.callCommand("Audits.disable", parameter, mode)
     }
 
     /**
      * Enables issues domain, sends the issues collected so far to the client by means of the
      * `issueAdded` event.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Audits.enable", parameter)
+        cdp.callCommand("Audits.enable", parameter, mode)
     }
 
     /**
      * Runs the contrast check for the target page. Found issues are reported
      * using Audits.issueAdded event.
      */
-    public suspend fun checkContrast(args: CheckContrastParameter) {
+    public suspend fun checkContrast(args: CheckContrastParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Audits.checkContrast", parameter)
+        cdp.callCommand("Audits.checkContrast", parameter, mode)
     }
 
     /**
@@ -105,9 +105,9 @@ public class Audits(
      * Runs the form issues check for the target page. Found issues are reported
      * using Audits.issueAdded event.
      */
-    public suspend fun checkFormsIssues(): CheckFormsIssuesReturn {
+    public suspend fun checkFormsIssues(mode: CommandMode = CommandMode.DEFAULT): CheckFormsIssuesReturn {
         val parameter = null
-        val result = cdp.callCommand("Audits.checkFormsIssues", parameter)
+        val result = cdp.callCommand("Audits.checkFormsIssues", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

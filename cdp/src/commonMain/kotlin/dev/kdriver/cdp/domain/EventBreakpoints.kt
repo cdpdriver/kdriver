@@ -1,16 +1,8 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.String
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
+import dev.kdriver.cdp.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
 public val CDP.eventBreakpoints: EventBreakpoints
@@ -27,9 +19,12 @@ public class EventBreakpoints(
     /**
      * Sets breakpoint on particular native event.
      */
-    public suspend fun setInstrumentationBreakpoint(args: SetInstrumentationBreakpointParameter) {
+    public suspend fun setInstrumentationBreakpoint(
+        args: SetInstrumentationBreakpointParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("EventBreakpoints.setInstrumentationBreakpoint", parameter)
+        cdp.callCommand("EventBreakpoints.setInstrumentationBreakpoint", parameter, mode)
     }
 
     /**
@@ -45,9 +40,12 @@ public class EventBreakpoints(
     /**
      * Removes breakpoint on particular native event.
      */
-    public suspend fun removeInstrumentationBreakpoint(args: RemoveInstrumentationBreakpointParameter) {
+    public suspend fun removeInstrumentationBreakpoint(
+        args: RemoveInstrumentationBreakpointParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("EventBreakpoints.removeInstrumentationBreakpoint", parameter)
+        cdp.callCommand("EventBreakpoints.removeInstrumentationBreakpoint", parameter, mode)
     }
 
     /**
@@ -63,9 +61,9 @@ public class EventBreakpoints(
     /**
      * Removes all breakpoints
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("EventBreakpoints.disable", parameter)
+        cdp.callCommand("EventBreakpoints.disable", parameter, mode)
     }
 
     @Serializable
