@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -76,14 +73,14 @@ public class Preload(
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
 
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Preload.enable", parameter)
+        cdp.callCommand("Preload.enable", parameter, mode)
     }
 
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Preload.disable", parameter)
+        cdp.callCommand("Preload.disable", parameter, mode)
     }
 
     /**

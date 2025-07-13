@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -19,18 +16,18 @@ public class Memory(
     /**
      * Retruns current DOM object counters.
      */
-    public suspend fun getDOMCounters(): GetDOMCountersReturn {
+    public suspend fun getDOMCounters(mode: CommandMode = CommandMode.DEFAULT): GetDOMCountersReturn {
         val parameter = null
-        val result = cdp.callCommand("Memory.getDOMCounters", parameter)
+        val result = cdp.callCommand("Memory.getDOMCounters", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Retruns DOM object counters after preparing renderer for leak detection.
      */
-    public suspend fun getDOMCountersForLeakDetection(): GetDOMCountersForLeakDetectionReturn {
+    public suspend fun getDOMCountersForLeakDetection(mode: CommandMode = CommandMode.DEFAULT): GetDOMCountersForLeakDetectionReturn {
         val parameter = null
-        val result = cdp.callCommand("Memory.getDOMCountersForLeakDetection", parameter)
+        val result = cdp.callCommand("Memory.getDOMCountersForLeakDetection", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -38,25 +35,28 @@ public class Memory(
      * Prepares for leak detection by terminating workers, stopping spellcheckers,
      * dropping non-essential internal caches, running garbage collections, etc.
      */
-    public suspend fun prepareForLeakDetection() {
+    public suspend fun prepareForLeakDetection(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Memory.prepareForLeakDetection", parameter)
+        cdp.callCommand("Memory.prepareForLeakDetection", parameter, mode)
     }
 
     /**
      * Simulate OomIntervention by purging V8 memory.
      */
-    public suspend fun forciblyPurgeJavaScriptMemory() {
+    public suspend fun forciblyPurgeJavaScriptMemory(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Memory.forciblyPurgeJavaScriptMemory", parameter)
+        cdp.callCommand("Memory.forciblyPurgeJavaScriptMemory", parameter, mode)
     }
 
     /**
      * Enable/disable suppressing memory pressure notifications in all processes.
      */
-    public suspend fun setPressureNotificationsSuppressed(args: SetPressureNotificationsSuppressedParameter) {
+    public suspend fun setPressureNotificationsSuppressed(
+        args: SetPressureNotificationsSuppressedParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Memory.setPressureNotificationsSuppressed", parameter)
+        cdp.callCommand("Memory.setPressureNotificationsSuppressed", parameter, mode)
     }
 
     /**
@@ -72,9 +72,12 @@ public class Memory(
     /**
      * Simulate a memory pressure notification in all processes.
      */
-    public suspend fun simulatePressureNotification(args: SimulatePressureNotificationParameter) {
+    public suspend fun simulatePressureNotification(
+        args: SimulatePressureNotificationParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Memory.simulatePressureNotification", parameter)
+        cdp.callCommand("Memory.simulatePressureNotification", parameter, mode)
     }
 
     /**
@@ -90,9 +93,9 @@ public class Memory(
     /**
      * Start collecting native memory profile.
      */
-    public suspend fun startSampling(args: StartSamplingParameter) {
+    public suspend fun startSampling(args: StartSamplingParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Memory.startSampling", parameter)
+        cdp.callCommand("Memory.startSampling", parameter, mode)
     }
 
     /**
@@ -110,18 +113,18 @@ public class Memory(
     /**
      * Stop collecting native memory profile.
      */
-    public suspend fun stopSampling() {
+    public suspend fun stopSampling(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Memory.stopSampling", parameter)
+        cdp.callCommand("Memory.stopSampling", parameter, mode)
     }
 
     /**
      * Retrieve native memory allocations profile
      * collected since renderer process startup.
      */
-    public suspend fun getAllTimeSamplingProfile(): GetAllTimeSamplingProfileReturn {
+    public suspend fun getAllTimeSamplingProfile(mode: CommandMode = CommandMode.DEFAULT): GetAllTimeSamplingProfileReturn {
         val parameter = null
-        val result = cdp.callCommand("Memory.getAllTimeSamplingProfile", parameter)
+        val result = cdp.callCommand("Memory.getAllTimeSamplingProfile", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -129,9 +132,9 @@ public class Memory(
      * Retrieve native memory allocations profile
      * collected since browser process startup.
      */
-    public suspend fun getBrowserSamplingProfile(): GetBrowserSamplingProfileReturn {
+    public suspend fun getBrowserSamplingProfile(mode: CommandMode = CommandMode.DEFAULT): GetBrowserSamplingProfileReturn {
         val parameter = null
-        val result = cdp.callCommand("Memory.getBrowserSamplingProfile", parameter)
+        val result = cdp.callCommand("Memory.getBrowserSamplingProfile", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -139,9 +142,9 @@ public class Memory(
      * Retrieve native memory allocations profile collected since last
      * `startSampling` call.
      */
-    public suspend fun getSamplingProfile(): GetSamplingProfileReturn {
+    public suspend fun getSamplingProfile(mode: CommandMode = CommandMode.DEFAULT): GetSamplingProfileReturn {
         val parameter = null
-        val result = cdp.callCommand("Memory.getSamplingProfile", parameter)
+        val result = cdp.callCommand("Memory.getSamplingProfile", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

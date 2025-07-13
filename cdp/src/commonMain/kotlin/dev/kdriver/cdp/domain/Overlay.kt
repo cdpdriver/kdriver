@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -68,25 +65,28 @@ public class Overlay(
     /**
      * Disables domain notifications.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Overlay.disable", parameter)
+        cdp.callCommand("Overlay.disable", parameter, mode)
     }
 
     /**
      * Enables domain notifications.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Overlay.enable", parameter)
+        cdp.callCommand("Overlay.enable", parameter, mode)
     }
 
     /**
      * For testing.
      */
-    public suspend fun getHighlightObjectForTest(args: GetHighlightObjectForTestParameter): GetHighlightObjectForTestReturn {
+    public suspend fun getHighlightObjectForTest(
+        args: GetHighlightObjectForTestParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetHighlightObjectForTestReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Overlay.getHighlightObjectForTest", parameter)
+        val result = cdp.callCommand("Overlay.getHighlightObjectForTest", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -119,9 +119,12 @@ public class Overlay(
     /**
      * For Persistent Grid testing.
      */
-    public suspend fun getGridHighlightObjectsForTest(args: GetGridHighlightObjectsForTestParameter): GetGridHighlightObjectsForTestReturn {
+    public suspend fun getGridHighlightObjectsForTest(
+        args: GetGridHighlightObjectsForTestParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetGridHighlightObjectsForTestReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Overlay.getGridHighlightObjectsForTest", parameter)
+        val result = cdp.callCommand("Overlay.getGridHighlightObjectsForTest", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -138,9 +141,12 @@ public class Overlay(
     /**
      * For Source Order Viewer testing.
      */
-    public suspend fun getSourceOrderHighlightObjectForTest(args: GetSourceOrderHighlightObjectForTestParameter): GetSourceOrderHighlightObjectForTestReturn {
+    public suspend fun getSourceOrderHighlightObjectForTest(
+        args: GetSourceOrderHighlightObjectForTestParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetSourceOrderHighlightObjectForTestReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Overlay.getSourceOrderHighlightObjectForTest", parameter)
+        val result = cdp.callCommand("Overlay.getSourceOrderHighlightObjectForTest", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -157,9 +163,9 @@ public class Overlay(
     /**
      * Hides any highlight.
      */
-    public suspend fun hideHighlight() {
+    public suspend fun hideHighlight(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Overlay.hideHighlight", parameter)
+        cdp.callCommand("Overlay.hideHighlight", parameter, mode)
     }
 
     /**
@@ -169,9 +175,9 @@ public class Overlay(
      * the owner node in the client and use highlightNode.
      */
     @Deprecated(message = "")
-    public suspend fun highlightFrame(args: HighlightFrameParameter) {
+    public suspend fun highlightFrame(args: HighlightFrameParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.highlightFrame", parameter)
+        cdp.callCommand("Overlay.highlightFrame", parameter, mode)
     }
 
     /**
@@ -202,9 +208,9 @@ public class Overlay(
      * Highlights DOM node with given id or with the given JavaScript object wrapper. Either nodeId or
      * objectId must be specified.
      */
-    public suspend fun highlightNode(args: HighlightNodeParameter) {
+    public suspend fun highlightNode(args: HighlightNodeParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.highlightNode", parameter)
+        cdp.callCommand("Overlay.highlightNode", parameter, mode)
     }
 
     /**
@@ -237,9 +243,9 @@ public class Overlay(
     /**
      * Highlights given quad. Coordinates are absolute with respect to the main frame viewport.
      */
-    public suspend fun highlightQuad(args: HighlightQuadParameter) {
+    public suspend fun highlightQuad(args: HighlightQuadParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.highlightQuad", parameter)
+        cdp.callCommand("Overlay.highlightQuad", parameter, mode)
     }
 
     /**
@@ -261,9 +267,9 @@ public class Overlay(
     /**
      * Highlights given rectangle. Coordinates are absolute with respect to the main frame viewport.
      */
-    public suspend fun highlightRect(args: HighlightRectParameter) {
+    public suspend fun highlightRect(args: HighlightRectParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.highlightRect", parameter)
+        cdp.callCommand("Overlay.highlightRect", parameter, mode)
     }
 
     /**
@@ -299,9 +305,12 @@ public class Overlay(
      * Highlights the source order of the children of the DOM node with given id or with the given
      * JavaScript object wrapper. Either nodeId or objectId must be specified.
      */
-    public suspend fun highlightSourceOrder(args: HighlightSourceOrderParameter) {
+    public suspend fun highlightSourceOrder(
+        args: HighlightSourceOrderParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.highlightSourceOrder", parameter)
+        cdp.callCommand("Overlay.highlightSourceOrder", parameter, mode)
     }
 
     /**
@@ -332,9 +341,9 @@ public class Overlay(
      * Enters the 'inspect' mode. In this mode, elements that user is hovering over are highlighted.
      * Backend then generates 'inspectNodeRequested' event upon element selection.
      */
-    public suspend fun setInspectMode(args: SetInspectModeParameter) {
+    public suspend fun setInspectMode(args: SetInspectModeParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setInspectMode", parameter)
+        cdp.callCommand("Overlay.setInspectMode", parameter, mode)
     }
 
     /**
@@ -353,9 +362,12 @@ public class Overlay(
     /**
      * Highlights owner element of all frames detected to be ads.
      */
-    public suspend fun setShowAdHighlights(args: SetShowAdHighlightsParameter) {
+    public suspend fun setShowAdHighlights(
+        args: SetShowAdHighlightsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowAdHighlights", parameter)
+        cdp.callCommand("Overlay.setShowAdHighlights", parameter, mode)
     }
 
     /**
@@ -368,9 +380,12 @@ public class Overlay(
         setShowAdHighlights(parameter)
     }
 
-    public suspend fun setPausedInDebuggerMessage(args: SetPausedInDebuggerMessageParameter) {
+    public suspend fun setPausedInDebuggerMessage(
+        args: SetPausedInDebuggerMessageParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setPausedInDebuggerMessage", parameter)
+        cdp.callCommand("Overlay.setPausedInDebuggerMessage", parameter, mode)
     }
 
     /**
@@ -386,9 +401,12 @@ public class Overlay(
     /**
      * Requests that backend shows debug borders on layers
      */
-    public suspend fun setShowDebugBorders(args: SetShowDebugBordersParameter) {
+    public suspend fun setShowDebugBorders(
+        args: SetShowDebugBordersParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowDebugBorders", parameter)
+        cdp.callCommand("Overlay.setShowDebugBorders", parameter, mode)
     }
 
     /**
@@ -404,9 +422,9 @@ public class Overlay(
     /**
      * Requests that backend shows the FPS counter
      */
-    public suspend fun setShowFPSCounter(args: SetShowFPSCounterParameter) {
+    public suspend fun setShowFPSCounter(args: SetShowFPSCounterParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowFPSCounter", parameter)
+        cdp.callCommand("Overlay.setShowFPSCounter", parameter, mode)
     }
 
     /**
@@ -422,9 +440,12 @@ public class Overlay(
     /**
      * Highlight multiple elements with the CSS Grid overlay.
      */
-    public suspend fun setShowGridOverlays(args: SetShowGridOverlaysParameter) {
+    public suspend fun setShowGridOverlays(
+        args: SetShowGridOverlaysParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowGridOverlays", parameter)
+        cdp.callCommand("Overlay.setShowGridOverlays", parameter, mode)
     }
 
     /**
@@ -437,9 +458,12 @@ public class Overlay(
         setShowGridOverlays(parameter)
     }
 
-    public suspend fun setShowFlexOverlays(args: SetShowFlexOverlaysParameter) {
+    public suspend fun setShowFlexOverlays(
+        args: SetShowFlexOverlaysParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowFlexOverlays", parameter)
+        cdp.callCommand("Overlay.setShowFlexOverlays", parameter, mode)
     }
 
     /**
@@ -452,9 +476,12 @@ public class Overlay(
         setShowFlexOverlays(parameter)
     }
 
-    public suspend fun setShowScrollSnapOverlays(args: SetShowScrollSnapOverlaysParameter) {
+    public suspend fun setShowScrollSnapOverlays(
+        args: SetShowScrollSnapOverlaysParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowScrollSnapOverlays", parameter)
+        cdp.callCommand("Overlay.setShowScrollSnapOverlays", parameter, mode)
     }
 
     /**
@@ -467,9 +494,12 @@ public class Overlay(
         setShowScrollSnapOverlays(parameter)
     }
 
-    public suspend fun setShowContainerQueryOverlays(args: SetShowContainerQueryOverlaysParameter) {
+    public suspend fun setShowContainerQueryOverlays(
+        args: SetShowContainerQueryOverlaysParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowContainerQueryOverlays", parameter)
+        cdp.callCommand("Overlay.setShowContainerQueryOverlays", parameter, mode)
     }
 
     /**
@@ -486,9 +516,9 @@ public class Overlay(
     /**
      * Requests that backend shows paint rectangles
      */
-    public suspend fun setShowPaintRects(args: SetShowPaintRectsParameter) {
+    public suspend fun setShowPaintRects(args: SetShowPaintRectsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowPaintRects", parameter)
+        cdp.callCommand("Overlay.setShowPaintRects", parameter, mode)
     }
 
     /**
@@ -504,9 +534,12 @@ public class Overlay(
     /**
      * Requests that backend shows layout shift regions
      */
-    public suspend fun setShowLayoutShiftRegions(args: SetShowLayoutShiftRegionsParameter) {
+    public suspend fun setShowLayoutShiftRegions(
+        args: SetShowLayoutShiftRegionsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowLayoutShiftRegions", parameter)
+        cdp.callCommand("Overlay.setShowLayoutShiftRegions", parameter, mode)
     }
 
     /**
@@ -522,9 +555,12 @@ public class Overlay(
     /**
      * Requests that backend shows scroll bottleneck rects
      */
-    public suspend fun setShowScrollBottleneckRects(args: SetShowScrollBottleneckRectsParameter) {
+    public suspend fun setShowScrollBottleneckRects(
+        args: SetShowScrollBottleneckRectsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowScrollBottleneckRects", parameter)
+        cdp.callCommand("Overlay.setShowScrollBottleneckRects", parameter, mode)
     }
 
     /**
@@ -541,9 +577,12 @@ public class Overlay(
      * Deprecated, no longer has any effect.
      */
     @Deprecated(message = "")
-    public suspend fun setShowHitTestBorders(args: SetShowHitTestBordersParameter) {
+    public suspend fun setShowHitTestBorders(
+        args: SetShowHitTestBordersParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowHitTestBorders", parameter)
+        cdp.callCommand("Overlay.setShowHitTestBorders", parameter, mode)
     }
 
     /**
@@ -561,9 +600,9 @@ public class Overlay(
      * Deprecated, no longer has any effect.
      */
     @Deprecated(message = "")
-    public suspend fun setShowWebVitals(args: SetShowWebVitalsParameter) {
+    public suspend fun setShowWebVitals(args: SetShowWebVitalsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowWebVitals", parameter)
+        cdp.callCommand("Overlay.setShowWebVitals", parameter, mode)
     }
 
     /**
@@ -580,9 +619,12 @@ public class Overlay(
     /**
      * Paints viewport size upon main frame resize.
      */
-    public suspend fun setShowViewportSizeOnResize(args: SetShowViewportSizeOnResizeParameter) {
+    public suspend fun setShowViewportSizeOnResize(
+        args: SetShowViewportSizeOnResizeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowViewportSizeOnResize", parameter)
+        cdp.callCommand("Overlay.setShowViewportSizeOnResize", parameter, mode)
     }
 
     /**
@@ -598,9 +640,9 @@ public class Overlay(
     /**
      * Add a dual screen device hinge
      */
-    public suspend fun setShowHinge(args: SetShowHingeParameter) {
+    public suspend fun setShowHinge(args: SetShowHingeParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowHinge", parameter)
+        cdp.callCommand("Overlay.setShowHinge", parameter, mode)
     }
 
     /**
@@ -616,9 +658,12 @@ public class Overlay(
     /**
      * Show elements in isolation mode with overlays.
      */
-    public suspend fun setShowIsolatedElements(args: SetShowIsolatedElementsParameter) {
+    public suspend fun setShowIsolatedElements(
+        args: SetShowIsolatedElementsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowIsolatedElements", parameter)
+        cdp.callCommand("Overlay.setShowIsolatedElements", parameter, mode)
     }
 
     /**
@@ -635,9 +680,12 @@ public class Overlay(
     /**
      * Show Window Controls Overlay for PWA
      */
-    public suspend fun setShowWindowControlsOverlay(args: SetShowWindowControlsOverlayParameter) {
+    public suspend fun setShowWindowControlsOverlay(
+        args: SetShowWindowControlsOverlayParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Overlay.setShowWindowControlsOverlay", parameter)
+        cdp.callCommand("Overlay.setShowWindowControlsOverlay", parameter, mode)
     }
 
     /**

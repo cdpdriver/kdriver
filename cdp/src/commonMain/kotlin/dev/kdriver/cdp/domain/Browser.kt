@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -46,9 +43,9 @@ public class Browser(
     /**
      * Set permission settings for given origin.
      */
-    public suspend fun setPermission(args: SetPermissionParameter) {
+    public suspend fun setPermission(args: SetPermissionParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Browser.setPermission", parameter)
+        cdp.callCommand("Browser.setPermission", parameter, mode)
     }
 
     /**
@@ -77,9 +74,9 @@ public class Browser(
     /**
      * Grant specific permissions to the given origin and reject all others.
      */
-    public suspend fun grantPermissions(args: GrantPermissionsParameter) {
+    public suspend fun grantPermissions(args: GrantPermissionsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Browser.grantPermissions", parameter)
+        cdp.callCommand("Browser.grantPermissions", parameter, mode)
     }
 
     /**
@@ -102,9 +99,9 @@ public class Browser(
     /**
      * Reset all permission management for all origins.
      */
-    public suspend fun resetPermissions(args: ResetPermissionsParameter) {
+    public suspend fun resetPermissions(args: ResetPermissionsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Browser.resetPermissions", parameter)
+        cdp.callCommand("Browser.resetPermissions", parameter, mode)
     }
 
     /**
@@ -120,9 +117,12 @@ public class Browser(
     /**
      * Set the behavior when downloading a file.
      */
-    public suspend fun setDownloadBehavior(args: SetDownloadBehaviorParameter) {
+    public suspend fun setDownloadBehavior(
+        args: SetDownloadBehaviorParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Browser.setDownloadBehavior", parameter)
+        cdp.callCommand("Browser.setDownloadBehavior", parameter, mode)
     }
 
     /**
@@ -154,9 +154,9 @@ public class Browser(
     /**
      * Cancel a download if in progress
      */
-    public suspend fun cancelDownload(args: CancelDownloadParameter) {
+    public suspend fun cancelDownload(args: CancelDownloadParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Browser.cancelDownload", parameter)
+        cdp.callCommand("Browser.cancelDownload", parameter, mode)
     }
 
     /**
@@ -173,33 +173,33 @@ public class Browser(
     /**
      * Close browser gracefully.
      */
-    public suspend fun close() {
+    public suspend fun close(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Browser.close", parameter)
+        cdp.callCommand("Browser.close", parameter, mode)
     }
 
     /**
      * Crashes browser on the main thread.
      */
-    public suspend fun crash() {
+    public suspend fun crash(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Browser.crash", parameter)
+        cdp.callCommand("Browser.crash", parameter, mode)
     }
 
     /**
      * Crashes GPU process.
      */
-    public suspend fun crashGpuProcess() {
+    public suspend fun crashGpuProcess(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Browser.crashGpuProcess", parameter)
+        cdp.callCommand("Browser.crashGpuProcess", parameter, mode)
     }
 
     /**
      * Returns version information.
      */
-    public suspend fun getVersion(): GetVersionReturn {
+    public suspend fun getVersion(mode: CommandMode = CommandMode.DEFAULT): GetVersionReturn {
         val parameter = null
-        val result = cdp.callCommand("Browser.getVersion", parameter)
+        val result = cdp.callCommand("Browser.getVersion", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -207,18 +207,21 @@ public class Browser(
      * Returns the command line switches for the browser process if, and only if
      * --enable-automation is on the commandline.
      */
-    public suspend fun getBrowserCommandLine(): GetBrowserCommandLineReturn {
+    public suspend fun getBrowserCommandLine(mode: CommandMode = CommandMode.DEFAULT): GetBrowserCommandLineReturn {
         val parameter = null
-        val result = cdp.callCommand("Browser.getBrowserCommandLine", parameter)
+        val result = cdp.callCommand("Browser.getBrowserCommandLine", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Get Chrome histograms.
      */
-    public suspend fun getHistograms(args: GetHistogramsParameter): GetHistogramsReturn {
+    public suspend fun getHistograms(
+        args: GetHistogramsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetHistogramsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Browser.getHistograms", parameter)
+        val result = cdp.callCommand("Browser.getHistograms", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -238,9 +241,12 @@ public class Browser(
     /**
      * Get a Chrome histogram by name.
      */
-    public suspend fun getHistogram(args: GetHistogramParameter): GetHistogramReturn {
+    public suspend fun getHistogram(
+        args: GetHistogramParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetHistogramReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Browser.getHistogram", parameter)
+        val result = cdp.callCommand("Browser.getHistogram", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -258,9 +264,12 @@ public class Browser(
     /**
      * Get position and size of the browser window.
      */
-    public suspend fun getWindowBounds(args: GetWindowBoundsParameter): GetWindowBoundsReturn {
+    public suspend fun getWindowBounds(
+        args: GetWindowBoundsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetWindowBoundsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Browser.getWindowBounds", parameter)
+        val result = cdp.callCommand("Browser.getWindowBounds", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -277,9 +286,12 @@ public class Browser(
     /**
      * Get the browser window that contains the devtools target.
      */
-    public suspend fun getWindowForTarget(args: GetWindowForTargetParameter): GetWindowForTargetReturn {
+    public suspend fun getWindowForTarget(
+        args: GetWindowForTargetParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetWindowForTargetReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Browser.getWindowForTarget", parameter)
+        val result = cdp.callCommand("Browser.getWindowForTarget", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -296,9 +308,9 @@ public class Browser(
     /**
      * Set position and/or size of the browser window.
      */
-    public suspend fun setWindowBounds(args: SetWindowBoundsParameter) {
+    public suspend fun setWindowBounds(args: SetWindowBoundsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Browser.setWindowBounds", parameter)
+        cdp.callCommand("Browser.setWindowBounds", parameter, mode)
     }
 
     /**
@@ -316,9 +328,9 @@ public class Browser(
     /**
      * Set dock tile details, platform-specific.
      */
-    public suspend fun setDockTile(args: SetDockTileParameter) {
+    public suspend fun setDockTile(args: SetDockTileParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Browser.setDockTile", parameter)
+        cdp.callCommand("Browser.setDockTile", parameter, mode)
     }
 
     /**
@@ -335,9 +347,12 @@ public class Browser(
     /**
      * Invoke custom browser commands used by telemetry.
      */
-    public suspend fun executeBrowserCommand(args: ExecuteBrowserCommandParameter) {
+    public suspend fun executeBrowserCommand(
+        args: ExecuteBrowserCommandParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Browser.executeBrowserCommand", parameter)
+        cdp.callCommand("Browser.executeBrowserCommand", parameter, mode)
     }
 
     /**
@@ -354,9 +369,12 @@ public class Browser(
      * Allows a site to use privacy sandbox features that require enrollment
      * without the site actually being enrolled. Only supported on page targets.
      */
-    public suspend fun addPrivacySandboxEnrollmentOverride(args: AddPrivacySandboxEnrollmentOverrideParameter) {
+    public suspend fun addPrivacySandboxEnrollmentOverride(
+        args: AddPrivacySandboxEnrollmentOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Browser.addPrivacySandboxEnrollmentOverride", parameter)
+        cdp.callCommand("Browser.addPrivacySandboxEnrollmentOverride", parameter, mode)
     }
 
     /**
@@ -376,9 +394,12 @@ public class Browser(
      * coordinatorOrigin must be a .test domain. No existing coordinator
      * configuration for the origin may exist.
      */
-    public suspend fun addPrivacySandboxCoordinatorKeyConfig(args: AddPrivacySandboxCoordinatorKeyConfigParameter) {
+    public suspend fun addPrivacySandboxCoordinatorKeyConfig(
+        args: AddPrivacySandboxCoordinatorKeyConfigParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Browser.addPrivacySandboxCoordinatorKeyConfig", parameter)
+        cdp.callCommand("Browser.addPrivacySandboxCoordinatorKeyConfig", parameter, mode)
     }
 
     /**

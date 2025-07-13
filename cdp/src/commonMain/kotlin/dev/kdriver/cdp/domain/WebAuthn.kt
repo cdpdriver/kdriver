@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -70,9 +67,9 @@ public class WebAuthn(
      * Enable the WebAuthn domain and start intercepting credential storage and
      * retrieval with a virtual authenticator.
      */
-    public suspend fun enable(args: EnableParameter) {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("WebAuthn.enable", parameter)
+        cdp.callCommand("WebAuthn.enable", parameter, mode)
     }
 
     /**
@@ -93,17 +90,20 @@ public class WebAuthn(
     /**
      * Disable the WebAuthn domain.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("WebAuthn.disable", parameter)
+        cdp.callCommand("WebAuthn.disable", parameter, mode)
     }
 
     /**
      * Creates and adds a virtual authenticator.
      */
-    public suspend fun addVirtualAuthenticator(args: AddVirtualAuthenticatorParameter): AddVirtualAuthenticatorReturn {
+    public suspend fun addVirtualAuthenticator(
+        args: AddVirtualAuthenticatorParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): AddVirtualAuthenticatorReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("WebAuthn.addVirtualAuthenticator", parameter)
+        val result = cdp.callCommand("WebAuthn.addVirtualAuthenticator", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -120,9 +120,12 @@ public class WebAuthn(
     /**
      * Resets parameters isBogusSignature, isBadUV, isBadUP to false if they are not present.
      */
-    public suspend fun setResponseOverrideBits(args: SetResponseOverrideBitsParameter) {
+    public suspend fun setResponseOverrideBits(
+        args: SetResponseOverrideBitsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("WebAuthn.setResponseOverrideBits", parameter)
+        cdp.callCommand("WebAuthn.setResponseOverrideBits", parameter, mode)
     }
 
     /**
@@ -154,9 +157,12 @@ public class WebAuthn(
     /**
      * Removes the given authenticator.
      */
-    public suspend fun removeVirtualAuthenticator(args: RemoveVirtualAuthenticatorParameter) {
+    public suspend fun removeVirtualAuthenticator(
+        args: RemoveVirtualAuthenticatorParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("WebAuthn.removeVirtualAuthenticator", parameter)
+        cdp.callCommand("WebAuthn.removeVirtualAuthenticator", parameter, mode)
     }
 
     /**
@@ -172,9 +178,9 @@ public class WebAuthn(
     /**
      * Adds the credential to the specified authenticator.
      */
-    public suspend fun addCredential(args: AddCredentialParameter) {
+    public suspend fun addCredential(args: AddCredentialParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("WebAuthn.addCredential", parameter)
+        cdp.callCommand("WebAuthn.addCredential", parameter, mode)
     }
 
     /**
@@ -192,9 +198,12 @@ public class WebAuthn(
      * Returns a single credential stored in the given virtual authenticator that
      * matches the credential ID.
      */
-    public suspend fun getCredential(args: GetCredentialParameter): GetCredentialReturn {
+    public suspend fun getCredential(
+        args: GetCredentialParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetCredentialReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("WebAuthn.getCredential", parameter)
+        val result = cdp.callCommand("WebAuthn.getCredential", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -213,9 +222,12 @@ public class WebAuthn(
     /**
      * Returns all the credentials stored in the given virtual authenticator.
      */
-    public suspend fun getCredentials(args: GetCredentialsParameter): GetCredentialsReturn {
+    public suspend fun getCredentials(
+        args: GetCredentialsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetCredentialsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("WebAuthn.getCredentials", parameter)
+        val result = cdp.callCommand("WebAuthn.getCredentials", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -232,9 +244,9 @@ public class WebAuthn(
     /**
      * Removes a credential from the authenticator.
      */
-    public suspend fun removeCredential(args: RemoveCredentialParameter) {
+    public suspend fun removeCredential(args: RemoveCredentialParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("WebAuthn.removeCredential", parameter)
+        cdp.callCommand("WebAuthn.removeCredential", parameter, mode)
     }
 
     /**
@@ -251,9 +263,9 @@ public class WebAuthn(
     /**
      * Clears all the credentials from the specified device.
      */
-    public suspend fun clearCredentials(args: ClearCredentialsParameter) {
+    public suspend fun clearCredentials(args: ClearCredentialsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("WebAuthn.clearCredentials", parameter)
+        cdp.callCommand("WebAuthn.clearCredentials", parameter, mode)
     }
 
     /**
@@ -270,9 +282,9 @@ public class WebAuthn(
      * Sets whether User Verification succeeds or fails for an authenticator.
      * The default is true.
      */
-    public suspend fun setUserVerified(args: SetUserVerifiedParameter) {
+    public suspend fun setUserVerified(args: SetUserVerifiedParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("WebAuthn.setUserVerified", parameter)
+        cdp.callCommand("WebAuthn.setUserVerified", parameter, mode)
     }
 
     /**
@@ -291,9 +303,12 @@ public class WebAuthn(
      * Sets whether tests of user presence will succeed immediately (if true) or fail to resolve (if false) for an authenticator.
      * The default is true.
      */
-    public suspend fun setAutomaticPresenceSimulation(args: SetAutomaticPresenceSimulationParameter) {
+    public suspend fun setAutomaticPresenceSimulation(
+        args: SetAutomaticPresenceSimulationParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("WebAuthn.setAutomaticPresenceSimulation", parameter)
+        cdp.callCommand("WebAuthn.setAutomaticPresenceSimulation", parameter, mode)
     }
 
     /**
@@ -312,9 +327,12 @@ public class WebAuthn(
      * Allows setting credential properties.
      * https://w3c.github.io/webauthn/#sctn-automation-set-credential-properties
      */
-    public suspend fun setCredentialProperties(args: SetCredentialPropertiesParameter) {
+    public suspend fun setCredentialProperties(
+        args: SetCredentialPropertiesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("WebAuthn.setCredentialProperties", parameter)
+        cdp.callCommand("WebAuthn.setCredentialProperties", parameter, mode)
     }
 
     /**

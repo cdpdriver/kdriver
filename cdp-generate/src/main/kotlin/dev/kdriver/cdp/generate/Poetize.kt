@@ -7,6 +7,7 @@ const val PACKAGE_NAME = "dev.kdriver.cdp.domain"
 const val BASE_PACKAGE_NAME = "dev.kdriver.cdp"
 val CDP = ClassName(BASE_PACKAGE_NAME, "CDP")
 val DOMAIN = ClassName(BASE_PACKAGE_NAME, "Domain")
+val COMMAND_MODE = ClassName(PACKAGE_NAME, "CommandMode")
 val FLOW = ClassName("kotlinx.coroutines.flow", "Flow")
 val SERIALIZATION = ClassName("dev.kaccelero.serializers", "Serialization")
 val SERIALIZABLE = ClassName("kotlinx.serialization", "Serializable")
@@ -47,7 +48,7 @@ fun Domain.generateClassFile(domains: List<Domain>): FileSpec {
         .build()
     return FileSpec.builder(PACKAGE_NAME, domain)
         .indent(" ".repeat(4))
-        .addImport(BASE_PACKAGE_NAME, "getGeneratedDomain", "cacheGeneratedDomain")
+        .addImport(BASE_PACKAGE_NAME, "getGeneratedDomain", "cacheGeneratedDomain", "CommandMode")
         .addImport("kotlinx.serialization.json", "decodeFromJsonElement", "encodeToJsonElement")
         .addImport("kotlinx.coroutines.flow", "filter", "filterNotNull", "map")
         .addProperty(
@@ -116,7 +117,7 @@ fun Domain.Type.Property.generateTypeProperty(parentDomain: Domain, domains: Lis
     return PropertySpec.builder(name, typeName)
         .initializer(name)
         .apply {
-            description?.let { addKdoc(it.replace("%", "%%")) }
+            description?.let { addKdoc(it.escapePercentage()) }
         }
         .build()
 }
@@ -268,43 +269,25 @@ val Domain.Event.parameterTypeName: TypeName
 fun Domain.Command.generateMethod(parentDomain: Domain, domains: List<Domain>): FunSpec {
     return FunSpec.builder(name).addModifiers(KModifier.SUSPEND).apply {
         description?.let { addKdoc(it) }
-        if (deprecated) {
-            addAnnotation(
-                AnnotationSpec.builder(Deprecated::class)
-                    .addMember("message = %S", "")
-                    .build()
-            )
-        }
+        if (deprecated) addAnnotation(AnnotationSpec.builder(Deprecated::class).addMember("message = %S", "").build())
 
         // parameters
-        if (this@generateMethod.parameters.isEmpty()) {
-            // no parameter
-        } else {
-            addParameter("args", this@generateMethod.parameterTypeName)
-        }
+        if (this@generateMethod.parameters.isNotEmpty()) addParameter("args", this@generateMethod.parameterTypeName)
+        addParameter(ParameterSpec.builder("mode", COMMAND_MODE).defaultValue("CommandMode.DEFAULT").build())
 
         // returning values
-        if (returns.isEmpty()) {
-            // return Unit
-        } else {
-            returns(this@generateMethod.returnTypeName)
-        }
+        if (returns.isNotEmpty()) returns(this@generateMethod.returnTypeName)
 
         // calling command
         addCode(CodeBlock.builder().apply {
-            if (this@generateMethod.parameters.isEmpty()) {
-                addStatement("val parameter = null")
-            } else {
-                addStatement("val parameter = %T.json.encodeToJsonElement(args)", SERIALIZATION)
-            }
-            if (this@generateMethod.returns.isEmpty()) {
-                addStatement("cdp.callCommand(\"${parentDomain.domain}.$name\", parameter)")
-            } else {
-                addStatement("val result = cdp.callCommand(\"${parentDomain.domain}.$name\", parameter)")
-            }
-            if (this@generateMethod.returns.isNotEmpty()) {
+            if (this@generateMethod.parameters.isEmpty()) addStatement("val parameter = null")
+            else addStatement("val parameter = %T.json.encodeToJsonElement(args)", SERIALIZATION)
+
+            if (this@generateMethod.returns.isEmpty()) addStatement("cdp.callCommand(\"${parentDomain.domain}.$name\", parameter, mode)")
+            else addStatement("val result = cdp.callCommand(\"${parentDomain.domain}.$name\", parameter, mode)")
+
+            if (this@generateMethod.returns.isNotEmpty())
                 addStatement("return result!!.let { %T.json.decodeFromJsonElement(it) }", SERIALIZATION)
-            }
         }.build())
     }.build()
 }
@@ -317,7 +300,7 @@ fun Domain.Command.generateParameterExpandedMethod(parentDomain: Domain, domains
                 ?.joinToString("\n", prefix = "\n\n") { param ->
                     "@param ${param.name} ${param.description ?: "No description"}"
                 }
-                ?.replace("%", "%%")
+                ?.escapePercentage()
                 ?: ""
             description?.let { addKdoc(it + parametersKdoc) } ?: addKdoc(parametersKdoc)
 

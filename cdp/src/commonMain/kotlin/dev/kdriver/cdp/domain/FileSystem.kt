@@ -1,16 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Double
-import kotlin.String
-import kotlin.collections.List
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
+import dev.kdriver.cdp.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -21,9 +12,12 @@ public val CDP.fileSystem: FileSystem
 public class FileSystem(
     private val cdp: CDP,
 ) : Domain {
-    public suspend fun getDirectory(args: GetDirectoryParameter): GetDirectoryReturn {
+    public suspend fun getDirectory(
+        args: GetDirectoryParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetDirectoryReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("FileSystem.getDirectory", parameter)
+        val result = cdp.callCommand("FileSystem.getDirectory", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

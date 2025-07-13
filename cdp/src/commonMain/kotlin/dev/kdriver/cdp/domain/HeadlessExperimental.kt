@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -24,9 +21,12 @@ public class HeadlessExperimental(
      * BeginFrameControl. Designed for use with --run-all-compositor-stages-before-draw, see also
      * https://goo.gle/chrome-headless-rendering for more background.
      */
-    public suspend fun beginFrame(args: BeginFrameParameter): BeginFrameReturn {
+    public suspend fun beginFrame(
+        args: BeginFrameParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): BeginFrameReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("HeadlessExperimental.beginFrame", parameter)
+        val result = cdp.callCommand("HeadlessExperimental.beginFrame", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -66,18 +66,18 @@ public class HeadlessExperimental(
      * Disables headless events for the target.
      */
     @Deprecated(message = "")
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("HeadlessExperimental.disable", parameter)
+        cdp.callCommand("HeadlessExperimental.disable", parameter, mode)
     }
 
     /**
      * Enables headless events for the target.
      */
     @Deprecated(message = "")
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("HeadlessExperimental.enable", parameter)
+        cdp.callCommand("HeadlessExperimental.enable", parameter, mode)
     }
 
     /**

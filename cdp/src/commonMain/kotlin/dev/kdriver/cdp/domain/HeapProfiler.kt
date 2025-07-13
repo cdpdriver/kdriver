@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -66,9 +63,12 @@ public class HeapProfiler(
      * Enables console to refer to the node with given id via $x (see Command Line API for more details
      * $x functions).
      */
-    public suspend fun addInspectedHeapObject(args: AddInspectedHeapObjectParameter) {
+    public suspend fun addInspectedHeapObject(
+        args: AddInspectedHeapObjectParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("HeapProfiler.addInspectedHeapObject", parameter)
+        cdp.callCommand("HeapProfiler.addInspectedHeapObject", parameter, mode)
     }
 
     /**
@@ -82,24 +82,27 @@ public class HeapProfiler(
         addInspectedHeapObject(parameter)
     }
 
-    public suspend fun collectGarbage() {
+    public suspend fun collectGarbage(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("HeapProfiler.collectGarbage", parameter)
+        cdp.callCommand("HeapProfiler.collectGarbage", parameter, mode)
     }
 
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("HeapProfiler.disable", parameter)
+        cdp.callCommand("HeapProfiler.disable", parameter, mode)
     }
 
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("HeapProfiler.enable", parameter)
+        cdp.callCommand("HeapProfiler.enable", parameter, mode)
     }
 
-    public suspend fun getHeapObjectId(args: GetHeapObjectIdParameter): GetHeapObjectIdReturn {
+    public suspend fun getHeapObjectId(
+        args: GetHeapObjectIdParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetHeapObjectIdReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("HeapProfiler.getHeapObjectId", parameter)
+        val result = cdp.callCommand("HeapProfiler.getHeapObjectId", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -113,9 +116,12 @@ public class HeapProfiler(
         return getHeapObjectId(parameter)
     }
 
-    public suspend fun getObjectByHeapObjectId(args: GetObjectByHeapObjectIdParameter): GetObjectByHeapObjectIdReturn {
+    public suspend fun getObjectByHeapObjectId(
+        args: GetObjectByHeapObjectIdParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetObjectByHeapObjectIdReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("HeapProfiler.getObjectByHeapObjectId", parameter)
+        val result = cdp.callCommand("HeapProfiler.getObjectByHeapObjectId", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -133,15 +139,15 @@ public class HeapProfiler(
         return getObjectByHeapObjectId(parameter)
     }
 
-    public suspend fun getSamplingProfile(): GetSamplingProfileReturn {
+    public suspend fun getSamplingProfile(mode: CommandMode = CommandMode.DEFAULT): GetSamplingProfileReturn {
         val parameter = null
-        val result = cdp.callCommand("HeapProfiler.getSamplingProfile", parameter)
+        val result = cdp.callCommand("HeapProfiler.getSamplingProfile", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
-    public suspend fun startSampling(args: StartSamplingParameter) {
+    public suspend fun startSampling(args: StartSamplingParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("HeapProfiler.startSampling", parameter)
+        cdp.callCommand("HeapProfiler.startSampling", parameter, mode)
     }
 
     /**
@@ -177,9 +183,12 @@ public class HeapProfiler(
         startSampling(parameter)
     }
 
-    public suspend fun startTrackingHeapObjects(args: StartTrackingHeapObjectsParameter) {
+    public suspend fun startTrackingHeapObjects(
+        args: StartTrackingHeapObjectsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("HeapProfiler.startTrackingHeapObjects", parameter)
+        cdp.callCommand("HeapProfiler.startTrackingHeapObjects", parameter, mode)
     }
 
     /**
@@ -192,15 +201,18 @@ public class HeapProfiler(
         startTrackingHeapObjects(parameter)
     }
 
-    public suspend fun stopSampling(): StopSamplingReturn {
+    public suspend fun stopSampling(mode: CommandMode = CommandMode.DEFAULT): StopSamplingReturn {
         val parameter = null
-        val result = cdp.callCommand("HeapProfiler.stopSampling", parameter)
+        val result = cdp.callCommand("HeapProfiler.stopSampling", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
-    public suspend fun stopTrackingHeapObjects(args: StopTrackingHeapObjectsParameter) {
+    public suspend fun stopTrackingHeapObjects(
+        args: StopTrackingHeapObjectsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("HeapProfiler.stopTrackingHeapObjects", parameter)
+        cdp.callCommand("HeapProfiler.stopTrackingHeapObjects", parameter, mode)
     }
 
     /**
@@ -227,9 +239,9 @@ public class HeapProfiler(
         stopTrackingHeapObjects(parameter)
     }
 
-    public suspend fun takeHeapSnapshot(args: TakeHeapSnapshotParameter) {
+    public suspend fun takeHeapSnapshot(args: TakeHeapSnapshotParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("HeapProfiler.takeHeapSnapshot", parameter)
+        cdp.callCommand("HeapProfiler.takeHeapSnapshot", parameter, mode)
     }
 
     /**

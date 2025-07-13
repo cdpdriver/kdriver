@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -32,17 +29,17 @@ public class Performance(
     /**
      * Disable collecting and reporting metrics.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Performance.disable", parameter)
+        cdp.callCommand("Performance.disable", parameter, mode)
     }
 
     /**
      * Enable collecting and reporting metrics.
      */
-    public suspend fun enable(args: EnableParameter) {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Performance.enable", parameter)
+        cdp.callCommand("Performance.enable", parameter, mode)
     }
 
     /**
@@ -61,9 +58,9 @@ public class Performance(
      * this method while metrics collection is enabled returns an error.
      */
     @Deprecated(message = "")
-    public suspend fun setTimeDomain(args: SetTimeDomainParameter) {
+    public suspend fun setTimeDomain(args: SetTimeDomainParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Performance.setTimeDomain", parameter)
+        cdp.callCommand("Performance.setTimeDomain", parameter, mode)
     }
 
     /**
@@ -82,9 +79,9 @@ public class Performance(
     /**
      * Retrieve current values of run-time metrics.
      */
-    public suspend fun getMetrics(): GetMetricsReturn {
+    public suspend fun getMetrics(mode: CommandMode = CommandMode.DEFAULT): GetMetricsReturn {
         val parameter = null
-        val result = cdp.callCommand("Performance.getMetrics", parameter)
+        val result = cdp.callCommand("Performance.getMetrics", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

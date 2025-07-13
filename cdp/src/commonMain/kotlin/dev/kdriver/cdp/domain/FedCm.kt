@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -41,9 +38,9 @@ public class FedCm(
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
 
-    public suspend fun enable(args: EnableParameter) {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("FedCm.enable", parameter)
+        cdp.callCommand("FedCm.enable", parameter, mode)
     }
 
     /**
@@ -58,14 +55,14 @@ public class FedCm(
         enable(parameter)
     }
 
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("FedCm.disable", parameter)
+        cdp.callCommand("FedCm.disable", parameter, mode)
     }
 
-    public suspend fun selectAccount(args: SelectAccountParameter) {
+    public suspend fun selectAccount(args: SelectAccountParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("FedCm.selectAccount", parameter)
+        cdp.callCommand("FedCm.selectAccount", parameter, mode)
     }
 
     /**
@@ -79,9 +76,9 @@ public class FedCm(
         selectAccount(parameter)
     }
 
-    public suspend fun clickDialogButton(args: ClickDialogButtonParameter) {
+    public suspend fun clickDialogButton(args: ClickDialogButtonParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("FedCm.clickDialogButton", parameter)
+        cdp.callCommand("FedCm.clickDialogButton", parameter, mode)
     }
 
     /**
@@ -95,9 +92,9 @@ public class FedCm(
         clickDialogButton(parameter)
     }
 
-    public suspend fun openUrl(args: OpenUrlParameter) {
+    public suspend fun openUrl(args: OpenUrlParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("FedCm.openUrl", parameter)
+        cdp.callCommand("FedCm.openUrl", parameter, mode)
     }
 
     /**
@@ -117,9 +114,9 @@ public class FedCm(
         openUrl(parameter)
     }
 
-    public suspend fun dismissDialog(args: DismissDialogParameter) {
+    public suspend fun dismissDialog(args: DismissDialogParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("FedCm.dismissDialog", parameter)
+        cdp.callCommand("FedCm.dismissDialog", parameter, mode)
     }
 
     /**
@@ -137,9 +134,9 @@ public class FedCm(
      * Resets the cooldown time, if any, to allow the next FedCM call to show
      * a dialog even if one was recently dismissed by the user.
      */
-    public suspend fun resetCooldown() {
+    public suspend fun resetCooldown(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("FedCm.resetCooldown", parameter)
+        cdp.callCommand("FedCm.resetCooldown", parameter, mode)
     }
 
     /**

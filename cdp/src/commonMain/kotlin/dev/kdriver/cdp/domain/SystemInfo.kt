@@ -1,19 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Double
-import kotlin.Int
-import kotlin.String
-import kotlin.collections.List
-import kotlin.collections.Map
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
+import dev.kdriver.cdp.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -32,18 +20,21 @@ public class SystemInfo(
     /**
      * Returns information about the system.
      */
-    public suspend fun getInfo(): GetInfoReturn {
+    public suspend fun getInfo(mode: CommandMode = CommandMode.DEFAULT): GetInfoReturn {
         val parameter = null
-        val result = cdp.callCommand("SystemInfo.getInfo", parameter)
+        val result = cdp.callCommand("SystemInfo.getInfo", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Returns information about the feature state.
      */
-    public suspend fun getFeatureState(args: GetFeatureStateParameter): GetFeatureStateReturn {
+    public suspend fun getFeatureState(
+        args: GetFeatureStateParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetFeatureStateReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("SystemInfo.getFeatureState", parameter)
+        val result = cdp.callCommand("SystemInfo.getFeatureState", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -60,9 +51,9 @@ public class SystemInfo(
     /**
      * Returns information about all running processes.
      */
-    public suspend fun getProcessInfo(): GetProcessInfoReturn {
+    public suspend fun getProcessInfo(mode: CommandMode = CommandMode.DEFAULT): GetProcessInfoReturn {
         val parameter = null
-        val result = cdp.callCommand("SystemInfo.getProcessInfo", parameter)
+        val result = cdp.callCommand("SystemInfo.getProcessInfo", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -170,8 +161,10 @@ public class SystemInfo(
     public enum class SubsamplingFormat {
         @SerialName("yuv420")
         YUV420,
+
         @SerialName("yuv422")
         YUV422,
+
         @SerialName("yuv444")
         YUV444,
     }
@@ -183,8 +176,10 @@ public class SystemInfo(
     public enum class ImageType {
         @SerialName("jpeg")
         JPEG,
+
         @SerialName("webp")
         WEBP,
+
         @SerialName("unknown")
         UNKNOWN,
     }

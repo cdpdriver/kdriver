@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -19,9 +16,9 @@ public class CacheStorage(
     /**
      * Deletes a cache.
      */
-    public suspend fun deleteCache(args: DeleteCacheParameter) {
+    public suspend fun deleteCache(args: DeleteCacheParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("CacheStorage.deleteCache", parameter)
+        cdp.callCommand("CacheStorage.deleteCache", parameter, mode)
     }
 
     /**
@@ -37,9 +34,9 @@ public class CacheStorage(
     /**
      * Deletes a cache entry.
      */
-    public suspend fun deleteEntry(args: DeleteEntryParameter) {
+    public suspend fun deleteEntry(args: DeleteEntryParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("CacheStorage.deleteEntry", parameter)
+        cdp.callCommand("CacheStorage.deleteEntry", parameter, mode)
     }
 
     /**
@@ -56,9 +53,12 @@ public class CacheStorage(
     /**
      * Requests cache names.
      */
-    public suspend fun requestCacheNames(args: RequestCacheNamesParameter): RequestCacheNamesReturn {
+    public suspend fun requestCacheNames(
+        args: RequestCacheNamesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): RequestCacheNamesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CacheStorage.requestCacheNames", parameter)
+        val result = cdp.callCommand("CacheStorage.requestCacheNames", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -86,9 +86,12 @@ public class CacheStorage(
     /**
      * Fetches cache entry.
      */
-    public suspend fun requestCachedResponse(args: RequestCachedResponseParameter): RequestCachedResponseReturn {
+    public suspend fun requestCachedResponse(
+        args: RequestCachedResponseParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): RequestCachedResponseReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CacheStorage.requestCachedResponse", parameter)
+        val result = cdp.callCommand("CacheStorage.requestCachedResponse", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -112,9 +115,12 @@ public class CacheStorage(
     /**
      * Requests data from cache.
      */
-    public suspend fun requestEntries(args: RequestEntriesParameter): RequestEntriesReturn {
+    public suspend fun requestEntries(
+        args: RequestEntriesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): RequestEntriesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CacheStorage.requestEntries", parameter)
+        val result = cdp.callCommand("CacheStorage.requestEntries", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

@@ -1,16 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Int
-import kotlin.String
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
+import dev.kdriver.cdp.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -27,9 +18,9 @@ public class IO(
     /**
      * Close the stream, discard any temporary backing storage.
      */
-    public suspend fun close(args: CloseParameter) {
+    public suspend fun close(args: CloseParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("IO.close", parameter)
+        cdp.callCommand("IO.close", parameter, mode)
     }
 
     /**
@@ -45,9 +36,9 @@ public class IO(
     /**
      * Read a chunk of the stream
      */
-    public suspend fun read(args: ReadParameter): ReadReturn {
+    public suspend fun read(args: ReadParameter, mode: CommandMode = CommandMode.DEFAULT): ReadReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("IO.read", parameter)
+        val result = cdp.callCommand("IO.read", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -71,9 +62,12 @@ public class IO(
     /**
      * Return UUID of Blob object specified by a remote object id.
      */
-    public suspend fun resolveBlob(args: ResolveBlobParameter): ResolveBlobReturn {
+    public suspend fun resolveBlob(
+        args: ResolveBlobParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): ResolveBlobReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("IO.resolveBlob", parameter)
+        val result = cdp.callCommand("IO.resolveBlob", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

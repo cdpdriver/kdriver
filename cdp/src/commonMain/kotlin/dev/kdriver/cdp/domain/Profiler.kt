@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -49,32 +46,35 @@ public class Profiler(
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
 
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Profiler.disable", parameter)
+        cdp.callCommand("Profiler.disable", parameter, mode)
     }
 
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Profiler.enable", parameter)
+        cdp.callCommand("Profiler.enable", parameter, mode)
     }
 
     /**
      * Collect coverage data for the current isolate. The coverage data may be incomplete due to
      * garbage collection.
      */
-    public suspend fun getBestEffortCoverage(): GetBestEffortCoverageReturn {
+    public suspend fun getBestEffortCoverage(mode: CommandMode = CommandMode.DEFAULT): GetBestEffortCoverageReturn {
         val parameter = null
-        val result = cdp.callCommand("Profiler.getBestEffortCoverage", parameter)
+        val result = cdp.callCommand("Profiler.getBestEffortCoverage", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Changes CPU profiler sampling interval. Must be called before CPU profiles recording started.
      */
-    public suspend fun setSamplingInterval(args: SetSamplingIntervalParameter) {
+    public suspend fun setSamplingInterval(
+        args: SetSamplingIntervalParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Profiler.setSamplingInterval", parameter)
+        cdp.callCommand("Profiler.setSamplingInterval", parameter, mode)
     }
 
     /**
@@ -87,9 +87,9 @@ public class Profiler(
         setSamplingInterval(parameter)
     }
 
-    public suspend fun start() {
+    public suspend fun start(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Profiler.start", parameter)
+        cdp.callCommand("Profiler.start", parameter, mode)
     }
 
     /**
@@ -97,9 +97,12 @@ public class Profiler(
      * coverage may be incomplete. Enabling prevents running optimized code and resets execution
      * counters.
      */
-    public suspend fun startPreciseCoverage(args: StartPreciseCoverageParameter): StartPreciseCoverageReturn {
+    public suspend fun startPreciseCoverage(
+        args: StartPreciseCoverageParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): StartPreciseCoverageReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Profiler.startPreciseCoverage", parameter)
+        val result = cdp.callCommand("Profiler.startPreciseCoverage", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -125,9 +128,9 @@ public class Profiler(
         return startPreciseCoverage(parameter)
     }
 
-    public suspend fun stop(): StopReturn {
+    public suspend fun stop(mode: CommandMode = CommandMode.DEFAULT): StopReturn {
         val parameter = null
-        val result = cdp.callCommand("Profiler.stop", parameter)
+        val result = cdp.callCommand("Profiler.stop", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -135,18 +138,18 @@ public class Profiler(
      * Disable precise code coverage. Disabling releases unnecessary execution count records and allows
      * executing optimized code.
      */
-    public suspend fun stopPreciseCoverage() {
+    public suspend fun stopPreciseCoverage(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Profiler.stopPreciseCoverage", parameter)
+        cdp.callCommand("Profiler.stopPreciseCoverage", parameter, mode)
     }
 
     /**
      * Collect coverage data for the current isolate, and resets execution counters. Precise code
      * coverage needs to have started.
      */
-    public suspend fun takePreciseCoverage(): TakePreciseCoverageReturn {
+    public suspend fun takePreciseCoverage(mode: CommandMode = CommandMode.DEFAULT): TakePreciseCoverageReturn {
         val parameter = null
-        val result = cdp.callCommand("Profiler.takePreciseCoverage", parameter)
+        val result = cdp.callCommand("Profiler.takePreciseCoverage", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -37,42 +34,45 @@ public class Emulation(
      * Tells whether emulation is supported.
      */
     @Deprecated(message = "")
-    public suspend fun canEmulate(): CanEmulateReturn {
+    public suspend fun canEmulate(mode: CommandMode = CommandMode.DEFAULT): CanEmulateReturn {
         val parameter = null
-        val result = cdp.callCommand("Emulation.canEmulate", parameter)
+        val result = cdp.callCommand("Emulation.canEmulate", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Clears the overridden device metrics.
      */
-    public suspend fun clearDeviceMetricsOverride() {
+    public suspend fun clearDeviceMetricsOverride(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Emulation.clearDeviceMetricsOverride", parameter)
+        cdp.callCommand("Emulation.clearDeviceMetricsOverride", parameter, mode)
     }
 
     /**
      * Clears the overridden Geolocation Position and Error.
      */
-    public suspend fun clearGeolocationOverride() {
+    public suspend fun clearGeolocationOverride(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Emulation.clearGeolocationOverride", parameter)
+        cdp.callCommand("Emulation.clearGeolocationOverride", parameter, mode)
     }
 
     /**
      * Requests that page scale factor is reset to initial values.
      */
-    public suspend fun resetPageScaleFactor() {
+    public suspend fun resetPageScaleFactor(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Emulation.resetPageScaleFactor", parameter)
+        cdp.callCommand("Emulation.resetPageScaleFactor", parameter, mode)
     }
 
     /**
      * Enables or disables simulating a focused and active page.
      */
-    public suspend fun setFocusEmulationEnabled(args: SetFocusEmulationEnabledParameter) {
+    public suspend fun setFocusEmulationEnabled(
+        args: SetFocusEmulationEnabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setFocusEmulationEnabled", parameter)
+        cdp.callCommand("Emulation.setFocusEmulationEnabled", parameter, mode)
     }
 
     /**
@@ -88,9 +88,12 @@ public class Emulation(
     /**
      * Automatically render all web contents using a dark theme.
      */
-    public suspend fun setAutoDarkModeOverride(args: SetAutoDarkModeOverrideParameter) {
+    public suspend fun setAutoDarkModeOverride(
+        args: SetAutoDarkModeOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setAutoDarkModeOverride", parameter)
+        cdp.callCommand("Emulation.setAutoDarkModeOverride", parameter, mode)
     }
 
     /**
@@ -107,9 +110,12 @@ public class Emulation(
     /**
      * Enables CPU throttling to emulate slow CPUs.
      */
-    public suspend fun setCPUThrottlingRate(args: SetCPUThrottlingRateParameter) {
+    public suspend fun setCPUThrottlingRate(
+        args: SetCPUThrottlingRateParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setCPUThrottlingRate", parameter)
+        cdp.callCommand("Emulation.setCPUThrottlingRate", parameter, mode)
     }
 
     /**
@@ -126,9 +132,12 @@ public class Emulation(
      * Sets or clears an override of the default background color of the frame. This override is used
      * if the content does not specify one.
      */
-    public suspend fun setDefaultBackgroundColorOverride(args: SetDefaultBackgroundColorOverrideParameter) {
+    public suspend fun setDefaultBackgroundColorOverride(
+        args: SetDefaultBackgroundColorOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setDefaultBackgroundColorOverride", parameter)
+        cdp.callCommand("Emulation.setDefaultBackgroundColorOverride", parameter, mode)
     }
 
     /**
@@ -147,9 +156,12 @@ public class Emulation(
      * Overrides the values for env(safe-area-inset-*) and env(safe-area-max-inset-*). Unset values will cause the
      * respective variables to be undefined, even if previously overridden.
      */
-    public suspend fun setSafeAreaInsetsOverride(args: SetSafeAreaInsetsOverrideParameter) {
+    public suspend fun setSafeAreaInsetsOverride(
+        args: SetSafeAreaInsetsOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setSafeAreaInsetsOverride", parameter)
+        cdp.callCommand("Emulation.setSafeAreaInsetsOverride", parameter, mode)
     }
 
     /**
@@ -168,9 +180,12 @@ public class Emulation(
      * window.innerWidth, window.innerHeight, and "device-width"/"device-height"-related CSS media
      * query results).
      */
-    public suspend fun setDeviceMetricsOverride(args: SetDeviceMetricsOverrideParameter) {
+    public suspend fun setDeviceMetricsOverride(
+        args: SetDeviceMetricsOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setDeviceMetricsOverride", parameter)
+        cdp.callCommand("Emulation.setDeviceMetricsOverride", parameter, mode)
     }
 
     /**
@@ -238,9 +253,12 @@ public class Emulation(
      * Start reporting the given posture value to the Device Posture API.
      * This override can also be set in setDeviceMetricsOverride().
      */
-    public suspend fun setDevicePostureOverride(args: SetDevicePostureOverrideParameter) {
+    public suspend fun setDevicePostureOverride(
+        args: SetDevicePostureOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setDevicePostureOverride", parameter)
+        cdp.callCommand("Emulation.setDevicePostureOverride", parameter, mode)
     }
 
     /**
@@ -260,18 +278,21 @@ public class Emulation(
      * platform again.
      * Does nothing if no override is set.
      */
-    public suspend fun clearDevicePostureOverride() {
+    public suspend fun clearDevicePostureOverride(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Emulation.clearDevicePostureOverride", parameter)
+        cdp.callCommand("Emulation.clearDevicePostureOverride", parameter, mode)
     }
 
     /**
      * Start using the given display features to pupulate the Viewport Segments API.
      * This override can also be set in setDeviceMetricsOverride().
      */
-    public suspend fun setDisplayFeaturesOverride(args: SetDisplayFeaturesOverrideParameter) {
+    public suspend fun setDisplayFeaturesOverride(
+        args: SetDisplayFeaturesOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setDisplayFeaturesOverride", parameter)
+        cdp.callCommand("Emulation.setDisplayFeaturesOverride", parameter, mode)
     }
 
     /**
@@ -291,14 +312,17 @@ public class Emulation(
      * platform again.
      * Does nothing if no override is set.
      */
-    public suspend fun clearDisplayFeaturesOverride() {
+    public suspend fun clearDisplayFeaturesOverride(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Emulation.clearDisplayFeaturesOverride", parameter)
+        cdp.callCommand("Emulation.clearDisplayFeaturesOverride", parameter, mode)
     }
 
-    public suspend fun setScrollbarsHidden(args: SetScrollbarsHiddenParameter) {
+    public suspend fun setScrollbarsHidden(
+        args: SetScrollbarsHiddenParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setScrollbarsHidden", parameter)
+        cdp.callCommand("Emulation.setScrollbarsHidden", parameter, mode)
     }
 
     /**
@@ -311,9 +335,12 @@ public class Emulation(
         setScrollbarsHidden(parameter)
     }
 
-    public suspend fun setDocumentCookieDisabled(args: SetDocumentCookieDisabledParameter) {
+    public suspend fun setDocumentCookieDisabled(
+        args: SetDocumentCookieDisabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setDocumentCookieDisabled", parameter)
+        cdp.callCommand("Emulation.setDocumentCookieDisabled", parameter, mode)
     }
 
     /**
@@ -326,9 +353,12 @@ public class Emulation(
         setDocumentCookieDisabled(parameter)
     }
 
-    public suspend fun setEmitTouchEventsForMouse(args: SetEmitTouchEventsForMouseParameter) {
+    public suspend fun setEmitTouchEventsForMouse(
+        args: SetEmitTouchEventsForMouseParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setEmitTouchEventsForMouse", parameter)
+        cdp.callCommand("Emulation.setEmitTouchEventsForMouse", parameter, mode)
     }
 
     /**
@@ -345,9 +375,9 @@ public class Emulation(
     /**
      * Emulates the given media type or media feature for CSS media queries.
      */
-    public suspend fun setEmulatedMedia(args: SetEmulatedMediaParameter) {
+    public suspend fun setEmulatedMedia(args: SetEmulatedMediaParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setEmulatedMedia", parameter)
+        cdp.callCommand("Emulation.setEmulatedMedia", parameter, mode)
     }
 
     /**
@@ -364,9 +394,12 @@ public class Emulation(
     /**
      * Emulates the given vision deficiency.
      */
-    public suspend fun setEmulatedVisionDeficiency(args: SetEmulatedVisionDeficiencyParameter) {
+    public suspend fun setEmulatedVisionDeficiency(
+        args: SetEmulatedVisionDeficiencyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setEmulatedVisionDeficiency", parameter)
+        cdp.callCommand("Emulation.setEmulatedVisionDeficiency", parameter, mode)
     }
 
     /**
@@ -383,9 +416,12 @@ public class Emulation(
     /**
      * Emulates the given OS text scale.
      */
-    public suspend fun setEmulatedOSTextScale(args: SetEmulatedOSTextScaleParameter) {
+    public suspend fun setEmulatedOSTextScale(
+        args: SetEmulatedOSTextScaleParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setEmulatedOSTextScale", parameter)
+        cdp.callCommand("Emulation.setEmulatedOSTextScale", parameter, mode)
     }
 
     /**
@@ -402,9 +438,12 @@ public class Emulation(
      * Overrides the Geolocation Position or Error. Omitting latitude, longitude or
      * accuracy emulates position unavailable.
      */
-    public suspend fun setGeolocationOverride(args: SetGeolocationOverrideParameter) {
+    public suspend fun setGeolocationOverride(
+        args: SetGeolocationOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setGeolocationOverride", parameter)
+        cdp.callCommand("Emulation.setGeolocationOverride", parameter, mode)
     }
 
     /**
@@ -440,9 +479,12 @@ public class Emulation(
         setGeolocationOverride(parameter)
     }
 
-    public suspend fun getOverriddenSensorInformation(args: GetOverriddenSensorInformationParameter): GetOverriddenSensorInformationReturn {
+    public suspend fun getOverriddenSensorInformation(
+        args: GetOverriddenSensorInformationParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetOverriddenSensorInformationReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Emulation.getOverriddenSensorInformation", parameter)
+        val result = cdp.callCommand("Emulation.getOverriddenSensorInformation", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -463,9 +505,12 @@ public class Emulation(
      * sensor-backend Sensor objects will fire an error event and new calls to
      * Sensor.start() will attempt to use a real sensor instead.
      */
-    public suspend fun setSensorOverrideEnabled(args: SetSensorOverrideEnabledParameter) {
+    public suspend fun setSensorOverrideEnabled(
+        args: SetSensorOverrideEnabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setSensorOverrideEnabled", parameter)
+        cdp.callCommand("Emulation.setSensorOverrideEnabled", parameter, mode)
     }
 
     /**
@@ -492,9 +537,12 @@ public class Emulation(
      * Updates the sensor readings reported by a sensor type previously overridden
      * by setSensorOverrideEnabled.
      */
-    public suspend fun setSensorOverrideReadings(args: SetSensorOverrideReadingsParameter) {
+    public suspend fun setSensorOverrideReadings(
+        args: SetSensorOverrideReadingsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setSensorOverrideReadings", parameter)
+        cdp.callCommand("Emulation.setSensorOverrideReadings", parameter, mode)
     }
 
     /**
@@ -515,9 +563,12 @@ public class Emulation(
      * via setPressureStateOverride instead of being retrieved from
      * platform-provided telemetry data.
      */
-    public suspend fun setPressureSourceOverrideEnabled(args: SetPressureSourceOverrideEnabledParameter) {
+    public suspend fun setPressureSourceOverrideEnabled(
+        args: SetPressureSourceOverrideEnabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setPressureSourceOverrideEnabled", parameter)
+        cdp.callCommand("Emulation.setPressureSourceOverrideEnabled", parameter, mode)
     }
 
     /**
@@ -546,9 +597,12 @@ public class Emulation(
      * delivered to PressureObserver users. |source| must have been previously
      * overridden by setPressureSourceOverrideEnabled.
      */
-    public suspend fun setPressureStateOverride(args: SetPressureStateOverrideParameter) {
+    public suspend fun setPressureStateOverride(
+        args: SetPressureStateOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setPressureStateOverride", parameter)
+        cdp.callCommand("Emulation.setPressureStateOverride", parameter, mode)
     }
 
     /**
@@ -570,9 +624,12 @@ public class Emulation(
      * delivered to PressureObserver users. |source| must have been previously
      * overridden by setPressureSourceOverrideEnabled.
      */
-    public suspend fun setPressureDataOverride(args: SetPressureDataOverrideParameter) {
+    public suspend fun setPressureDataOverride(
+        args: SetPressureDataOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setPressureDataOverride", parameter)
+        cdp.callCommand("Emulation.setPressureDataOverride", parameter, mode)
     }
 
     /**
@@ -600,9 +657,9 @@ public class Emulation(
     /**
      * Overrides the Idle state.
      */
-    public suspend fun setIdleOverride(args: SetIdleOverrideParameter) {
+    public suspend fun setIdleOverride(args: SetIdleOverrideParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setIdleOverride", parameter)
+        cdp.callCommand("Emulation.setIdleOverride", parameter, mode)
     }
 
     /**
@@ -619,18 +676,21 @@ public class Emulation(
     /**
      * Clears Idle state overrides.
      */
-    public suspend fun clearIdleOverride() {
+    public suspend fun clearIdleOverride(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Emulation.clearIdleOverride", parameter)
+        cdp.callCommand("Emulation.clearIdleOverride", parameter, mode)
     }
 
     /**
      * Overrides value returned by the javascript navigator object.
      */
     @Deprecated(message = "")
-    public suspend fun setNavigatorOverrides(args: SetNavigatorOverridesParameter) {
+    public suspend fun setNavigatorOverrides(
+        args: SetNavigatorOverridesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setNavigatorOverrides", parameter)
+        cdp.callCommand("Emulation.setNavigatorOverrides", parameter, mode)
     }
 
     /**
@@ -647,9 +707,9 @@ public class Emulation(
     /**
      * Sets a specified page scale factor.
      */
-    public suspend fun setPageScaleFactor(args: SetPageScaleFactorParameter) {
+    public suspend fun setPageScaleFactor(args: SetPageScaleFactorParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setPageScaleFactor", parameter)
+        cdp.callCommand("Emulation.setPageScaleFactor", parameter, mode)
     }
 
     /**
@@ -665,9 +725,12 @@ public class Emulation(
     /**
      * Switches script execution in the page.
      */
-    public suspend fun setScriptExecutionDisabled(args: SetScriptExecutionDisabledParameter) {
+    public suspend fun setScriptExecutionDisabled(
+        args: SetScriptExecutionDisabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setScriptExecutionDisabled", parameter)
+        cdp.callCommand("Emulation.setScriptExecutionDisabled", parameter, mode)
     }
 
     /**
@@ -683,9 +746,12 @@ public class Emulation(
     /**
      * Enables touch on platforms which do not support them.
      */
-    public suspend fun setTouchEmulationEnabled(args: SetTouchEmulationEnabledParameter) {
+    public suspend fun setTouchEmulationEnabled(
+        args: SetTouchEmulationEnabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setTouchEmulationEnabled", parameter)
+        cdp.callCommand("Emulation.setTouchEmulationEnabled", parameter, mode)
     }
 
     /**
@@ -703,9 +769,12 @@ public class Emulation(
      * Turns on virtual time for all frames (replacing real-time with a synthetic time source) and sets
      * the current virtual time policy.  Note this supersedes any previous time budget.
      */
-    public suspend fun setVirtualTimePolicy(args: SetVirtualTimePolicyParameter): SetVirtualTimePolicyReturn {
+    public suspend fun setVirtualTimePolicy(
+        args: SetVirtualTimePolicyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetVirtualTimePolicyReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Emulation.setVirtualTimePolicy", parameter)
+        val result = cdp.callCommand("Emulation.setVirtualTimePolicy", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -738,9 +807,9 @@ public class Emulation(
     /**
      * Overrides default host system locale with the specified one.
      */
-    public suspend fun setLocaleOverride(args: SetLocaleOverrideParameter) {
+    public suspend fun setLocaleOverride(args: SetLocaleOverrideParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setLocaleOverride", parameter)
+        cdp.callCommand("Emulation.setLocaleOverride", parameter, mode)
     }
 
     /**
@@ -757,9 +826,12 @@ public class Emulation(
     /**
      * Overrides default host system timezone with the specified one.
      */
-    public suspend fun setTimezoneOverride(args: SetTimezoneOverrideParameter) {
+    public suspend fun setTimezoneOverride(
+        args: SetTimezoneOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setTimezoneOverride", parameter)
+        cdp.callCommand("Emulation.setTimezoneOverride", parameter, mode)
     }
 
     /**
@@ -780,9 +852,9 @@ public class Emulation(
      * on Android.
      */
     @Deprecated(message = "")
-    public suspend fun setVisibleSize(args: SetVisibleSizeParameter) {
+    public suspend fun setVisibleSize(args: SetVisibleSizeParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setVisibleSize", parameter)
+        cdp.callCommand("Emulation.setVisibleSize", parameter, mode)
     }
 
     /**
@@ -799,9 +871,12 @@ public class Emulation(
         setVisibleSize(parameter)
     }
 
-    public suspend fun setDisabledImageTypes(args: SetDisabledImageTypesParameter) {
+    public suspend fun setDisabledImageTypes(
+        args: SetDisabledImageTypesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setDisabledImageTypes", parameter)
+        cdp.callCommand("Emulation.setDisabledImageTypes", parameter, mode)
     }
 
     /**
@@ -814,9 +889,12 @@ public class Emulation(
         setDisabledImageTypes(parameter)
     }
 
-    public suspend fun setHardwareConcurrencyOverride(args: SetHardwareConcurrencyOverrideParameter) {
+    public suspend fun setHardwareConcurrencyOverride(
+        args: SetHardwareConcurrencyOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setHardwareConcurrencyOverride", parameter)
+        cdp.callCommand("Emulation.setHardwareConcurrencyOverride", parameter, mode)
     }
 
     /**
@@ -833,9 +911,12 @@ public class Emulation(
      * Allows overriding user agent with the given string.
      * `userAgentMetadata` must be set for Client Hint headers to be sent.
      */
-    public suspend fun setUserAgentOverride(args: SetUserAgentOverrideParameter) {
+    public suspend fun setUserAgentOverride(
+        args: SetUserAgentOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setUserAgentOverride", parameter)
+        cdp.callCommand("Emulation.setUserAgentOverride", parameter, mode)
     }
 
     /**
@@ -865,9 +946,12 @@ public class Emulation(
     /**
      * Allows overriding the automation flag.
      */
-    public suspend fun setAutomationOverride(args: SetAutomationOverrideParameter) {
+    public suspend fun setAutomationOverride(
+        args: SetAutomationOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setAutomationOverride", parameter)
+        cdp.callCommand("Emulation.setAutomationOverride", parameter, mode)
     }
 
     /**
@@ -884,9 +968,12 @@ public class Emulation(
      * Allows overriding the difference between the small and large viewport sizes, which determine the
      * value of the `svh` and `lvh` unit, respectively. Only supported for top-level frames.
      */
-    public suspend fun setSmallViewportHeightDifferenceOverride(args: SetSmallViewportHeightDifferenceOverrideParameter) {
+    public suspend fun setSmallViewportHeightDifferenceOverride(
+        args: SetSmallViewportHeightDifferenceOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Emulation.setSmallViewportHeightDifferenceOverride", parameter)
+        cdp.callCommand("Emulation.setSmallViewportHeightDifferenceOverride", parameter, mode)
     }
 
     /**

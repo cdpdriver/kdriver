@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -21,17 +18,17 @@ public class DOMSnapshot(
     /**
      * Disables DOM snapshot agent for the given page.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOMSnapshot.disable", parameter)
+        cdp.callCommand("DOMSnapshot.disable", parameter, mode)
     }
 
     /**
      * Enables DOM snapshot agent for the given page.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DOMSnapshot.enable", parameter)
+        cdp.callCommand("DOMSnapshot.enable", parameter, mode)
     }
 
     /**
@@ -41,9 +38,12 @@ public class DOMSnapshot(
      * flattened.
      */
     @Deprecated(message = "")
-    public suspend fun getSnapshot(args: GetSnapshotParameter): GetSnapshotReturn {
+    public suspend fun getSnapshot(
+        args: GetSnapshotParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetSnapshotReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOMSnapshot.getSnapshot", parameter)
+        val result = cdp.callCommand("DOMSnapshot.getSnapshot", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -80,9 +80,12 @@ public class DOMSnapshot(
      * white-listed computed style information for the nodes. Shadow DOM in the returned DOM tree is
      * flattened.
      */
-    public suspend fun captureSnapshot(args: CaptureSnapshotParameter): CaptureSnapshotReturn {
+    public suspend fun captureSnapshot(
+        args: CaptureSnapshotParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CaptureSnapshotReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOMSnapshot.captureSnapshot", parameter)
+        val result = cdp.callCommand("DOMSnapshot.captureSnapshot", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

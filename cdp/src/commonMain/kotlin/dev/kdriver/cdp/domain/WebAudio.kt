@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -157,25 +154,28 @@ public class WebAudio(
     /**
      * Enables the WebAudio domain and starts sending context lifetime events.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("WebAudio.enable", parameter)
+        cdp.callCommand("WebAudio.enable", parameter, mode)
     }
 
     /**
      * Disables the WebAudio domain.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("WebAudio.disable", parameter)
+        cdp.callCommand("WebAudio.disable", parameter, mode)
     }
 
     /**
      * Fetch the realtime data from the registered contexts.
      */
-    public suspend fun getRealtimeData(args: GetRealtimeDataParameter): GetRealtimeDataReturn {
+    public suspend fun getRealtimeData(
+        args: GetRealtimeDataParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetRealtimeDataReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("WebAudio.getRealtimeData", parameter)
+        val result = cdp.callCommand("WebAudio.getRealtimeData", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

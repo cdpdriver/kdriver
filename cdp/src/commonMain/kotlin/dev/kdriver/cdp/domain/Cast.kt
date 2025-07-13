@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -52,9 +49,9 @@ public class Cast(
      * Also starts observing for issue messages. When an issue is added or removed,
      * an |issueUpdated| event is fired.
      */
-    public suspend fun enable(args: EnableParameter) {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Cast.enable", parameter)
+        cdp.callCommand("Cast.enable", parameter, mode)
     }
 
     /**
@@ -74,18 +71,18 @@ public class Cast(
     /**
      * Stops observing for sinks and issues.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Cast.disable", parameter)
+        cdp.callCommand("Cast.disable", parameter, mode)
     }
 
     /**
      * Sets a sink to be used when the web page requests the browser to choose a
      * sink via Presentation API, Remote Playback API, or Cast SDK.
      */
-    public suspend fun setSinkToUse(args: SetSinkToUseParameter) {
+    public suspend fun setSinkToUse(args: SetSinkToUseParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Cast.setSinkToUse", parameter)
+        cdp.callCommand("Cast.setSinkToUse", parameter, mode)
     }
 
     /**
@@ -102,9 +99,12 @@ public class Cast(
     /**
      * Starts mirroring the desktop to the sink.
      */
-    public suspend fun startDesktopMirroring(args: StartDesktopMirroringParameter) {
+    public suspend fun startDesktopMirroring(
+        args: StartDesktopMirroringParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Cast.startDesktopMirroring", parameter)
+        cdp.callCommand("Cast.startDesktopMirroring", parameter, mode)
     }
 
     /**
@@ -120,9 +120,9 @@ public class Cast(
     /**
      * Starts mirroring the tab to the sink.
      */
-    public suspend fun startTabMirroring(args: StartTabMirroringParameter) {
+    public suspend fun startTabMirroring(args: StartTabMirroringParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Cast.startTabMirroring", parameter)
+        cdp.callCommand("Cast.startTabMirroring", parameter, mode)
     }
 
     /**
@@ -138,9 +138,9 @@ public class Cast(
     /**
      * Stops the active Cast session on the sink.
      */
-    public suspend fun stopCasting(args: StopCastingParameter) {
+    public suspend fun stopCasting(args: StopCastingParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Cast.stopCasting", parameter)
+        cdp.callCommand("Cast.stopCasting", parameter, mode)
     }
 
     /**

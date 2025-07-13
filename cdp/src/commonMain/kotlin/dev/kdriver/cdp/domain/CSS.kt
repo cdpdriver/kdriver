@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -91,9 +88,9 @@ public class CSS(
      * Inserts a new rule with the given `ruleText` in a stylesheet with given `styleSheetId`, at the
      * position specified by `location`.
      */
-    public suspend fun addRule(args: AddRuleParameter): AddRuleReturn {
+    public suspend fun addRule(args: AddRuleParameter, mode: CommandMode = CommandMode.DEFAULT): AddRuleReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.addRule", parameter)
+        val result = cdp.callCommand("CSS.addRule", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -126,9 +123,12 @@ public class CSS(
     /**
      * Returns all class names from specified stylesheet.
      */
-    public suspend fun collectClassNames(args: CollectClassNamesParameter): CollectClassNamesReturn {
+    public suspend fun collectClassNames(
+        args: CollectClassNamesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CollectClassNamesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.collectClassNames", parameter)
+        val result = cdp.callCommand("CSS.collectClassNames", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -145,9 +145,12 @@ public class CSS(
     /**
      * Creates a new special "via-inspector" stylesheet in the frame with given `frameId`.
      */
-    public suspend fun createStyleSheet(args: CreateStyleSheetParameter): CreateStyleSheetReturn {
+    public suspend fun createStyleSheet(
+        args: CreateStyleSheetParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CreateStyleSheetReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.createStyleSheet", parameter)
+        val result = cdp.callCommand("CSS.createStyleSheet", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -168,27 +171,27 @@ public class CSS(
     /**
      * Disables the CSS agent for the given page.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("CSS.disable", parameter)
+        cdp.callCommand("CSS.disable", parameter, mode)
     }
 
     /**
      * Enables the CSS agent for the given page. Clients should not assume that the CSS agent has been
      * enabled until the result of this command is received.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("CSS.enable", parameter)
+        cdp.callCommand("CSS.enable", parameter, mode)
     }
 
     /**
      * Ensures that the given node will have specified pseudo-classes whenever its style is computed by
      * the browser.
      */
-    public suspend fun forcePseudoState(args: ForcePseudoStateParameter) {
+    public suspend fun forcePseudoState(args: ForcePseudoStateParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("CSS.forcePseudoState", parameter)
+        cdp.callCommand("CSS.forcePseudoState", parameter, mode)
     }
 
     /**
@@ -206,9 +209,9 @@ public class CSS(
     /**
      * Ensures that the given node is in its starting-style state.
      */
-    public suspend fun forceStartingStyle(args: ForceStartingStyleParameter) {
+    public suspend fun forceStartingStyle(args: ForceStartingStyleParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("CSS.forceStartingStyle", parameter)
+        cdp.callCommand("CSS.forceStartingStyle", parameter, mode)
     }
 
     /**
@@ -222,9 +225,12 @@ public class CSS(
         forceStartingStyle(parameter)
     }
 
-    public suspend fun getBackgroundColors(args: GetBackgroundColorsParameter): GetBackgroundColorsReturn {
+    public suspend fun getBackgroundColors(
+        args: GetBackgroundColorsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetBackgroundColorsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.getBackgroundColors", parameter)
+        val result = cdp.callCommand("CSS.getBackgroundColors", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -241,9 +247,12 @@ public class CSS(
     /**
      * Returns the computed style for a DOM node identified by `nodeId`.
      */
-    public suspend fun getComputedStyleForNode(args: GetComputedStyleForNodeParameter): GetComputedStyleForNodeReturn {
+    public suspend fun getComputedStyleForNode(
+        args: GetComputedStyleForNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetComputedStyleForNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.getComputedStyleForNode", parameter)
+        val result = cdp.callCommand("CSS.getComputedStyleForNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -268,9 +277,12 @@ public class CSS(
      * syntax as if null `propertyName` was provided. If the value cannot be
      * resolved even then, return the provided value without any changes.
      */
-    public suspend fun resolveValues(args: ResolveValuesParameter): ResolveValuesReturn {
+    public suspend fun resolveValues(
+        args: ResolveValuesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): ResolveValuesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.resolveValues", parameter)
+        val result = cdp.callCommand("CSS.resolveValues", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -310,9 +322,12 @@ public class CSS(
         return resolveValues(parameter)
     }
 
-    public suspend fun getLonghandProperties(args: GetLonghandPropertiesParameter): GetLonghandPropertiesReturn {
+    public suspend fun getLonghandProperties(
+        args: GetLonghandPropertiesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetLonghandPropertiesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.getLonghandProperties", parameter)
+        val result = cdp.callCommand("CSS.getLonghandProperties", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -331,9 +346,12 @@ public class CSS(
      * Returns the styles defined inline (explicitly in the "style" attribute and implicitly, using DOM
      * attributes) for a DOM node identified by `nodeId`.
      */
-    public suspend fun getInlineStylesForNode(args: GetInlineStylesForNodeParameter): GetInlineStylesForNodeReturn {
+    public suspend fun getInlineStylesForNode(
+        args: GetInlineStylesForNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetInlineStylesForNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.getInlineStylesForNode", parameter)
+        val result = cdp.callCommand("CSS.getInlineStylesForNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -352,9 +370,12 @@ public class CSS(
      * Returns the styles coming from animations & transitions
      * including the animation & transition styles coming from inheritance chain.
      */
-    public suspend fun getAnimatedStylesForNode(args: GetAnimatedStylesForNodeParameter): GetAnimatedStylesForNodeReturn {
+    public suspend fun getAnimatedStylesForNode(
+        args: GetAnimatedStylesForNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetAnimatedStylesForNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.getAnimatedStylesForNode", parameter)
+        val result = cdp.callCommand("CSS.getAnimatedStylesForNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -372,9 +393,12 @@ public class CSS(
     /**
      * Returns requested styles for a DOM node identified by `nodeId`.
      */
-    public suspend fun getMatchedStylesForNode(args: GetMatchedStylesForNodeParameter): GetMatchedStylesForNodeReturn {
+    public suspend fun getMatchedStylesForNode(
+        args: GetMatchedStylesForNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetMatchedStylesForNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.getMatchedStylesForNode", parameter)
+        val result = cdp.callCommand("CSS.getMatchedStylesForNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -391,9 +415,9 @@ public class CSS(
     /**
      * Returns all media queries parsed by the rendering engine.
      */
-    public suspend fun getMediaQueries(): GetMediaQueriesReturn {
+    public suspend fun getMediaQueries(mode: CommandMode = CommandMode.DEFAULT): GetMediaQueriesReturn {
         val parameter = null
-        val result = cdp.callCommand("CSS.getMediaQueries", parameter)
+        val result = cdp.callCommand("CSS.getMediaQueries", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -401,9 +425,12 @@ public class CSS(
      * Requests information about platform fonts which we used to render child TextNodes in the given
      * node.
      */
-    public suspend fun getPlatformFontsForNode(args: GetPlatformFontsForNodeParameter): GetPlatformFontsForNodeReturn {
+    public suspend fun getPlatformFontsForNode(
+        args: GetPlatformFontsForNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetPlatformFontsForNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.getPlatformFontsForNode", parameter)
+        val result = cdp.callCommand("CSS.getPlatformFontsForNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -421,9 +448,12 @@ public class CSS(
     /**
      * Returns the current textual content for a stylesheet.
      */
-    public suspend fun getStyleSheetText(args: GetStyleSheetTextParameter): GetStyleSheetTextReturn {
+    public suspend fun getStyleSheetText(
+        args: GetStyleSheetTextParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetStyleSheetTextReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.getStyleSheetText", parameter)
+        val result = cdp.callCommand("CSS.getStyleSheetText", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -443,9 +473,12 @@ public class CSS(
      * layer for the nearest ancestor document or shadow root. The layer root contains
      * the full layer tree for the tree scope and their ordering.
      */
-    public suspend fun getLayersForNode(args: GetLayersForNodeParameter): GetLayersForNodeReturn {
+    public suspend fun getLayersForNode(
+        args: GetLayersForNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetLayersForNodeReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.getLayersForNode", parameter)
+        val result = cdp.callCommand("CSS.getLayersForNode", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -466,9 +499,12 @@ public class CSS(
      * Given a CSS selector text and a style sheet ID, getLocationForSelector
      * returns an array of locations of the CSS selector in the style sheet.
      */
-    public suspend fun getLocationForSelector(args: GetLocationForSelectorParameter): GetLocationForSelectorReturn {
+    public suspend fun getLocationForSelector(
+        args: GetLocationForSelectorParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetLocationForSelectorReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.getLocationForSelector", parameter)
+        val result = cdp.callCommand("CSS.getLocationForSelector", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -495,9 +531,12 @@ public class CSS(
      * so passing a new node id removes tracking from the previous node.
      * Pass `undefined` to disable tracking.
      */
-    public suspend fun trackComputedStyleUpdatesForNode(args: TrackComputedStyleUpdatesForNodeParameter) {
+    public suspend fun trackComputedStyleUpdatesForNode(
+        args: TrackComputedStyleUpdatesForNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("CSS.trackComputedStyleUpdatesForNode", parameter)
+        cdp.callCommand("CSS.trackComputedStyleUpdatesForNode", parameter, mode)
     }
 
     /**
@@ -523,9 +562,12 @@ public class CSS(
      * by the DOM agent. If no changes to the tracked properties occur after the node has been pushed
      * to the front-end, no updates will be issued for the node.
      */
-    public suspend fun trackComputedStyleUpdates(args: TrackComputedStyleUpdatesParameter) {
+    public suspend fun trackComputedStyleUpdates(
+        args: TrackComputedStyleUpdatesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("CSS.trackComputedStyleUpdates", parameter)
+        cdp.callCommand("CSS.trackComputedStyleUpdates", parameter, mode)
     }
 
     /**
@@ -546,9 +588,9 @@ public class CSS(
     /**
      * Polls the next batch of computed style updates.
      */
-    public suspend fun takeComputedStyleUpdates(): TakeComputedStyleUpdatesReturn {
+    public suspend fun takeComputedStyleUpdates(mode: CommandMode = CommandMode.DEFAULT): TakeComputedStyleUpdatesReturn {
         val parameter = null
-        val result = cdp.callCommand("CSS.takeComputedStyleUpdates", parameter)
+        val result = cdp.callCommand("CSS.takeComputedStyleUpdates", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -556,9 +598,12 @@ public class CSS(
      * Find a rule with the given active property for the given node and set the new value for this
      * property
      */
-    public suspend fun setEffectivePropertyValueForNode(args: SetEffectivePropertyValueForNodeParameter) {
+    public suspend fun setEffectivePropertyValueForNode(
+        args: SetEffectivePropertyValueForNodeParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("CSS.setEffectivePropertyValueForNode", parameter)
+        cdp.callCommand("CSS.setEffectivePropertyValueForNode", parameter, mode)
     }
 
     /**
@@ -582,9 +627,12 @@ public class CSS(
     /**
      * Modifies the property rule property name.
      */
-    public suspend fun setPropertyRulePropertyName(args: SetPropertyRulePropertyNameParameter): SetPropertyRulePropertyNameReturn {
+    public suspend fun setPropertyRulePropertyName(
+        args: SetPropertyRulePropertyNameParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetPropertyRulePropertyNameReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.setPropertyRulePropertyName", parameter)
+        val result = cdp.callCommand("CSS.setPropertyRulePropertyName", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -611,9 +659,12 @@ public class CSS(
     /**
      * Modifies the keyframe rule key text.
      */
-    public suspend fun setKeyframeKey(args: SetKeyframeKeyParameter): SetKeyframeKeyReturn {
+    public suspend fun setKeyframeKey(
+        args: SetKeyframeKeyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetKeyframeKeyReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.setKeyframeKey", parameter)
+        val result = cdp.callCommand("CSS.setKeyframeKey", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -636,9 +687,12 @@ public class CSS(
     /**
      * Modifies the rule selector.
      */
-    public suspend fun setMediaText(args: SetMediaTextParameter): SetMediaTextReturn {
+    public suspend fun setMediaText(
+        args: SetMediaTextParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetMediaTextReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.setMediaText", parameter)
+        val result = cdp.callCommand("CSS.setMediaText", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -661,9 +715,12 @@ public class CSS(
     /**
      * Modifies the expression of a container query.
      */
-    public suspend fun setContainerQueryText(args: SetContainerQueryTextParameter): SetContainerQueryTextReturn {
+    public suspend fun setContainerQueryText(
+        args: SetContainerQueryTextParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetContainerQueryTextReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.setContainerQueryText", parameter)
+        val result = cdp.callCommand("CSS.setContainerQueryText", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -686,9 +743,12 @@ public class CSS(
     /**
      * Modifies the expression of a supports at-rule.
      */
-    public suspend fun setSupportsText(args: SetSupportsTextParameter): SetSupportsTextReturn {
+    public suspend fun setSupportsText(
+        args: SetSupportsTextParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetSupportsTextReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.setSupportsText", parameter)
+        val result = cdp.callCommand("CSS.setSupportsText", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -711,9 +771,12 @@ public class CSS(
     /**
      * Modifies the expression of a scope at-rule.
      */
-    public suspend fun setScopeText(args: SetScopeTextParameter): SetScopeTextReturn {
+    public suspend fun setScopeText(
+        args: SetScopeTextParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetScopeTextReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.setScopeText", parameter)
+        val result = cdp.callCommand("CSS.setScopeText", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -736,9 +799,12 @@ public class CSS(
     /**
      * Modifies the rule selector.
      */
-    public suspend fun setRuleSelector(args: SetRuleSelectorParameter): SetRuleSelectorReturn {
+    public suspend fun setRuleSelector(
+        args: SetRuleSelectorParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetRuleSelectorReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.setRuleSelector", parameter)
+        val result = cdp.callCommand("CSS.setRuleSelector", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -761,9 +827,12 @@ public class CSS(
     /**
      * Sets the new stylesheet text.
      */
-    public suspend fun setStyleSheetText(args: SetStyleSheetTextParameter): SetStyleSheetTextReturn {
+    public suspend fun setStyleSheetText(
+        args: SetStyleSheetTextParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetStyleSheetTextReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.setStyleSheetText", parameter)
+        val result = cdp.callCommand("CSS.setStyleSheetText", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -781,9 +850,12 @@ public class CSS(
     /**
      * Applies specified style edits one after another in the given order.
      */
-    public suspend fun setStyleTexts(args: SetStyleTextsParameter): SetStyleTextsReturn {
+    public suspend fun setStyleTexts(
+        args: SetStyleTextsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetStyleTextsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("CSS.setStyleTexts", parameter)
+        val result = cdp.callCommand("CSS.setStyleTexts", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -807,18 +879,18 @@ public class CSS(
     /**
      * Enables the selector recording.
      */
-    public suspend fun startRuleUsageTracking() {
+    public suspend fun startRuleUsageTracking(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("CSS.startRuleUsageTracking", parameter)
+        cdp.callCommand("CSS.startRuleUsageTracking", parameter, mode)
     }
 
     /**
      * Stop tracking rule usage and return the list of rules that were used since last call to
      * `takeCoverageDelta` (or since start of coverage instrumentation).
      */
-    public suspend fun stopRuleUsageTracking(): StopRuleUsageTrackingReturn {
+    public suspend fun stopRuleUsageTracking(mode: CommandMode = CommandMode.DEFAULT): StopRuleUsageTrackingReturn {
         val parameter = null
-        val result = cdp.callCommand("CSS.stopRuleUsageTracking", parameter)
+        val result = cdp.callCommand("CSS.stopRuleUsageTracking", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -826,18 +898,21 @@ public class CSS(
      * Obtain list of rules that became used since last call to this method (or since start of coverage
      * instrumentation).
      */
-    public suspend fun takeCoverageDelta(): TakeCoverageDeltaReturn {
+    public suspend fun takeCoverageDelta(mode: CommandMode = CommandMode.DEFAULT): TakeCoverageDeltaReturn {
         val parameter = null
-        val result = cdp.callCommand("CSS.takeCoverageDelta", parameter)
+        val result = cdp.callCommand("CSS.takeCoverageDelta", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
      * Enables/disables rendering of local CSS fonts (enabled by default).
      */
-    public suspend fun setLocalFontsEnabled(args: SetLocalFontsEnabledParameter) {
+    public suspend fun setLocalFontsEnabled(
+        args: SetLocalFontsEnabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("CSS.setLocalFontsEnabled", parameter)
+        cdp.callCommand("CSS.setLocalFontsEnabled", parameter, mode)
     }
 
     /**

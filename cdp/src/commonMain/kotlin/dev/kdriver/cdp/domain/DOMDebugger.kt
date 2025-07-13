@@ -1,18 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Deprecated
-import kotlin.Int
-import kotlin.String
-import kotlin.collections.List
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
+import dev.kdriver.cdp.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -31,9 +20,12 @@ public class DOMDebugger(
     /**
      * Returns event listeners of the given object.
      */
-    public suspend fun getEventListeners(args: GetEventListenersParameter): GetEventListenersReturn {
+    public suspend fun getEventListeners(
+        args: GetEventListenersParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetEventListenersReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("DOMDebugger.getEventListeners", parameter)
+        val result = cdp.callCommand("DOMDebugger.getEventListeners", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -58,9 +50,12 @@ public class DOMDebugger(
     /**
      * Removes DOM breakpoint that was set using `setDOMBreakpoint`.
      */
-    public suspend fun removeDOMBreakpoint(args: RemoveDOMBreakpointParameter) {
+    public suspend fun removeDOMBreakpoint(
+        args: RemoveDOMBreakpointParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMDebugger.removeDOMBreakpoint", parameter)
+        cdp.callCommand("DOMDebugger.removeDOMBreakpoint", parameter, mode)
     }
 
     /**
@@ -77,9 +72,12 @@ public class DOMDebugger(
     /**
      * Removes breakpoint on particular DOM event.
      */
-    public suspend fun removeEventListenerBreakpoint(args: RemoveEventListenerBreakpointParameter) {
+    public suspend fun removeEventListenerBreakpoint(
+        args: RemoveEventListenerBreakpointParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMDebugger.removeEventListenerBreakpoint", parameter)
+        cdp.callCommand("DOMDebugger.removeEventListenerBreakpoint", parameter, mode)
     }
 
     /**
@@ -97,9 +95,12 @@ public class DOMDebugger(
      * Removes breakpoint on particular native event.
      */
     @Deprecated(message = "")
-    public suspend fun removeInstrumentationBreakpoint(args: RemoveInstrumentationBreakpointParameter) {
+    public suspend fun removeInstrumentationBreakpoint(
+        args: RemoveInstrumentationBreakpointParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMDebugger.removeInstrumentationBreakpoint", parameter)
+        cdp.callCommand("DOMDebugger.removeInstrumentationBreakpoint", parameter, mode)
     }
 
     /**
@@ -116,9 +117,12 @@ public class DOMDebugger(
     /**
      * Removes breakpoint from XMLHttpRequest.
      */
-    public suspend fun removeXHRBreakpoint(args: RemoveXHRBreakpointParameter) {
+    public suspend fun removeXHRBreakpoint(
+        args: RemoveXHRBreakpointParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMDebugger.removeXHRBreakpoint", parameter)
+        cdp.callCommand("DOMDebugger.removeXHRBreakpoint", parameter, mode)
     }
 
     /**
@@ -134,9 +138,12 @@ public class DOMDebugger(
     /**
      * Sets breakpoint on particular CSP violations.
      */
-    public suspend fun setBreakOnCSPViolation(args: SetBreakOnCSPViolationParameter) {
+    public suspend fun setBreakOnCSPViolation(
+        args: SetBreakOnCSPViolationParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMDebugger.setBreakOnCSPViolation", parameter)
+        cdp.callCommand("DOMDebugger.setBreakOnCSPViolation", parameter, mode)
     }
 
     /**
@@ -152,9 +159,9 @@ public class DOMDebugger(
     /**
      * Sets breakpoint on particular operation with DOM.
      */
-    public suspend fun setDOMBreakpoint(args: SetDOMBreakpointParameter) {
+    public suspend fun setDOMBreakpoint(args: SetDOMBreakpointParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMDebugger.setDOMBreakpoint", parameter)
+        cdp.callCommand("DOMDebugger.setDOMBreakpoint", parameter, mode)
     }
 
     /**
@@ -171,9 +178,12 @@ public class DOMDebugger(
     /**
      * Sets breakpoint on particular DOM event.
      */
-    public suspend fun setEventListenerBreakpoint(args: SetEventListenerBreakpointParameter) {
+    public suspend fun setEventListenerBreakpoint(
+        args: SetEventListenerBreakpointParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMDebugger.setEventListenerBreakpoint", parameter)
+        cdp.callCommand("DOMDebugger.setEventListenerBreakpoint", parameter, mode)
     }
 
     /**
@@ -192,9 +202,12 @@ public class DOMDebugger(
      * Sets breakpoint on particular native event.
      */
     @Deprecated(message = "")
-    public suspend fun setInstrumentationBreakpoint(args: SetInstrumentationBreakpointParameter) {
+    public suspend fun setInstrumentationBreakpoint(
+        args: SetInstrumentationBreakpointParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMDebugger.setInstrumentationBreakpoint", parameter)
+        cdp.callCommand("DOMDebugger.setInstrumentationBreakpoint", parameter, mode)
     }
 
     /**
@@ -211,9 +224,9 @@ public class DOMDebugger(
     /**
      * Sets breakpoint on XMLHttpRequest.
      */
-    public suspend fun setXHRBreakpoint(args: SetXHRBreakpointParameter) {
+    public suspend fun setXHRBreakpoint(args: SetXHRBreakpointParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DOMDebugger.setXHRBreakpoint", parameter)
+        cdp.callCommand("DOMDebugger.setXHRBreakpoint", parameter, mode)
     }
 
     /**
@@ -233,8 +246,10 @@ public class DOMDebugger(
     public enum class DOMBreakpointType {
         @SerialName("subtree-modified")
         SUBTREE_MODIFIED,
+
         @SerialName("attribute-modified")
         ATTRIBUTE_MODIFIED,
+
         @SerialName("node-removed")
         NODE_REMOVED,
     }
@@ -246,6 +261,7 @@ public class DOMDebugger(
     public enum class CSPViolationType {
         @SerialName("trustedtype-sink-violation")
         TRUSTEDTYPE_SINK_VIOLATION,
+
         @SerialName("trustedtype-policy-violation")
         TRUSTEDTYPE_POLICY_VIOLATION,
     }

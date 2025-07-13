@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -37,9 +34,12 @@ public class LayerTree(
     /**
      * Provides the reasons why the given layer was composited.
      */
-    public suspend fun compositingReasons(args: CompositingReasonsParameter): CompositingReasonsReturn {
+    public suspend fun compositingReasons(
+        args: CompositingReasonsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CompositingReasonsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("LayerTree.compositingReasons", parameter)
+        val result = cdp.callCommand("LayerTree.compositingReasons", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -56,25 +56,28 @@ public class LayerTree(
     /**
      * Disables compositing tree inspection.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("LayerTree.disable", parameter)
+        cdp.callCommand("LayerTree.disable", parameter, mode)
     }
 
     /**
      * Enables compositing tree inspection.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("LayerTree.enable", parameter)
+        cdp.callCommand("LayerTree.enable", parameter, mode)
     }
 
     /**
      * Returns the snapshot identifier.
      */
-    public suspend fun loadSnapshot(args: LoadSnapshotParameter): LoadSnapshotReturn {
+    public suspend fun loadSnapshot(
+        args: LoadSnapshotParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): LoadSnapshotReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("LayerTree.loadSnapshot", parameter)
+        val result = cdp.callCommand("LayerTree.loadSnapshot", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -91,9 +94,12 @@ public class LayerTree(
     /**
      * Returns the layer snapshot identifier.
      */
-    public suspend fun makeSnapshot(args: MakeSnapshotParameter): MakeSnapshotReturn {
+    public suspend fun makeSnapshot(
+        args: MakeSnapshotParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): MakeSnapshotReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("LayerTree.makeSnapshot", parameter)
+        val result = cdp.callCommand("LayerTree.makeSnapshot", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -107,9 +113,12 @@ public class LayerTree(
         return makeSnapshot(parameter)
     }
 
-    public suspend fun profileSnapshot(args: ProfileSnapshotParameter): ProfileSnapshotReturn {
+    public suspend fun profileSnapshot(
+        args: ProfileSnapshotParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): ProfileSnapshotReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("LayerTree.profileSnapshot", parameter)
+        val result = cdp.callCommand("LayerTree.profileSnapshot", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -139,9 +148,9 @@ public class LayerTree(
     /**
      * Releases layer snapshot captured by the back-end.
      */
-    public suspend fun releaseSnapshot(args: ReleaseSnapshotParameter) {
+    public suspend fun releaseSnapshot(args: ReleaseSnapshotParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("LayerTree.releaseSnapshot", parameter)
+        cdp.callCommand("LayerTree.releaseSnapshot", parameter, mode)
     }
 
     /**
@@ -157,9 +166,12 @@ public class LayerTree(
     /**
      * Replays the layer snapshot and returns the resulting bitmap.
      */
-    public suspend fun replaySnapshot(args: ReplaySnapshotParameter): ReplaySnapshotReturn {
+    public suspend fun replaySnapshot(
+        args: ReplaySnapshotParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): ReplaySnapshotReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("LayerTree.replaySnapshot", parameter)
+        val result = cdp.callCommand("LayerTree.replaySnapshot", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -185,9 +197,12 @@ public class LayerTree(
     /**
      * Replays the layer snapshot and returns canvas log.
      */
-    public suspend fun snapshotCommandLog(args: SnapshotCommandLogParameter): SnapshotCommandLogReturn {
+    public suspend fun snapshotCommandLog(
+        args: SnapshotCommandLogParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SnapshotCommandLogReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("LayerTree.snapshotCommandLog", parameter)
+        val result = cdp.callCommand("LayerTree.snapshotCommandLog", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

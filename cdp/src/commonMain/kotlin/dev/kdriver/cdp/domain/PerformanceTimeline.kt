@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -37,9 +34,9 @@ public class PerformanceTimeline(
      * Previously buffered events would be reported before method returns.
      * See also: timelineEventAdded
      */
-    public suspend fun enable(args: EnableParameter) {
+    public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("PerformanceTimeline.enable", parameter)
+        cdp.callCommand("PerformanceTimeline.enable", parameter, mode)
     }
 
     /**

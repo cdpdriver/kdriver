@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -111,9 +108,12 @@ public class Runtime(
     /**
      * Add handler to promise with given promise object id.
      */
-    public suspend fun awaitPromise(args: AwaitPromiseParameter): AwaitPromiseReturn {
+    public suspend fun awaitPromise(
+        args: AwaitPromiseParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): AwaitPromiseReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Runtime.awaitPromise", parameter)
+        val result = cdp.callCommand("Runtime.awaitPromise", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -141,9 +141,12 @@ public class Runtime(
      * Calls function with given declaration on the given object. Object group of the result is
      * inherited from the target object.
      */
-    public suspend fun callFunctionOn(args: CallFunctionOnParameter): CallFunctionOnReturn {
+    public suspend fun callFunctionOn(
+        args: CallFunctionOnParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CallFunctionOnReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Runtime.callFunctionOn", parameter)
+        val result = cdp.callCommand("Runtime.callFunctionOn", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -214,9 +217,12 @@ public class Runtime(
     /**
      * Compiles expression.
      */
-    public suspend fun compileScript(args: CompileScriptParameter): CompileScriptReturn {
+    public suspend fun compileScript(
+        args: CompileScriptParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): CompileScriptReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Runtime.compileScript", parameter)
+        val result = cdp.callCommand("Runtime.compileScript", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -247,17 +253,17 @@ public class Runtime(
     /**
      * Disables reporting of execution contexts creation.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Runtime.disable", parameter)
+        cdp.callCommand("Runtime.disable", parameter, mode)
     }
 
     /**
      * Discards collected exceptions and console API calls.
      */
-    public suspend fun discardConsoleEntries() {
+    public suspend fun discardConsoleEntries(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Runtime.discardConsoleEntries", parameter)
+        cdp.callCommand("Runtime.discardConsoleEntries", parameter, mode)
     }
 
     /**
@@ -265,17 +271,17 @@ public class Runtime(
      * When the reporting gets enabled the event will be sent immediately for each existing execution
      * context.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Runtime.enable", parameter)
+        cdp.callCommand("Runtime.enable", parameter, mode)
     }
 
     /**
      * Evaluates expression on global object.
      */
-    public suspend fun evaluate(args: EvaluateParameter): EvaluateReturn {
+    public suspend fun evaluate(args: EvaluateParameter, mode: CommandMode = CommandMode.DEFAULT): EvaluateReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Runtime.evaluate", parameter)
+        val result = cdp.callCommand("Runtime.evaluate", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -359,9 +365,9 @@ public class Runtime(
     /**
      * Returns the isolate id.
      */
-    public suspend fun getIsolateId(): GetIsolateIdReturn {
+    public suspend fun getIsolateId(mode: CommandMode = CommandMode.DEFAULT): GetIsolateIdReturn {
         val parameter = null
-        val result = cdp.callCommand("Runtime.getIsolateId", parameter)
+        val result = cdp.callCommand("Runtime.getIsolateId", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -369,9 +375,9 @@ public class Runtime(
      * Returns the JavaScript heap usage.
      * It is the total usage of the corresponding isolate not scoped to a particular Runtime.
      */
-    public suspend fun getHeapUsage(): GetHeapUsageReturn {
+    public suspend fun getHeapUsage(mode: CommandMode = CommandMode.DEFAULT): GetHeapUsageReturn {
         val parameter = null
-        val result = cdp.callCommand("Runtime.getHeapUsage", parameter)
+        val result = cdp.callCommand("Runtime.getHeapUsage", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -379,9 +385,12 @@ public class Runtime(
      * Returns properties of a given object. Object group of the result is inherited from the target
      * object.
      */
-    public suspend fun getProperties(args: GetPropertiesParameter): GetPropertiesReturn {
+    public suspend fun getProperties(
+        args: GetPropertiesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetPropertiesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Runtime.getProperties", parameter)
+        val result = cdp.callCommand("Runtime.getProperties", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -417,9 +426,12 @@ public class Runtime(
     /**
      * Returns all let, const and class variables from global scope.
      */
-    public suspend fun globalLexicalScopeNames(args: GlobalLexicalScopeNamesParameter): GlobalLexicalScopeNamesReturn {
+    public suspend fun globalLexicalScopeNames(
+        args: GlobalLexicalScopeNamesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GlobalLexicalScopeNamesReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Runtime.globalLexicalScopeNames", parameter)
+        val result = cdp.callCommand("Runtime.globalLexicalScopeNames", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -433,9 +445,12 @@ public class Runtime(
         return globalLexicalScopeNames(parameter)
     }
 
-    public suspend fun queryObjects(args: QueryObjectsParameter): QueryObjectsReturn {
+    public suspend fun queryObjects(
+        args: QueryObjectsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): QueryObjectsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Runtime.queryObjects", parameter)
+        val result = cdp.callCommand("Runtime.queryObjects", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -453,9 +468,9 @@ public class Runtime(
     /**
      * Releases remote object with given id.
      */
-    public suspend fun releaseObject(args: ReleaseObjectParameter) {
+    public suspend fun releaseObject(args: ReleaseObjectParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Runtime.releaseObject", parameter)
+        cdp.callCommand("Runtime.releaseObject", parameter, mode)
     }
 
     /**
@@ -471,9 +486,9 @@ public class Runtime(
     /**
      * Releases all remote objects that belong to a given group.
      */
-    public suspend fun releaseObjectGroup(args: ReleaseObjectGroupParameter) {
+    public suspend fun releaseObjectGroup(args: ReleaseObjectGroupParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Runtime.releaseObjectGroup", parameter)
+        cdp.callCommand("Runtime.releaseObjectGroup", parameter, mode)
     }
 
     /**
@@ -489,17 +504,17 @@ public class Runtime(
     /**
      * Tells inspected instance to run if it was waiting for debugger to attach.
      */
-    public suspend fun runIfWaitingForDebugger() {
+    public suspend fun runIfWaitingForDebugger(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Runtime.runIfWaitingForDebugger", parameter)
+        cdp.callCommand("Runtime.runIfWaitingForDebugger", parameter, mode)
     }
 
     /**
      * Runs script with given id in a given context.
      */
-    public suspend fun runScript(args: RunScriptParameter): RunScriptReturn {
+    public suspend fun runScript(args: RunScriptParameter, mode: CommandMode = CommandMode.DEFAULT): RunScriptReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Runtime.runScript", parameter)
+        val result = cdp.callCommand("Runtime.runScript", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -544,9 +559,12 @@ public class Runtime(
     /**
      * Enables or disables async call stacks tracking.
      */
-    public suspend fun setAsyncCallStackDepth(args: SetAsyncCallStackDepthParameter) {
+    public suspend fun setAsyncCallStackDepth(
+        args: SetAsyncCallStackDepthParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Runtime.setAsyncCallStackDepth", parameter)
+        cdp.callCommand("Runtime.setAsyncCallStackDepth", parameter, mode)
     }
 
     /**
@@ -560,9 +578,12 @@ public class Runtime(
         setAsyncCallStackDepth(parameter)
     }
 
-    public suspend fun setCustomObjectFormatterEnabled(args: SetCustomObjectFormatterEnabledParameter) {
+    public suspend fun setCustomObjectFormatterEnabled(
+        args: SetCustomObjectFormatterEnabledParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Runtime.setCustomObjectFormatterEnabled", parameter)
+        cdp.callCommand("Runtime.setCustomObjectFormatterEnabled", parameter, mode)
     }
 
     /**
@@ -575,9 +596,12 @@ public class Runtime(
         setCustomObjectFormatterEnabled(parameter)
     }
 
-    public suspend fun setMaxCallStackSizeToCapture(args: SetMaxCallStackSizeToCaptureParameter) {
+    public suspend fun setMaxCallStackSizeToCapture(
+        args: SetMaxCallStackSizeToCaptureParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Runtime.setMaxCallStackSizeToCapture", parameter)
+        cdp.callCommand("Runtime.setMaxCallStackSizeToCapture", parameter, mode)
     }
 
     /**
@@ -594,9 +618,9 @@ public class Runtime(
      * Terminate current or next JavaScript execution.
      * Will cancel the termination when the outer-most script execution ends.
      */
-    public suspend fun terminateExecution() {
+    public suspend fun terminateExecution(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Runtime.terminateExecution", parameter)
+        cdp.callCommand("Runtime.terminateExecution", parameter, mode)
     }
 
     /**
@@ -607,9 +631,9 @@ public class Runtime(
      * in case of any other input, function throws an exception.
      * Each binding function call produces Runtime.bindingCalled notification.
      */
-    public suspend fun addBinding(args: AddBindingParameter) {
+    public suspend fun addBinding(args: AddBindingParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Runtime.addBinding", parameter)
+        cdp.callCommand("Runtime.addBinding", parameter, mode)
     }
 
     /**
@@ -651,9 +675,9 @@ public class Runtime(
      * This method does not remove binding function from global object but
      * unsubscribes current runtime agent from Runtime.bindingCalled notifications.
      */
-    public suspend fun removeBinding(args: RemoveBindingParameter) {
+    public suspend fun removeBinding(args: RemoveBindingParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Runtime.removeBinding", parameter)
+        cdp.callCommand("Runtime.removeBinding", parameter, mode)
     }
 
     /**
@@ -674,9 +698,12 @@ public class Runtime(
      * only be populated if the Runtime domain was enabled at the time when the
      * Error was thrown.
      */
-    public suspend fun getExceptionDetails(args: GetExceptionDetailsParameter): GetExceptionDetailsReturn {
+    public suspend fun getExceptionDetails(
+        args: GetExceptionDetailsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetExceptionDetailsReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Runtime.getExceptionDetails", parameter)
+        val result = cdp.callCommand("Runtime.getExceptionDetails", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 

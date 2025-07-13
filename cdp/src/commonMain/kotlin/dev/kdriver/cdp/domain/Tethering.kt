@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -35,9 +32,9 @@ public class Tethering(
     /**
      * Request browser port binding.
      */
-    public suspend fun bind(args: BindParameter) {
+    public suspend fun bind(args: BindParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Tethering.bind", parameter)
+        cdp.callCommand("Tethering.bind", parameter, mode)
     }
 
     /**
@@ -53,9 +50,9 @@ public class Tethering(
     /**
      * Request browser port unbinding.
      */
-    public suspend fun unbind(args: UnbindParameter) {
+    public suspend fun unbind(args: UnbindParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Tethering.unbind", parameter)
+        cdp.callCommand("Tethering.unbind", parameter, mode)
     }
 
     /**

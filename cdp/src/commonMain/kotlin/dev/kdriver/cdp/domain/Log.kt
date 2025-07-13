@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -35,34 +32,37 @@ public class Log(
     /**
      * Clears the log.
      */
-    public suspend fun clear() {
+    public suspend fun clear(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Log.clear", parameter)
+        cdp.callCommand("Log.clear", parameter, mode)
     }
 
     /**
      * Disables log domain, prevents further log entries from being reported to the client.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Log.disable", parameter)
+        cdp.callCommand("Log.disable", parameter, mode)
     }
 
     /**
      * Enables log domain, sends the entries collected so far to the client by means of the
      * `entryAdded` notification.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Log.enable", parameter)
+        cdp.callCommand("Log.enable", parameter, mode)
     }
 
     /**
      * start violation reporting.
      */
-    public suspend fun startViolationsReport(args: StartViolationsReportParameter) {
+    public suspend fun startViolationsReport(
+        args: StartViolationsReportParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Log.startViolationsReport", parameter)
+        cdp.callCommand("Log.startViolationsReport", parameter, mode)
     }
 
     /**
@@ -78,9 +78,9 @@ public class Log(
     /**
      * Stop violation reporting.
      */
-    public suspend fun stopViolationsReport() {
+    public suspend fun stopViolationsReport(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("Log.stopViolationsReport", parameter)
+        cdp.callCommand("Log.stopViolationsReport", parameter, mode)
     }
 
     /**

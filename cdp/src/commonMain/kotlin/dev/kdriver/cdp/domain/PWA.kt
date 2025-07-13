@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -22,9 +19,12 @@ public class PWA(
     /**
      * Returns the following OS state for the given manifest id.
      */
-    public suspend fun getOsAppState(args: GetOsAppStateParameter): GetOsAppStateReturn {
+    public suspend fun getOsAppState(
+        args: GetOsAppStateParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetOsAppStateReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("PWA.getOsAppState", parameter)
+        val result = cdp.callCommand("PWA.getOsAppState", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -67,9 +67,9 @@ public class PWA(
      * If Chrome is not in IWA dev
      * mode, the installation will fail, regardless of the state of the allowlist.
      */
-    public suspend fun install(args: InstallParameter) {
+    public suspend fun install(args: InstallParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("PWA.install", parameter)
+        cdp.callCommand("PWA.install", parameter, mode)
     }
 
     /**
@@ -111,9 +111,9 @@ public class PWA(
     /**
      * Uninstalls the given manifest_id and closes any opened app windows.
      */
-    public suspend fun uninstall(args: UninstallParameter) {
+    public suspend fun uninstall(args: UninstallParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("PWA.uninstall", parameter)
+        cdp.callCommand("PWA.uninstall", parameter, mode)
     }
 
     /**
@@ -131,9 +131,9 @@ public class PWA(
      * default start url if it is provided. Returns a page Target.TargetID which
      * can be used to attach to via Target.attachToTarget or similar APIs.
      */
-    public suspend fun launch(args: LaunchParameter): LaunchReturn {
+    public suspend fun launch(args: LaunchParameter, mode: CommandMode = CommandMode.DEFAULT): LaunchReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("PWA.launch", parameter)
+        val result = cdp.callCommand("PWA.launch", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -165,9 +165,12 @@ public class PWA(
      *
      * TODO(crbug.com/339454034): Check the existences of the input files.
      */
-    public suspend fun launchFilesInApp(args: LaunchFilesInAppParameter): LaunchFilesInAppReturn {
+    public suspend fun launchFilesInApp(
+        args: LaunchFilesInAppParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): LaunchFilesInAppReturn {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("PWA.launchFilesInApp", parameter)
+        val result = cdp.callCommand("PWA.launchFilesInApp", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -199,9 +202,12 @@ public class PWA(
      * to be called on a page target. This function returns immediately without
      * waiting for the app to finish loading.
      */
-    public suspend fun openCurrentPageInApp(args: OpenCurrentPageInAppParameter) {
+    public suspend fun openCurrentPageInApp(
+        args: OpenCurrentPageInAppParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("PWA.openCurrentPageInApp", parameter)
+        cdp.callCommand("PWA.openCurrentPageInApp", parameter, mode)
     }
 
     /**
@@ -227,9 +233,12 @@ public class PWA(
      *
      * See the comment of each parameter.
      */
-    public suspend fun changeAppUserSettings(args: ChangeAppUserSettingsParameter) {
+    public suspend fun changeAppUserSettings(
+        args: ChangeAppUserSettingsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("PWA.changeAppUserSettings", parameter)
+        cdp.callCommand("PWA.changeAppUserSettings", parameter, mode)
     }
 
     /**

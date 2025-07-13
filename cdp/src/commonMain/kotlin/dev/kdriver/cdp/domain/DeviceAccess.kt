@@ -1,10 +1,7 @@
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -33,25 +30,25 @@ public class DeviceAccess(
     /**
      * Enable events in this domain.
      */
-    public suspend fun enable() {
+    public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DeviceAccess.enable", parameter)
+        cdp.callCommand("DeviceAccess.enable", parameter, mode)
     }
 
     /**
      * Disable events in this domain.
      */
-    public suspend fun disable() {
+    public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
-        cdp.callCommand("DeviceAccess.disable", parameter)
+        cdp.callCommand("DeviceAccess.disable", parameter, mode)
     }
 
     /**
      * Select a device in response to a DeviceAccess.deviceRequestPrompted event.
      */
-    public suspend fun selectPrompt(args: SelectPromptParameter) {
+    public suspend fun selectPrompt(args: SelectPromptParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DeviceAccess.selectPrompt", parameter)
+        cdp.callCommand("DeviceAccess.selectPrompt", parameter, mode)
     }
 
     /**
@@ -68,9 +65,9 @@ public class DeviceAccess(
     /**
      * Cancel a prompt in response to a DeviceAccess.deviceRequestPrompted event.
      */
-    public suspend fun cancelPrompt(args: CancelPromptParameter) {
+    public suspend fun cancelPrompt(args: CancelPromptParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("DeviceAccess.cancelPrompt", parameter)
+        cdp.callCommand("DeviceAccess.cancelPrompt", parameter, mode)
     }
 
     /**

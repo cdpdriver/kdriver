@@ -19,6 +19,6 @@ interface CDP {
     val generatedDomains: MutableMap<KClass<out Domain>, Domain>
 
     @InternalCdpApi
-    suspend fun callCommand(method: String, parameter: JsonElement?): JsonElement?
+    suspend fun callCommand(method: String, parameter: JsonElement?, mode: CommandMode): JsonElement?
 
 }
