@@ -186,8 +186,8 @@ open class Connection(
         delay(t)
     }
 
-    private suspend fun prepareHeadless() {
-        if (prepareHeadlessDone) return
+    private suspend fun prepareHeadless() = runCatching {
+        if (prepareHeadlessDone) return@runCatching
         val response = runtime.evaluate(
             Runtime.EvaluateParameter(
                 expression = "navigator.userAgent",
@@ -209,8 +209,8 @@ open class Connection(
         prepareHeadlessDone = true
     }
 
-    private suspend fun prepareExpert() {
-        if (prepareExpertDone) return
+    private suspend fun prepareExpert() = runCatching {
+        if (prepareExpertDone) return@runCatching
         owner?.let {
             page.addScriptToEvaluateOnNewDocument(
                 Page.AddScriptToEvaluateOnNewDocumentParameter(
