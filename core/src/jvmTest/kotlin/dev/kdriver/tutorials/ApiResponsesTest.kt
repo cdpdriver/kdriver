@@ -14,7 +14,7 @@ class ApiResponsesTest {
 
         val page = browser.mainTab ?: return@runBlocking
         val userData = page.expect(Regex(".*/user-data.json")) {
-            page.get("https://slensky.com/zendriver-examples/api-request.html")
+            page.get("https://cdpdriver.github.io/examples/api-request.html")
             getResponseBody<UserData>() // Wait and decode the response body from the matching expectation
         }
 

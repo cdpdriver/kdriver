@@ -14,7 +14,7 @@ class CdpTest {
     @Test
     fun testCdpFunctionality() = runBlocking {
         val browser = Browser.create(this, headless = true, sandbox = false)
-        val page = browser.get("https://slensky.com/zendriver-examples/console.html")
+        val page = browser.get("https://cdpdriver.github.io/examples/console.html")
 
         // Those 4 lines are equivalent and do the same thing
         page.runtime.enable()

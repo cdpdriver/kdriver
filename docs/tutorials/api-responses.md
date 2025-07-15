@@ -7,7 +7,7 @@ nav_order: 13
 # Reading API responses
 
 **Target page:**
-[https://slensky.com/zendriver-examples/api-request.html](https://slensky.com/zendriver-examples/api-request.html)
+[https://cdpdriver.github.io/examples/api-request.html](https://cdpdriver.github.io/examples/api-request.html)
 
 In this tutorial, we will demonstrate how to read a dynamically loaded API response using response expectations.
 
@@ -23,7 +23,7 @@ Begin by creating a new script for the tutorial:
 fun main() = runBlocking {
     val browser = Browser.create(this)
     // TODO: Read the API response
-    val page = browser.get("https://slensky.com/zendriver-examples/api-request.html")
+    val page = browser.get("https://cdpdriver.github.io/examples/api-request.html")
 
     browser.stop()
 }
@@ -52,7 +52,7 @@ fun main() = runBlocking {
 
     val page = browser.mainTab ?: return@runBlocking
     val userData = page.expect(Regex(".*/user-data.json")) {
-        page.get("https://slensky.com/zendriver-examples/api-request.html")
+        page.get("https://cdpdriver.github.io/examples/api-request.html")
         getResponseBody<UserData>() // Wait and decode the response body from the matching expectation
     }
 

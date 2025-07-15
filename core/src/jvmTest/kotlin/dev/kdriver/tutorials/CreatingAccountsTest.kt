@@ -47,7 +47,7 @@ class CreatingAccountsTest {
     @Test
     fun testCreatingAccounts() = runBlocking {
         val browser = Browser.create(this, headless = true, sandbox = false)
-        val page = browser.get("https://slensky.com/zendriver-examples/login-page.html")
+        val page = browser.get("https://cdpdriver.github.io/examples/login-page.html")
         page.wait(500) // Wait for the page to load
 
         val name = "John Doe"

@@ -9,7 +9,7 @@
 [![Open Source Helpers](https://www.codetriage.com/cdpdriver/kdriver/badges/users.svg)](https://www.codetriage.com/cdpdriver/kdriver)
 
 > This project is a Kotlin port of [@stephanlensky](https://github.com/stephanlensky)'s awesome Python
-> library [zendriver](https://github.com/stephanlensky/zendriver), built to bring the same simplicity and power of
+> library [zendriver](https://github.com/cdpdriver/zendriver), built to bring the same simplicity and power of
 > CDP-based automation to the Kotlin and Java/JVM world.
 
 kdriver is a blazing fast, coroutine-first, undetectable web scraping / browser automation library for Kotlin. It uses
@@ -77,7 +77,7 @@ More examples can be found on the [tutorial section of the documentation](https:
 ## Acknowledgments
 
 Huge thanks to [@stephanlensky](https://github.com/stephanlensky) for
-creating [zendriver](https://github.com/stephanlensky/zendriver), a brilliantly designed and maintained library that
+creating [zendriver](https://github.com/cdpdriver/zendriver), a brilliantly designed and maintained library that
 inspired this port.
 If you're using Python, we highly recommend checking out the original project!
 
