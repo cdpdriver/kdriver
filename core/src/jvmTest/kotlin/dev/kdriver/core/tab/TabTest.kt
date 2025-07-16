@@ -1,12 +1,15 @@
 package dev.kdriver.core.tab
 
+import dev.kdriver.cdp.cdp
 import dev.kdriver.cdp.domain.Fetch
 import dev.kdriver.cdp.domain.Network
+import dev.kdriver.cdp.domain.network
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.sampleFile
 import dev.kdriver.models.TodoItem
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlin.test.*
@@ -142,6 +145,36 @@ class TabTest {
         assertNotNull(result)
         assertEquals("li", result.tag)
         assertEquals("Apples", result.text)
+        browser.stop()
+    }
+
+    @Test
+    fun testHandlers() = runBlocking {
+        val browser = Browser.create(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val handle1Called = CompletableDeferred<Boolean>()
+        val handle2Called = CompletableDeferred<Boolean>()
+
+        val requestHandler1: suspend (Network.RequestWillBeSentParameter) -> Unit = {
+            if (!handle1Called.isCompleted) handle1Called.complete(true)
+        }
+        val requestHandler2: suspend (Network.RequestWillBeSentParameter) -> Unit = {
+            if (!handle2Called.isCompleted) handle2Called.complete(true)
+        }
+
+        tab.send { cdp.network.enable() }
+        val job1 = tab.addHandler(this, { cdp.network.requestWillBeSent }, requestHandler1)
+        val job2 = tab.addHandler(this, { cdp.network.requestWillBeSent }, requestHandler2)
+
+        tab.reload()
+        tab.waitForReadyState(ReadyState.COMPLETE)
+
+        withTimeout(1000) { assertTrue(handle1Called.await()) }
+        withTimeout(1000) { assertTrue(handle2Called.await()) }
+
+        job1.cancel()
+        job2.cancel()
         browser.stop()
     }
 

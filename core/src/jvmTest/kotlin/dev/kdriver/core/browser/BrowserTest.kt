@@ -1,5 +1,6 @@
 package dev.kdriver.core.browser
 
+import dev.kdriver.core.tab.ReadyState
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -7,6 +8,19 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class BrowserTest {
+
+    @Test
+    fun testBrowserScanBotDetection() = runBlocking {
+        val browser = Browser.create(this, headless = true, sandbox = false)
+        val tab = browser.get("https://www.browserscan.net/bot-detection")
+        tab.waitForReadyState(ReadyState.COMPLETE)
+        tab.wait(2000)
+        val element = tab.findElementByText("Test Results:")
+        assertNotNull(element)
+        assertNotNull(element.parent)
+        assertEquals("Normal", element.parent!!.children.last().text)
+        browser.stop()
+    }
 
     @Test
     fun testGetContentGetsHtmlContent() = runBlocking {
