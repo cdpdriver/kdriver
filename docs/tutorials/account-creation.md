@@ -7,7 +7,7 @@ nav_order: 12
 # Creating accounts
 
 **Target page:**
-[https://slensky.com/zendriver-examples/login-page.html](https://slensky.com/zendriver-examples/login-page.html)
+[https://cdpdriver.github.io/examples/login-page.html](https://cdpdriver.github.io/examples/login-page.html)
 
 In this tutorial, we will demonstrate how to fill out a new account sign-up form and then log in with the newly created
 account. The example page login/signup is implemented entirely with JavaScript, so created accounts do not persist once
@@ -22,7 +22,7 @@ Begin by creating a new script for the tutorial:
 ```kotlin
 fun main() = runBlocking {
     val browser = Browser.create(this)
-    val page = browser.get("https://slensky.com/zendriver-examples/login-page.html")
+    val page = browser.get("https://cdpdriver.github.io/examples/login-page.html")
 
     // TODO: TODO: Sign-up and login
 
@@ -124,7 +124,7 @@ suspend fun login(page: Tab, email: String, password: String) {
 
 fun main() = runBlocking {
     val browser = Browser.create(this)
-    val page = browser.get("https://slensky.com/zendriver-examples/login-page.html")
+    val page = browser.get("https://cdpdriver.github.io/examples/login-page.html")
     page.wait(500) // Wait for the page to load
 
     val name = "John Doe"

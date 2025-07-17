@@ -7,7 +7,7 @@ nav_order: 14
 # Playing with CDP
 
 **Target page:**
-[https://slensky.com/zendriver-examples/console.html](https://slensky.com/zendriver-examples/console.html)
+[https://cdpdriver.github.io/examples/console.html](https://cdpdriver.github.io/examples/console.html)
 
 In this tutorial, we will explore how to use the Chrome DevTools Protocol (CDP) directly, when kdriver does not provide
 a specific API for the functionality you need.
@@ -20,7 +20,7 @@ equivalent and do the same thing, so you can choose the one that suits you best.
 ```kotlin
 fun main() = runBlocking {
     val browser = Browser.create(this)
-    val page = browser.get("https://slensky.com/zendriver-examples/console.html")
+    val page = browser.get("https://cdpdriver.github.io/examples/console.html")
 
     // Those 4 lines are equivalent and do the same thing
     page.runtime.enable()
@@ -41,7 +41,7 @@ Now, let's listen to some CDP events. In this example, we will listen to console
 ```kotlin
 fun main() = runBlocking {
     val browser = Browser.create(this)
-    val page = browser.get("https://slensky.com/zendriver-examples/console.html")
+    val page = browser.get("https://cdpdriver.github.io/examples/console.html")
 
     // Those 4 lines are equivalent and do the same thing
     page.runtime.enable()
