@@ -8,9 +8,8 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/cdpdriver/kdriver/badge)](https://www.codefactor.io/repository/github/cdpdriver/kdriver)
 [![Open Source Helpers](https://www.codetriage.com/cdpdriver/kdriver/badges/users.svg)](https://www.codetriage.com/cdpdriver/kdriver)
 
-> This project is a Kotlin port of [@stephanlensky](https://github.com/stephanlensky)'s awesome Python
-> library [zendriver](https://github.com/cdpdriver/zendriver), built to bring the same simplicity and power of
-> CDP-based automation to the Kotlin and Java/JVM world.
+> This project is a Kotlin port of Python library [zendriver](https://github.com/cdpdriver/zendriver), built to bring
+> the same simplicity and power of CDP-based automation to the Kotlin and Java/JVM world.
 
 kdriver is a blazing fast, coroutine-first, undetectable web scraping / browser automation library for Kotlin. It uses
 the Chrome DevTools Protocol (CDP) under the hood to interact with real Chrome instances, offering a sleek alternative

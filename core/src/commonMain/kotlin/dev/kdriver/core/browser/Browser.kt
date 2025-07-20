@@ -1,10 +1,7 @@
 package dev.kdriver.core.browser
 
-import dev.kdriver.core.browser.Browser.Companion.create
 import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.tab.Tab
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.io.files.Path
 
 /**
  * Represents a browser instance that can be controlled programmatically.
@@ -12,7 +9,7 @@ import kotlinx.io.files.Path
  * This class provides methods to start the browser, navigate to URLs, manage tabs,
  * and handle browser events.
  *
- * You can create a new instance of this class using the [create] method:
+ * You can create a new instance of this class using the [createBrowser] method:
  * ```kotlin
  * fun main() = runBlocking {
  *     val browser = createBrowser(this)
@@ -69,61 +66,6 @@ interface Browser {
      * Checks if the browser process has stopped.
      */
     val stopped: Boolean
-
-    companion object {
-
-        /**
-         * The entry point for creating a new Browser instance.
-         *
-         * This function initializes a new Browser instance with the provided configuration.
-         * It sets up the necessary parameters such as user data directory, headless mode, browser executable path, and more.
-         * It also handles the creation of a coroutine scope for the browser instance and sets up a shutdown hook to clean up resources when the application exits.
-         *
-         * @param coroutineScope The parent CoroutineScope, in which the browser will run.
-         * @param config Optional configuration for the browser. If not provided, a default configuration will be used.
-         * @param userDataDir Optional path to the user data directory. If not provided, a temporary profile will be created.
-         * @param headless If true, the browser will run in headless mode. Defaults to false.
-         * @param userAgent Optional user agent string to use for the browser. If not provided, the default user agent will be used.
-         * @param browserExecutablePath Optional path to the browser executable. If not provided, the default browser will be used.
-         * @param browserArgs Optional list of additional arguments to pass to the browser executable.
-         * @param sandbox If true, the browser will run in a sandboxed environment. Defaults to true.
-         * @param lang The language to use for the browser.
-         * @param host Optional host address for the browser connection. If not provided, defaults to "127.0.0.1".
-         * @param port Optional port for the browser connection. If not provided, a free port will be assigned.
-         *
-         * @return A new instance of the Browser class.
-         */
-        @Deprecated(
-            message = "Browser.create(...) will be removed in a future version. Use createBrowser(...) instead.",
-            replaceWith = ReplaceWith("createBrowser(...)")
-        )
-        suspend fun create(
-            coroutineScope: CoroutineScope,
-            config: Config? = null,
-            userDataDir: Path? = null,
-            headless: Boolean = false,
-            userAgent: String? = null,
-            browserExecutablePath: Path? = null,
-            browserArgs: List<String>? = null,
-            sandbox: Boolean = true,
-            lang: String? = null,
-            host: String? = null,
-            port: Int? = null,
-        ): Browser = DefaultBrowser.create(
-            coroutineScope = coroutineScope,
-            config = config ?: Config(
-                userDataDir = userDataDir,
-                headless = headless,
-                userAgent = userAgent,
-                browserExecutablePath = browserExecutablePath,
-                browserArgs = browserArgs ?: emptyList(),
-                sandbox = sandbox,
-                lang = lang,
-                host = host,
-                port = port,
-            )
-        )
-    }
 
     /**
      * Waits for the specified time in seconds.

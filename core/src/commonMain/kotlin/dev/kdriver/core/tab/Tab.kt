@@ -19,6 +19,16 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  *
  * This class provides methods to interact with the tab, such as navigating to URLs,
  * managing history, evaluating JavaScript expressions, and manipulating the DOM.
+ *
+ * You can create a new instance of this class using the [dev.kdriver.core.browser.Browser.get] method:
+ * ```kotlin
+ * fun main() = runBlocking {
+ *     val browser = createBrowser(this)
+ *     val tab = browser.get("https://example.com")
+ *     // Use the tab instance to do things...
+ *     browser.stop()
+ * }
+ * ```
  */
 interface Tab : Connection {
 
