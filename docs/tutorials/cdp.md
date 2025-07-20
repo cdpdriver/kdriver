@@ -19,7 +19,7 @@ equivalent and do the same thing, so you can choose the one that suits you best.
 
 ```kotlin
 fun main() = runBlocking {
-    val browser = Browser.create(this)
+    val browser = createBrowser(this)
     val page = browser.get("https://cdpdriver.github.io/examples/console.html")
 
     // Those 4 lines are equivalent and do the same thing
@@ -40,7 +40,7 @@ Now, let's listen to some CDP events. In this example, we will listen to console
 
 ```kotlin
 fun main() = runBlocking {
-    val browser = Browser.create(this)
+    val browser = createBrowser(this)
     val page = browser.get("https://cdpdriver.github.io/examples/console.html")
 
     // Those 4 lines are equivalent and do the same thing

@@ -1,6 +1,7 @@
 package dev.kdriver.core.extensions
 
 import dev.kdriver.core.dom.Element
+import dev.kdriver.core.dom.apply
 
 suspend fun Element.sendKeysWithSpecialChars(text: String) {
     apply<Unit>("(elem) => elem.focus()")

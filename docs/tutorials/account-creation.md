@@ -21,7 +21,7 @@ Begin by creating a new script for the tutorial:
 
 ```kotlin
 fun main() = runBlocking {
-    val browser = Browser.create(this)
+    val browser = createBrowser(this)
     val page = browser.get("https://cdpdriver.github.io/examples/login-page.html")
 
     // TODO: TODO: Sign-up and login
@@ -123,7 +123,7 @@ suspend fun login(page: Tab, email: String, password: String) {
 }
 
 fun main() = runBlocking {
-    val browser = Browser.create(this)
+    val browser = createBrowser(this)
     val page = browser.get("https://cdpdriver.github.io/examples/login-page.html")
     page.wait(500) // Wait for the page to load
 

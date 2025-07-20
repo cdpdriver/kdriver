@@ -3,7 +3,9 @@ package dev.kdriver.tutorials
 import dev.kdriver.cdp.cdp
 import dev.kdriver.cdp.domain.Runtime
 import dev.kdriver.cdp.domain.runtime
-import dev.kdriver.core.browser.Browser
+import dev.kdriver.core.browser.createBrowser
+import dev.kdriver.core.connection.addHandler
+import dev.kdriver.core.connection.send
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -13,7 +15,7 @@ class CdpTest {
 
     @Test
     fun testCdpFunctionality() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val page = browser.get("https://cdpdriver.github.io/examples/console.html")
 
         // Those 4 lines are equivalent and do the same thing

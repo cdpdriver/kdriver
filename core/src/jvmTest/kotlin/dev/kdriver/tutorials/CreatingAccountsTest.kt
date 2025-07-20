@@ -1,6 +1,6 @@
 package dev.kdriver.tutorials
 
-import dev.kdriver.core.browser.Browser
+import dev.kdriver.core.browser.createBrowser
 import dev.kdriver.core.tab.Tab
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -46,7 +46,7 @@ class CreatingAccountsTest {
 
     @Test
     fun testCreatingAccounts() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val page = browser.get("https://cdpdriver.github.io/examples/login-page.html")
         page.wait(500) // Wait for the page to load
 

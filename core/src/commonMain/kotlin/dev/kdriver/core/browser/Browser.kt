@@ -1,19 +1,9 @@
 package dev.kdriver.core.browser
 
-import dev.kdriver.cdp.domain.Target
-import dev.kdriver.cdp.domain.page
-import dev.kdriver.cdp.domain.target
 import dev.kdriver.core.browser.Browser.Companion.create
 import dev.kdriver.core.connection.Connection
-import dev.kdriver.core.exceptions.BrowserExecutableNotFoundException
-import dev.kdriver.core.exceptions.FailedToConnectToBrowserException
-import dev.kdriver.core.exceptions.NoBrowserExecutablePathException
 import dev.kdriver.core.tab.Tab
-import dev.kdriver.core.utils.*
-import io.ktor.util.logging.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.io.files.Path
 
 /**
@@ -25,23 +15,18 @@ import kotlinx.io.files.Path
  * You can create a new instance of this class using the [create] method:
  * ```kotlin
  * fun main() = runBlocking {
- *     val browser = Browser.create(this)
+ *     val browser = createBrowser(this)
  *     // Use the browser instance to do things...
  *     browser.stop()
  * }
  * ```
  */
-class Browser private constructor(
-    val coroutineScope: CoroutineScope,
-    val config: Config = Config(),
-) {
+interface Browser {
 
-    private val logger = KtorSimpleLogger("Browser")
-    private val updateTargetInfoMutex = Mutex()
-
-    private var process: Process? = null
-    private var http: HTTPApi? = null
-    //private var _cookies: CookieJar? = null
+    /**
+     * The configuration for the browser instance.
+     */
+    val config: Config
 
     /**
      * The connection to the browser's WebSocket debugger.
@@ -49,18 +34,16 @@ class Browser private constructor(
      * This connection is established when the browser is started and is used to communicate with the browser.
      * It allows sending commands and receiving events from the browser.
      */
-    var connection: Connection? = null
-        private set
+    val connection: Connection?
 
-    var info: ContraDict? = null
-        private set
+    val info: ContraDict?
 
     /**
      * A list of targets currently open in the browser.
      *
      * If you want to tabs, consider using [tabs] property instead.
      */
-    val targets: MutableList<Connection> = mutableListOf()
+    val targets: MutableList<Connection>
 
     /**
      * The WebSocket URL for the browser's debugger.
@@ -69,35 +52,23 @@ class Browser private constructor(
      * It is available after the browser has been started and the connection has been established.
      */
     val websocketUrl: String
-        get() = info?.webSocketDebuggerUrl ?: throw IllegalStateException("Browser not yet started. Call start() first")
 
     /**
      * The main tab of the browser.
      */
     val mainTab: Tab?
-        get() = targets.filterIsInstance<Tab>().maxByOrNull { it.type == "page" }
 
     /**
      * A list of all tabs in the browser.
      */
     val tabs: List<Tab>
-        get() = targets.filterIsInstance<Tab>().filter { it.type == "page" }
 
-    /*
-    val cookies: CookieJar
-        get() {
-            if (_cookies == null) {
-                _cookies = CookieJar(this)
-            }
-            return _cookies!!
-        }
-     */
+    //val cookies: CookieJar
 
     /**
      * Checks if the browser process has stopped.
      */
     val stopped: Boolean
-        get() = process?.isAlive()?.not() ?: true
 
     companion object {
 
@@ -122,6 +93,10 @@ class Browser private constructor(
          *
          * @return A new instance of the Browser class.
          */
+        @Deprecated(
+            message = "Browser.create(...) will be removed in a future version. Use createBrowser(...) instead.",
+            replaceWith = ReplaceWith("createBrowser(...)")
+        )
         suspend fun create(
             coroutineScope: CoroutineScope,
             config: Config? = null,
@@ -134,10 +109,9 @@ class Browser private constructor(
             lang: String? = null,
             host: String? = null,
             port: Int? = null,
-        ): Browser {
-            val browserScope = CoroutineScope(coroutineScope.coroutineContext + SupervisorJob())
-
-            val cfg = config ?: Config(
+        ): Browser = DefaultBrowser.create(
+            coroutineScope = coroutineScope,
+            config = config ?: Config(
                 userDataDir = userDataDir,
                 headless = headless,
                 userAgent = userAgent,
@@ -148,18 +122,7 @@ class Browser private constructor(
                 host = host,
                 port = port,
             )
-
-            val instance = Browser(browserScope, cfg)
-            instance.start()
-
-            addShutdownHook {
-                if (!instance.stopped) instance.stop()
-                instance.cleanupTemporaryProfile()
-            }
-
-            return instance
-        }
-
+        )
     }
 
     /**
@@ -168,14 +131,11 @@ class Browser private constructor(
      * This function suspends the coroutine for the given number of seconds.
      * It can be used to introduce delays in the execution flow, similar to `delay()`.
      *
-     * @param timeSeconds The number of seconds to wait. Defaults to 1.0 second.
+     * @param timeout The number of milliseconds to wait. Defaults to 1 second.
      *
      * @return The current Browser instance for chaining.
      */
-    suspend fun wait(timeSeconds: Double = 1.0): Browser {
-        delay((timeSeconds * 1000).toLong())
-        return this
-    }
+    suspend fun wait(timeout: Long = 1000): Browser
 
     /**
      * Top level get. Uses the first tab to retrieve given url.
@@ -189,204 +149,12 @@ class Browser private constructor(
      *
      * @return The Tab object representing the opened tab.
      */
-    suspend fun get(url: String = "about:blank", newTab: Boolean = false, newWindow: Boolean = false): Tab {
-        val connection = connection ?: throw IllegalStateException("Browser not yet started. Call start() first")
-
-        val future = CompletableDeferred<Target.TargetInfoChangedParameter>()
-
-        val job = coroutineScope.launch {
-            connection.target.targetInfoChanged.collect {
-                if (future.isCompleted) return@collect
-                if (it.targetInfo.url != "about:blank" || (url == "about:blank" && it.targetInfo.url == "about:blank")) {
-                    future.complete(it)
-                }
-            }
-        }
-
-        val connectionTab = if (newTab || newWindow) {
-            val targetId = connection.target.createTarget(
-                url = url,
-                newWindow = newWindow,
-                enableBeginFrameControl = true
-            )
-            targets.filterIsInstance<Tab>().first { it.type == "page" && it.targetId == targetId.targetId }.also {
-                it.owner = this
-            }
-        } else {
-            targets.filterIsInstance<Tab>().first { it.type == "page" }.also {
-                it.page.navigate(url)
-                it.owner = this
-            }
-        }
-
-        // Wait for the target info to be updated (but with a timeout so we don't block indefinitely nor crash)
-        withTimeoutOrNull(10_000) {
-            future.await()
-        }
-        job.cancel()
-
-        return connectionTab
-    }
+    suspend fun get(url: String = "about:blank", newTab: Boolean = false, newWindow: Boolean = false): Tab
 
     /**
      * Launches the actual browser
      */
-    suspend fun start(): Browser {
-        process?.let {
-            if (process?.isAlive() == false) return create(coroutineScope, config)
-            logger.warn("Ignored! Browser is already running.")
-            return this
-        }
-
-        val connectExisting = config.host != null && config.port != null
-
-        if (!connectExisting) {
-            config.host = "127.0.0.1"
-            config.port = freePort()
-        }
-
-        // handle extensions if any
-        config.extensions.takeIf { it.isNotEmpty() }?.let {
-            config.addArgument("--load-extension=${it.joinToString(",")}")
-        }
-
-        config.lang?.let {
-            config.addArgument("--lang=$it")
-        }
-
-        if (!connectExisting) {
-            val exe = config.browserExecutablePath ?: throw NoBrowserExecutablePathException()
-
-            logger.info("BROWSER EXECUTABLE PATH: $exe")
-            if (!exists(exe)) throw BrowserExecutableNotFoundException()
-
-            val params = config().toMutableList()
-            params.add("about:blank")
-
-            logger.info("starting\n\texecutable :$exe\n\narguments:\n${params.joinToString("\n\t")}")
-
-            process = startProcess(exe, params)
-        }
-
-        logger.info("Browser process started with PID: ${process?.pid()}")
-        http = HTTPApi(config.host ?: "127.0.0.1", config.port ?: throw IllegalStateException("Port not set"))
-
-        delay(config.browserConnectionTimeout)
-        repeat(config.browserConnectionMaxTries) {
-            if (testConnection()) return@repeat
-            delay(config.browserConnectionTimeout)
-        }
-        logger.info("Connection to browser established")
-
-        val info = info ?: run {
-            logger.info("Browser info not initialized, reading error")
-            /*
-            // This seems to block indefinitely on CI, so inspection is required
-            withTimeoutOrNull(1000) {
-                _process?.errorStream?.bufferedReader()?.use {
-                    logger.info("Browser stderr: ${it.readText()}")
-                }
-            }
-             */
-            stop()
-            throw FailedToConnectToBrowserException()
-        }
-
-        logger.info("Connected to browser at ${info.webSocketDebuggerUrl}")
-        val connection = Connection(
-            websocketUrl = info.webSocketDebuggerUrl,
-            messageListeningScope = coroutineScope,
-            eventsBufferSize = config.eventsBufferSize,
-            owner = this
-        )
-        this.connection = connection
-
-        if (config.autoDiscoverTargets) {
-            logger.info("Enabling autodiscover targets")
-            coroutineScope.launch {
-                connection.target.targetInfoChanged.collect(::handleTargetUpdate)
-            }
-            coroutineScope.launch {
-                connection.target.targetCreated.collect(::handleTargetUpdate)
-            }
-            coroutineScope.launch {
-                connection.target.targetDestroyed.collect(::handleTargetUpdate)
-            }
-            coroutineScope.launch {
-                connection.target.targetCrashed.collect(::handleTargetUpdate)
-            }
-
-            connection.target.setDiscoverTargets(discover = true)
-        }
-
-        updateTargets()
-        return this
-    }
-
-    /**
-     * This is an internal handler that updates the targets when chrome emits the corresponding event.
-     *
-     * It handles the following events:
-     * - TargetInfoChangedParameter: Updates the target info of an existing tab.
-     * - TargetCreatedParameter: Creates a new tab when a target is created.
-     * - TargetDestroyedParameter: Removes a tab when a target is destroyed.
-     * - TargetCrashedParameter: Logs a warning when a target crashes.
-     *
-     * @param event The event emitted by the Target domain.
-     */
-    private suspend fun handleTargetUpdate(event: Any) = updateTargetInfoMutex.withLock {
-        when (event) {
-            is Target.TargetInfoChangedParameter -> {
-                val targetInfo = event.targetInfo
-                val currentTab = targets.firstOrNull { it.targetId == targetInfo.targetId } ?: run {
-                    logger.warn("TargetInfoChangedParameter: Target with ID ${targetInfo.targetId} not found in current targets.")
-                    return
-                }
-                val currentTarget = currentTab.targetInfo
-
-                logger.debug("target #${targets.indexOf(currentTab)} has changed")
-                /*
-                if (logger.isLoggable(Level.FINE)) {
-                    val changes = compareTargetInfo(currentTarget, targetInfo)
-                    val changesString = changes.joinToString("\n") { (key, old, new) ->
-                        "$key: $old => $new"
-                    }
-                    logger.fine("target #${targets.indexOf(currentTab)} has changed: \n$changesString")
-                }
-                */
-
-                currentTab.targetInfo = targetInfo
-            }
-
-            is Target.TargetCreatedParameter -> {
-                val targetInfo = event.targetInfo
-                val wsUrl = "ws://${config.host}:${config.port}/devtools/${targetInfo.type}/${targetInfo.targetId}"
-
-                val newTarget = Tab(
-                    wsUrl,
-                    messageListeningScope = coroutineScope,
-                    eventsBufferSize = config.eventsBufferSize,
-                    targetInfo = targetInfo,
-                    owner = this
-                )
-                targets.add(newTarget)
-                logger.debug("target ${targets.size - 1} created => $newTarget")
-            }
-
-            is Target.TargetDestroyedParameter -> {
-                val currentTab = targets.firstOrNull { it.targetId == event.targetId } ?: run {
-                    logger.warn("TargetDestroyedParameter: Target with ID ${event.targetId} not found in current targets.")
-                    return
-                }
-                logger.debug("target removed. id ${targets.indexOf(currentTab)} => $currentTab")
-                targets.remove(currentTab)
-            }
-
-            is Target.TargetCrashedParameter -> {
-                logger.warn("target crashed: ${event.targetId}")
-            }
-        }
-    }
+    suspend fun start(): Browser
 
     /**
      * Tests the connection to the browser by sending a request to the "version" endpoint.
@@ -396,16 +164,7 @@ class Browser private constructor(
      *
      * @return True if the connection was successful, false otherwise.
      */
-    suspend fun testConnection(): Boolean {
-        val http = http ?: throw IllegalStateException("HTTPApi not initialized")
-        return try {
-            info = http.get<ContraDict>("version")
-            true
-        } catch (e: Exception) {
-            logger.debug("Could not start: ${e.message}")
-            false
-        }
-    }
+    suspend fun testConnection(): Boolean
 
     /**
      * Stops the browser process and cleans up resources.
@@ -413,26 +172,9 @@ class Browser private constructor(
      * This method will close the connection, cancel the coroutine scope, and destroy the process.
      * It should be called when the browser is no longer needed to free up resources.
      */
-    suspend fun stop() {
-        logger.info("Stopping browser process with PID: ${process?.pid()}")
-        process?.destroy()
-        process = null
-        connection?.close()
-        connection = null
-        coroutineScope.cancel()
-        logger.info("Browser process stopped")
-    }
+    suspend fun stop()
 
-    suspend fun cleanupTemporaryProfile() {
-        // TODO: Implement cleanup of temporary profile files (nothing on JVM but maybe for other platforms)
-    }
-
-    private suspend fun getTargets(): List<Target.TargetInfo> {
-        val connection = this.connection
-            ?: throw IllegalStateException("Browser not yet started. Use browser.start() first.")
-        val info = connection.target.getTargets()
-        return info.targetInfos
-    }
+    suspend fun cleanupTemporaryProfile()
 
     /**
      * Updates the list of targets in the browser.
@@ -442,27 +184,6 @@ class Browser private constructor(
      *
      * @throws IllegalStateException if the browser has not been started yet.
      */
-    suspend fun updateTargets() {
-        getTargets().forEach { t ->
-            val existingTab = this.targets.firstOrNull { it.targetInfo?.targetId == t.targetId }
-
-            if (existingTab != null) {
-                existingTab.targetInfo = t.copy() // ou update manuellement les champs si nécessaire
-            } else {
-                val wsUrl = "ws://${config.host}:${config.port}/devtools/page/${t.targetId}"
-                val newConnection = Connection(
-                    websocketUrl = wsUrl,
-                    messageListeningScope = coroutineScope,
-                    eventsBufferSize = config.eventsBufferSize,
-                    targetInfo = t,
-                    owner = this
-                )
-                this.targets.add(newConnection)
-            }
-        }
-
-        yield() // equivalent to asyncio.sleep(0)
-    }
-
+    suspend fun updateTargets()
 
 }
