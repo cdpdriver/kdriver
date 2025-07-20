@@ -34,7 +34,7 @@ suspend fun createBrowser(
     lang: String? = null,
     host: String? = null,
     port: Int? = null,
-): Browser = DefaultBrowser.create(
+): Browser = createBrowser(
     coroutineScope = coroutineScope,
     config = Config(
         userDataDir = userDataDir,
