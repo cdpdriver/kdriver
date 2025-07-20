@@ -4,9 +4,12 @@ import dev.kdriver.cdp.cdp
 import dev.kdriver.cdp.domain.Fetch
 import dev.kdriver.cdp.domain.Network
 import dev.kdriver.cdp.domain.network
-import dev.kdriver.core.browser.Browser
+import dev.kdriver.core.browser.createBrowser
+import dev.kdriver.core.connection.addHandler
+import dev.kdriver.core.connection.send
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
+import dev.kdriver.core.network.getResponseBody
 import dev.kdriver.core.sampleFile
 import dev.kdriver.models.UserData
 import kotlinx.coroutines.CompletableDeferred
@@ -18,7 +21,7 @@ class TabTest {
 
     @Test
     fun testSetUserAgentSetsNavigatorValues() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
         tab.setUserAgent(
@@ -39,7 +42,7 @@ class TabTest {
 
     @Test
     fun testSetUserAgentDefaultsExistingUserAgent() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
         val existingUserAgent = tab.evaluate<String>("navigator.userAgent")
@@ -58,7 +61,7 @@ class TabTest {
 
     @Test
     fun testEvaluateWaitPromiseSuccess() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
         val result = tab.evaluate<String>("new Promise(r => setTimeout(() => r(\"ok\")));", true)
@@ -70,7 +73,7 @@ class TabTest {
 
     @Test
     fun testEvaluateWaitPromiseFail() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
         val result = assertFailsWith<EvaluateException> {
@@ -83,7 +86,7 @@ class TabTest {
 
     @Test
     fun testEvaluateWaitPromiseError() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
         val result = assertFailsWith<EvaluateException> {
@@ -96,7 +99,7 @@ class TabTest {
 
     @Test
     fun testFindFindsElementByText() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get(sampleFile("groceries.html"))
 
         val result = tab.find("Apples")
@@ -109,7 +112,7 @@ class TabTest {
 
     @Test
     fun testFindTimesOutIfElementNotFound() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get(sampleFile("groceries.html"))
 
         val exception = assertFailsWith<TimeoutWaitingForElementException> {
@@ -121,7 +124,7 @@ class TabTest {
 
     @Test
     fun testSelect() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get(sampleFile("groceries.html"))
 
         val result = tab.select("li[aria-label^='Apples']")
@@ -134,7 +137,7 @@ class TabTest {
 
     @Test
     fun testXpath() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get(sampleFile("groceries.html"))
 
         val results = tab.xpath("//li[@aria-label=\"Apples (42)\"]")
@@ -150,7 +153,7 @@ class TabTest {
 
     @Test
     fun testHandlers() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get(sampleFile("groceries.html"))
 
         val handle1Called = CompletableDeferred<Boolean>()
@@ -180,7 +183,7 @@ class TabTest {
 
     @Test
     fun testWaitForReadyState() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get(sampleFile("groceries.html"))
 
         tab.waitForReadyState(ReadyState.COMPLETE)
@@ -192,7 +195,7 @@ class TabTest {
 
     @Test
     fun testExpect() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
         tab.expect(Regex("groceries.html")) {
@@ -212,7 +215,7 @@ class TabTest {
 
     @Test
     fun testIntercept() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
 
         val userData = tab.intercept(

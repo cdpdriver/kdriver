@@ -65,7 +65,7 @@ Visit a website and do something on it:
 
 ```kotlin
 fun main() = runBlocking {
-    val browser = Browser.create(this)
+    val browser = createBrowser(this)
     val page = browser.get("https://www.browserscan.net/bot-detection")
     page.saveScreenshot(Path("browserscan.png"))
     browser.stop()

@@ -21,7 +21,7 @@ Begin by creating a new script for the tutorial:
 
 ```kotlin
 fun main() = runBlocking {
-    val browser = Browser.create(this)
+    val browser = createBrowser(this)
     // TODO: Read the API response
     val page = browser.get("https://cdpdriver.github.io/examples/api-request.html")
 
@@ -48,7 +48,7 @@ data class UserData(
 
 ```kotlin
 fun main() = runBlocking {
-    val browser = Browser.create(this)
+    val browser = createBrowser(this)
 
     val page = browser.mainTab ?: return@runBlocking
     val userData = page.expect(Regex(".*/user-data.json")) {

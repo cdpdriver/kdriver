@@ -22,7 +22,7 @@ Open a browser, navigate to a page, and scrape the content:
 
 ```kotlin
 fun main() = runBlocking {
-    val browser = Browser.create(this)
+    val browser = createBrowser(this)
     val page = browser.get("https://example.com")
 
     // Get HTML content of the page as a string
@@ -40,7 +40,7 @@ fun main() = runBlocking {
 
 ```kotlin
 fun main() = runBlocking {
-    val browser = Browser.create(this)
+    val browser = createBrowser(this)
     val page2 = browser.get("https://twitter.com", newTab = true)
     val page3 = browser.get("https://github.com/cdpdriver/kdriver", newWindow = true)
 
@@ -58,7 +58,7 @@ I'll leave out the boilerplate here
 
 ```kotlin
 fun main() = runBlocking {
-    val browser = Browser.create(
+    val browser = createBrowser(
         this,
         headless = false,
         userDataDir = Path("/path/to/existing/profile"), // by specifying it, it won't be automatically cleaned up when finished
@@ -86,7 +86,7 @@ fun main() = runBlocking {
         lang = "en-US", // this could set iso-language-code in navigator, not recommended to change
     )
 
-    val browser = Browser.create(this, config)
+    val browser = createBrowser(this, config)
     val tab = browser.get("https://somewebsite.com")
 
     // ...
@@ -103,7 +103,7 @@ fun main() = runBlocking {
     // of this fast beast. You have to carefully consider timing.
     val DELAY = 2000L
 
-    val browser = Browser.create(this)
+    val browser = createBrowser(this)
     val tab = browser.get("https://imgur.com")
 
     // Now we first need an image to upload, lets make a screenshot of the project page

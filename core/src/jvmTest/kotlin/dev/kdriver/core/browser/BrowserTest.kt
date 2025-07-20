@@ -11,7 +11,7 @@ class BrowserTest {
 
     @Test
     fun testBrowserScanBotDetection() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get("https://www.browserscan.net/bot-detection")
         tab.waitForReadyState(ReadyState.COMPLETE)
         tab.wait(2000)
@@ -24,7 +24,7 @@ class BrowserTest {
 
     @Test
     fun testGetContentGetsHtmlContent() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get("https://example.com")
         val content = tab.getContent()
         assertTrue(content.lowercase().startsWith("<!doctype html>"))
@@ -33,7 +33,7 @@ class BrowserTest {
 
     @Test
     fun testUpdateTargetSetsTargetTitle() = runBlocking {
-        val browser = Browser.create(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get("https://example.com")
         tab.updateTarget()
         assertNotNull(tab.targetInfo)
@@ -43,9 +43,9 @@ class BrowserTest {
 
     @Test
     fun testMultipleBrowsersDiffUserData() = runBlocking {
-        val browser1 = Browser.create(this, headless = true, sandbox = false)
-        val browser2 = Browser.create(this, headless = true, sandbox = false)
-        val browser3 = Browser.create(this, headless = true, sandbox = false)
+        val browser1 = createBrowser(this, headless = true, sandbox = false)
+        val browser2 = createBrowser(this, headless = true, sandbox = false)
+        val browser3 = createBrowser(this, headless = true, sandbox = false)
 
         assertTrue(!browser1.config.usesCustomDataDir)
         assertTrue(!browser2.config.usesCustomDataDir)

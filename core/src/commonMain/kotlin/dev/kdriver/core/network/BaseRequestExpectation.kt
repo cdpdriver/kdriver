@@ -1,6 +1,5 @@
 package dev.kdriver.core.network
 
-import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.domain.Network
 import dev.kdriver.cdp.domain.network
 import dev.kdriver.core.tab.Tab
@@ -9,21 +8,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.coroutines.coroutineContext
-import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * Base class for handling request and response expectations.
- * This class provides a context manager to wait for specific network requests and responses
- * based on a URL pattern. It sets up handlers for request and response events and provides
- * properties to access the request, response, and response body.
- *
- * @param tab The Tab instance to monitor.
- * @param urlPattern The URL pattern to match requests and responses.
+ * Default implementation of [RequestExpectation].
  */
-class BaseRequestExpectation(
+open class BaseRequestExpectation(
     private val tab: Tab,
-    private val urlPattern: Regex,
-) {
+    override val urlPattern: Regex,
+) : RequestExpectation {
 
     private var requestJob: Job? = null
     private var responseJob: Job? = null
@@ -60,10 +52,7 @@ class BaseRequestExpectation(
             loadingFinishedJob = null
         }
 
-    /**
-     * Expect a request/response that matches the given [urlPattern].
-     */
-    suspend fun <T> use(block: suspend BaseRequestExpectation.() -> T): T {
+    override suspend fun <T> use(block: suspend RequestExpectation.() -> T): T {
         val coroutineScope = CoroutineScope(coroutineContext)
         tab.network.enable()
         requestJob = coroutineScope.launch {
@@ -84,41 +73,18 @@ class BaseRequestExpectation(
         }
     }
 
-    /**
-     * Returns the request event once it has been received.
-     */
-    suspend fun getRequestEvent(): Network.RequestWillBeSentParameter = requestDeferred.await()
+    override suspend fun getRequestEvent(): Network.RequestWillBeSentParameter = requestDeferred.await()
 
-    /**
-     * Returns the response event once it has been received.
-     */
-    suspend fun getResponseEvent(): Network.ResponseReceivedParameter = responseDeferred.await()
+    override suspend fun getResponseEvent(): Network.ResponseReceivedParameter = responseDeferred.await()
 
-    /**
-     * Returns the request once it has been received.
-     */
-    suspend fun getRequest(): Network.Request = getRequestEvent().request
+    override suspend fun getRequest(): Network.Request = getRequestEvent().request
 
-    /**
-     * Returns the response once it has been received.
-     */
-    suspend fun getResponse(): Network.Response = getResponseEvent().response
+    override suspend fun getResponse(): Network.Response = getResponseEvent().response
 
-    /**
-     * Fetches the raw response body once it has been received.
-     */
-    suspend fun getRawResponseBody(): EncodedBody {
+    override suspend fun getRawResponseBody(): EncodedBody {
         val requestId = getResponseEvent().requestId
         loadingFinishedDeferred.await() // Ensure the loading is finished before fetching the body
         return EncodedBody(tab.network.getResponseBody(requestId))
-    }
-
-    /**
-     * Fetches the response body once it has been received.
-     */
-    @OptIn(ExperimentalEncodingApi::class)
-    suspend inline fun <reified T> getResponseBody(): T {
-        return Serialization.json.decodeFromString<T>(getRawResponseBody().decodedBody)
     }
 
 }
