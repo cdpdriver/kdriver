@@ -40,10 +40,9 @@ import kotlin.time.Duration.Companion.seconds
 open class DefaultTab(
     websocketUrl: String,
     messageListeningScope: CoroutineScope,
-    eventsBufferSize: Int,
     targetInfo: Target.TargetInfo,
     owner: Browser? = null,
-) : DefaultConnection(websocketUrl, messageListeningScope, eventsBufferSize, targetInfo, owner), Tab {
+) : DefaultConnection(websocketUrl, messageListeningScope, targetInfo, owner), Tab {
 
     private val logger = KtorSimpleLogger("Tab")
 

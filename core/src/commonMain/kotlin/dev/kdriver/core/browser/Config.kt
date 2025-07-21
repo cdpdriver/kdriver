@@ -20,7 +20,6 @@ class Config(
     val expert: Boolean = false,
     val browserConnectionTimeout: Long = 500,
     val browserConnectionMaxTries: Int = 60,
-    val eventsBufferSize: Int = 64,
     val autoDiscoverTargets: Boolean = true,
 ) {
 
