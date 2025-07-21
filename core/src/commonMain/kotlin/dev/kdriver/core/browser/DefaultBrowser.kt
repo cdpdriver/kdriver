@@ -198,7 +198,6 @@ open class DefaultBrowser(
         val connection = DefaultConnection(
             websocketUrl = info.webSocketDebuggerUrl,
             messageListeningScope = coroutineScope,
-            eventsBufferSize = config.eventsBufferSize,
             owner = this
         )
         this.connection = connection
@@ -256,7 +255,6 @@ open class DefaultBrowser(
                 val newTarget = DefaultTab(
                     wsUrl,
                     messageListeningScope = coroutineScope,
-                    eventsBufferSize = config.eventsBufferSize,
                     targetInfo = targetInfo,
                     owner = this
                 )
@@ -322,7 +320,6 @@ open class DefaultBrowser(
                 val newConnection = DefaultConnection(
                     websocketUrl = wsUrl,
                     messageListeningScope = coroutineScope,
-                    eventsBufferSize = config.eventsBufferSize,
                     targetInfo = t,
                     owner = this
                 )

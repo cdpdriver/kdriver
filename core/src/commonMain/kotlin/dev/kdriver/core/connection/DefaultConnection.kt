@@ -12,6 +12,7 @@ import io.ktor.http.*
 import io.ktor.util.logging.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterIsInstance
@@ -29,7 +30,6 @@ import kotlin.reflect.KClass
 open class DefaultConnection(
     private val websocketUrl: String,
     private val messageListeningScope: CoroutineScope,
-    private val eventsBufferSize: Int,
     override var targetInfo: Target.TargetInfo? = null,
     var owner: Browser? = null,
 ) : Connection {
@@ -51,7 +51,7 @@ open class DefaultConnection(
     private var prepareHeadlessDone = false
     private var prepareExpertDone = false
 
-    private val allMessages = MutableSharedFlow<Message>(extraBufferCapacity = eventsBufferSize)
+    private val allMessages = MutableSharedFlow<Message>(extraBufferCapacity = Channel.UNLIMITED)
 
     @InternalCdpApi
     override val events: Flow<Message.Event> = allMessages.filterIsInstance()
