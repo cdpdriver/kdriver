@@ -46,7 +46,7 @@ To use kdriver, add the following to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("dev.kdriver:core:0.2.5")
+    implementation("dev.kdriver:core:0.2.6")
 }
 ```
 
