@@ -31,8 +31,8 @@ open class DefaultConnection(
     private val websocketUrl: String,
     private val messageListeningScope: CoroutineScope,
     override var targetInfo: Target.TargetInfo? = null,
-    var owner: Browser? = null,
-) : Connection {
+    override var owner: Browser? = null,
+) : OwnedConnection {
 
     private val logger = KtorSimpleLogger("Connection")
     private val debugStringLimit = 64

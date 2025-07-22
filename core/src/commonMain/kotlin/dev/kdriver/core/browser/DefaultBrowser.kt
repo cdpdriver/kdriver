@@ -5,6 +5,7 @@ import dev.kdriver.cdp.domain.page
 import dev.kdriver.cdp.domain.target
 import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.connection.DefaultConnection
+import dev.kdriver.core.connection.OwnedConnection
 import dev.kdriver.core.exceptions.BrowserExecutableNotFoundException
 import dev.kdriver.core.exceptions.FailedToConnectToBrowserException
 import dev.kdriver.core.exceptions.NoBrowserExecutablePathException
@@ -75,18 +76,33 @@ open class DefaultBrowser(
          */
         suspend fun create(coroutineScope: CoroutineScope, config: Config): Browser {
             val browserScope = CoroutineScope(coroutineScope.coroutineContext + SupervisorJob())
-
             val instance = DefaultBrowser(browserScope, config)
             instance.start()
-
             addShutdownHook {
                 if (!instance.stopped) instance.stop()
                 instance.cleanupTemporaryProfile()
             }
-
             return instance
         }
 
+    }
+
+    open fun createConnection(websocketUrl: String, targetInfo: Target.TargetInfo? = null): Connection {
+        return DefaultConnection(
+            websocketUrl = websocketUrl,
+            messageListeningScope = coroutineScope,
+            targetInfo = targetInfo,
+            owner = this
+        )
+    }
+
+    open fun createTab(websocketUrl: String, targetInfo: Target.TargetInfo): Tab {
+        return DefaultTab(
+            websocketUrl,
+            messageListeningScope = coroutineScope,
+            targetInfo = targetInfo,
+            owner = this
+        )
     }
 
     override suspend fun wait(timeout: Long): Browser {
@@ -115,12 +131,12 @@ open class DefaultBrowser(
                 enableBeginFrameControl = true
             )
             targets.filterIsInstance<Tab>().first { it.type == "page" && it.targetId == targetId.targetId }.also {
-                if (it is DefaultConnection) it.owner = this
+                if (it is OwnedConnection) it.owner = this
             }
         } else {
             targets.filterIsInstance<Tab>().first { it.type == "page" }.also {
                 it.page.navigate(url)
-                if (it is DefaultConnection) it.owner = this
+                if (it is OwnedConnection) it.owner = this
             }
         }
 
@@ -195,11 +211,7 @@ open class DefaultBrowser(
         }
 
         logger.info("Connected to browser at ${info.webSocketDebuggerUrl}")
-        val connection = DefaultConnection(
-            websocketUrl = info.webSocketDebuggerUrl,
-            messageListeningScope = coroutineScope,
-            owner = this
-        )
+        val connection = createConnection(info.webSocketDebuggerUrl)
         this.connection = connection
 
         if (config.autoDiscoverTargets) {
@@ -252,12 +264,7 @@ open class DefaultBrowser(
                 val targetInfo = event.targetInfo
                 val wsUrl = "ws://${config.host}:${config.port}/devtools/${targetInfo.type}/${targetInfo.targetId}"
 
-                val newTarget = DefaultTab(
-                    wsUrl,
-                    messageListeningScope = coroutineScope,
-                    targetInfo = targetInfo,
-                    owner = this
-                )
+                val newTarget = createTab(wsUrl, targetInfo)
                 targets.add(newTarget)
                 logger.debug("target ${targets.size - 1} created => $newTarget")
             }
@@ -317,12 +324,7 @@ open class DefaultBrowser(
                 existingTab.targetInfo = t.copy() // ou update manuellement les champs si nécessaire
             } else {
                 val wsUrl = "ws://${config.host}:${config.port}/devtools/page/${t.targetId}"
-                val newConnection = DefaultConnection(
-                    websocketUrl = wsUrl,
-                    messageListeningScope = coroutineScope,
-                    targetInfo = t,
-                    owner = this
-                )
+                val newConnection = createConnection(wsUrl, t)
                 this.targets.add(newConnection)
             }
         }
