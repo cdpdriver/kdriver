@@ -1,5 +1,6 @@
 package dev.kdriver.core.browser
 
+import dev.kdriver.core.browser.Config.Defaults
 import kotlinx.io.files.Path
 
 /**
@@ -17,18 +18,18 @@ import kotlinx.io.files.Path
 class ConfigBuilder {
 
     var userDataDir: Path? = null
-    var headless: Boolean = false
+    var headless: Boolean = Defaults.HEADLESS
     var userAgent: String? = null
     var browserExecutablePath: Path? = null
     var browserArgs: List<String>? = null
-    var sandbox: Boolean = true
+    var sandbox: Boolean = Defaults.SANDBOX
     var lang: String? = null
     var host: String? = null
     var port: Int? = null
-    var expert: Boolean = false
-    var browserConnectionTimeout: Long = 500
-    var browserConnectionMaxTries: Int = 60
-    var autoDiscoverTargets: Boolean = true
+    var expert: Boolean = Defaults.EXPERT
+    var browserConnectionTimeout: Long = Defaults.BROWSER_CONNECTION_TIMEOUT
+    var browserConnectionMaxTries: Int = Defaults.BROWSER_CONNECTION_MAX_TRIES
+    var autoDiscoverTargets: Boolean = Defaults.AUTO_DISCOVER_TARGETS
 
     /**
      * Builds the Config instance with the configured parameters.

@@ -9,18 +9,18 @@ import kotlinx.io.files.Path
 
 class Config(
     userDataDir: Path? = null,
-    val headless: Boolean = false,
+    val headless: Boolean = Defaults.HEADLESS,
     val userAgent: String? = null,
     browserExecutablePath: Path? = null,
     browserArgs: List<String>? = null,
-    sandbox: Boolean = true,
+    sandbox: Boolean = Defaults.SANDBOX,
     val lang: String? = null,
     var host: String? = null,
     var port: Int? = null,
-    val expert: Boolean = false,
-    val browserConnectionTimeout: Long = 500,
-    val browserConnectionMaxTries: Int = 60,
-    val autoDiscoverTargets: Boolean = true,
+    val expert: Boolean = Defaults.EXPERT,
+    val browserConnectionTimeout: Long = Defaults.BROWSER_CONNECTION_TIMEOUT,
+    val browserConnectionMaxTries: Int = Defaults.BROWSER_CONNECTION_MAX_TRIES,
+    val autoDiscoverTargets: Boolean = Defaults.AUTO_DISCOVER_TARGETS,
 ) {
 
     private val logger = KtorSimpleLogger("Config")
@@ -110,6 +110,15 @@ class Config(
             throw IllegalArgumentException("\"$arg\" not allowed. Please use one of the attributes of the Config object to set it")
         }
         _browserArgs.add(arg)
+    }
+
+    object Defaults {
+        const val HEADLESS: Boolean = false
+        const val SANDBOX: Boolean = true
+        const val EXPERT: Boolean = false
+        const val BROWSER_CONNECTION_TIMEOUT: Long = 500
+        const val BROWSER_CONNECTION_MAX_TRIES: Int = 60
+        const val AUTO_DISCOVER_TARGETS: Boolean = true
     }
 
 }
