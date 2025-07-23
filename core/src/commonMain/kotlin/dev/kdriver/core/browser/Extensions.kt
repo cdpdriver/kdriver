@@ -68,3 +68,31 @@ suspend fun createBrowser(
     coroutineScope = coroutineScope,
     config = config
 )
+
+/**
+ * The entry point for creating a new Browser instance using DSL configuration.
+ *
+ * This convenience function allows direct inline configuration using the DSL syntax.
+ *
+ * @param coroutineScope The parent CoroutineScope, in which the browser will run.
+ * @param block The configuration block to apply to the ConfigBuilder.
+ * @return A new instance of the Browser class.
+ */
+
+suspend fun createBrowser(
+    coroutineScope: CoroutineScope,
+    block: ConfigBuilder.() -> Unit
+): Browser = createBrowser(coroutineScope, config(block))
+
+
+
+/**
+ * Creates a Config instance using Kotlin DSL syntax.
+ *
+ * @param block The configuration block to apply to the ConfigBuilder.
+ * @return A new Config instance with the specified configuration.
+ */
+fun config(block: ConfigBuilder.() -> Unit): Config {
+    return ConfigBuilder().apply(block).build()
+}
+
