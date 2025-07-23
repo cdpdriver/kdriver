@@ -4,6 +4,14 @@ import kotlinx.io.files.Path
 
 /**
  * Builder class for creating Config instances using Kotlin DSL syntax.
+ *
+ * Example usage:
+ * ```
+ * val config = config {
+ *     headless = true
+ *     userAgent = "Custom Agent"
+ *     sandbox = false
+ * }
  * ```
  */
 class ConfigBuilder {
