@@ -19,7 +19,6 @@ class ConfigDslTest {
         val browser = createBrowser(this, cfg)
 
         val tab = browser.get("https://example.com")
-        tab.waitForReadyState(ReadyState.COMPLETE)
 
         assertTrue(cfg.headless)
         assertEquals(cfg, browser.config)
@@ -37,7 +36,6 @@ class ConfigDslTest {
         }
 
         val tab = browser.get("https://example.com")
-        tab.waitForReadyState(ReadyState.COMPLETE)
 
         assertTrue(browser.config.headless)
         assertEquals(false, browser.config.sandbox)
