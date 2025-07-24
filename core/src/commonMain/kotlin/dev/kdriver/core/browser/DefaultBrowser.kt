@@ -1,6 +1,7 @@
 package dev.kdriver.core.browser
 
 import dev.kdriver.cdp.domain.Target
+import dev.kdriver.cdp.domain.browser
 import dev.kdriver.cdp.domain.page
 import dev.kdriver.cdp.domain.target
 import dev.kdriver.core.connection.Connection
@@ -297,6 +298,7 @@ open class DefaultBrowser(
 
     override suspend fun stop() {
         logger.info("Stopping browser process with PID: ${process?.pid()}")
+        connection?.browser?.close()
         process?.destroy()
         process = null
         connection?.close()
