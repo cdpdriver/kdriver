@@ -88,23 +88,11 @@ open class DefaultBrowser(
 
     }
 
-    open fun createConnection(websocketUrl: String, targetInfo: Target.TargetInfo? = null): Connection {
-        return DefaultConnection(
-            websocketUrl = websocketUrl,
-            messageListeningScope = coroutineScope,
-            targetInfo = targetInfo,
-            owner = this
-        )
-    }
+    protected open fun createConnection(websocketUrl: String, targetInfo: Target.TargetInfo? = null): Connection =
+        DefaultConnection(websocketUrl, coroutineScope, targetInfo, this)
 
-    open fun createTab(websocketUrl: String, targetInfo: Target.TargetInfo): Tab {
-        return DefaultTab(
-            websocketUrl,
-            messageListeningScope = coroutineScope,
-            targetInfo = targetInfo,
-            owner = this
-        )
-    }
+    protected open fun createTab(websocketUrl: String, targetInfo: Target.TargetInfo): Tab =
+        DefaultTab(websocketUrl, coroutineScope, targetInfo, this)
 
     override suspend fun wait(timeout: Long): Browser {
         delay(timeout)
