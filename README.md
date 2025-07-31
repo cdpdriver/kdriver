@@ -16,6 +16,7 @@ the Chrome DevTools Protocol (CDP) under the hood to interact with real Chrome i
 to heavy tools like Selenium or Puppeteer — all without relying on WebDriver.
 
 * **Documentation:** [kdriver.dev](https://kdriver.dev)
+* **AI-generated wiki:** [deepwiki.com/cdpdriver/kdriver](https://deepwiki.com/cdpdriver/kdriver)
 * **Repository:** [github.com/cdpdriver/kdriver](https://github.com/cdpdriver/kdriver)
 * **Code coverage:** [codecov.io/github/cdpdriver/kdriver](https://codecov.io/github/cdpdriver/kdriver)
 
