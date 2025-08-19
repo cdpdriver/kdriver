@@ -6,7 +6,7 @@ plugins {
 
 allprojects {
     group = "dev.kdriver"
-    version = "0.2.8"
+    version = "0.2.9"
     project.ext.set("url", "https://github.com/cdpdriver/kdriver")
     project.ext.set("license.name", "Apache 2.0")
     project.ext.set("license.url", "https://www.apache.org/licenses/LICENSE-2.0.txt")
