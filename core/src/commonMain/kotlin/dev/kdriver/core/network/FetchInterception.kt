@@ -31,6 +31,11 @@ interface FetchInterception {
     suspend fun getRequestEvent(): Fetch.RequestPausedParameter
 
     /**
+     * Returns the request once it has been received.
+     */
+    suspend fun getRequest(): Network.Request
+
+    /**
      * Fetches the raw response body once it has been received.
      */
     suspend fun getRawResponseBody(): EncodedBody
