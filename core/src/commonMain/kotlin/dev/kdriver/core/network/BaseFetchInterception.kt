@@ -54,6 +54,8 @@ open class BaseFetchInterception(
 
     override suspend fun getRequestEvent(): Fetch.RequestPausedParameter = responseDeferred.await()
 
+    override suspend fun getRequest(): Network.Request = getRequestEvent().request
+
     override suspend fun getRawResponseBody(): EncodedBody {
         val requestId = getRequestEvent().requestId
         return EncodedBody(tab.fetch.getResponseBody(requestId))
