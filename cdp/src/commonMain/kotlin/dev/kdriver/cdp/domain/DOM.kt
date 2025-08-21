@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -12,6 +14,15 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * This domain exposes DOM read/write operations. Each DOM Node is represented with its mirror object
+ * that has an `id`. This `id` can be used to get additional information on the Node, resolve it into
+ * the JavaScript object wrapper, etc. It is important that client receives DOM events only for the
+ * nodes that are known to the client. Backend keeps track of the nodes that were sent to the client
+ * and never sends the same node twice. It is client's responsibility to collect information about
+ * the nodes that were sent to the client. Note that `iframe` owner elements will return
+ * corresponding document elements as their child nodes.
+ */
 public val CDP.dom: DOM
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(DOM(this))
 
@@ -616,13 +627,20 @@ public class DOM(
      * @param nodeId Identifier of the node.
      * @param backendNodeId Identifier of the backend node.
      * @param objectId JavaScript object id of the node wrapper.
+     * @param includeShadowDOM Include all shadow roots. Equals to false if not specified.
      */
     public suspend fun getOuterHTML(
         nodeId: Int? = null,
         backendNodeId: Int? = null,
         objectId: String? = null,
+        includeShadowDOM: Boolean? = null,
     ): GetOuterHTMLReturn {
-        val parameter = GetOuterHTMLParameter(nodeId = nodeId, backendNodeId = backendNodeId, objectId = objectId)
+        val parameter = GetOuterHTMLParameter(
+            nodeId = nodeId,
+            backendNodeId = backendNodeId,
+            objectId = objectId,
+            includeShadowDOM = includeShadowDOM
+        )
         return getOuterHTML(parameter)
     }
 
@@ -1297,9 +1315,9 @@ public class DOM(
     /**
      * Returns the query container of the given node based on container query
      * conditions: containerName, physical and logical axes, and whether it queries
-     * scroll-state. If no axes are provided and queriesScrollState is false, the
-     * style container is returned, which is the direct parent or the closest
-     * element with a matching container-name.
+     * scroll-state or anchored elements. If no axes are provided and
+     * queriesScrollState is false, the style container is returned, which is the
+     * direct parent or the closest element with a matching container-name.
      */
     public suspend fun getContainerForNode(
         args: GetContainerForNodeParameter,
@@ -1313,15 +1331,16 @@ public class DOM(
     /**
      * Returns the query container of the given node based on container query
      * conditions: containerName, physical and logical axes, and whether it queries
-     * scroll-state. If no axes are provided and queriesScrollState is false, the
-     * style container is returned, which is the direct parent or the closest
-     * element with a matching container-name.
+     * scroll-state or anchored elements. If no axes are provided and
+     * queriesScrollState is false, the style container is returned, which is the
+     * direct parent or the closest element with a matching container-name.
      *
      * @param nodeId No description
      * @param containerName No description
      * @param physicalAxes No description
      * @param logicalAxes No description
      * @param queriesScrollState No description
+     * @param queriesAnchored No description
      */
     public suspend fun getContainerForNode(
         nodeId: Int,
@@ -1329,13 +1348,15 @@ public class DOM(
         physicalAxes: PhysicalAxes? = null,
         logicalAxes: LogicalAxes? = null,
         queriesScrollState: Boolean? = null,
+        queriesAnchored: Boolean? = null,
     ): GetContainerForNodeReturn {
         val parameter = GetContainerForNodeParameter(
             nodeId = nodeId,
             containerName = containerName,
             physicalAxes = physicalAxes,
             logicalAxes = logicalAxes,
-            queriesScrollState = queriesScrollState
+            queriesScrollState = queriesScrollState,
+            queriesAnchored = queriesAnchored
         )
         return getContainerForNode(parameter)
     }
@@ -1393,6 +1414,32 @@ public class DOM(
     }
 
     /**
+     * When enabling, this API force-opens the popover identified by nodeId
+     * and keeps it open until disabled.
+     */
+    public suspend fun forceShowPopover(
+        args: ForceShowPopoverParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): ForceShowPopoverReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("DOM.forceShowPopover", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * When enabling, this API force-opens the popover identified by nodeId
+     * and keeps it open until disabled.
+     *
+     * @param nodeId Id of the popover HTMLElement
+     * @param enable If true, opens the popover and keeps it open. If false, closes the
+     * popover if it was previously force-opened.
+     */
+    public suspend fun forceShowPopover(nodeId: Int, enable: Boolean): ForceShowPopoverReturn {
+        val parameter = ForceShowPopoverParameter(nodeId = nodeId, enable = enable)
+        return forceShowPopover(parameter)
+    }
+
+    /**
      * Backend node with a friendly name.
      */
     @Serializable
@@ -1430,6 +1477,9 @@ public class DOM(
 
         @SerialName("picker-icon")
         PICKER_ICON,
+
+        @SerialName("interest-hint")
+        INTEREST_HINT,
 
         @SerialName("marker")
         MARKER,
@@ -2379,6 +2429,10 @@ public class DOM(
          * JavaScript object id of the node wrapper.
          */
         public val objectId: String? = null,
+        /**
+         * Include all shadow roots. Equals to false if not specified.
+         */
+        public val includeShadowDOM: Boolean? = null,
     )
 
     @Serializable
@@ -2835,6 +2889,7 @@ public class DOM(
         public val physicalAxes: PhysicalAxes? = null,
         public val logicalAxes: LogicalAxes? = null,
         public val queriesScrollState: Boolean? = null,
+        public val queriesAnchored: Boolean? = null,
     )
 
     @Serializable
@@ -2882,5 +2937,26 @@ public class DOM(
          * The anchor element of the given anchor query.
          */
         public val nodeId: Int,
+    )
+
+    @Serializable
+    public data class ForceShowPopoverParameter(
+        /**
+         * Id of the popover HTMLElement
+         */
+        public val nodeId: Int,
+        /**
+         * If true, opens the popover and keeps it open. If false, closes the
+         * popover if it was previously force-opened.
+         */
+        public val enable: Boolean,
+    )
+
+    @Serializable
+    public data class ForceShowPopoverReturn(
+        /**
+         * List of popovers that were closed in order to respect popover stacking order.
+         */
+        public val nodeIds: List<Int>,
     )
 }

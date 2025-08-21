@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -11,6 +13,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * This domain emulates different environments for the page.
+ */
 public val CDP.emulation: Emulation
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Emulation(this))
 
@@ -889,6 +894,27 @@ public class Emulation(
         setDisabledImageTypes(parameter)
     }
 
+    /**
+     * Override the value of navigator.connection.saveData
+     */
+    public suspend fun setDataSaverOverride(
+        args: SetDataSaverOverrideParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.setDataSaverOverride", parameter, mode)
+    }
+
+    /**
+     * Override the value of navigator.connection.saveData
+     *
+     * @param dataSaverEnabled Override value. Omitting the parameter disables the override.
+     */
+    public suspend fun setDataSaverOverride(dataSaverEnabled: Boolean? = null) {
+        val parameter = SetDataSaverOverrideParameter(dataSaverEnabled = dataSaverEnabled)
+        setDataSaverOverride(parameter)
+    }
+
     public suspend fun setHardwareConcurrencyOverride(
         args: SetHardwareConcurrencyOverrideParameter,
         mode: CommandMode = CommandMode.DEFAULT,
@@ -1595,6 +1621,14 @@ public class Emulation(
          * Image types to disable.
          */
         public val imageTypes: List<DisabledImageType>,
+    )
+
+    @Serializable
+    public data class SetDataSaverOverrideParameter(
+        /**
+         * Override value. Omitting the parameter disables the override.
+         */
+        public val dataSaverEnabled: Boolean? = null,
     )
 
     @Serializable

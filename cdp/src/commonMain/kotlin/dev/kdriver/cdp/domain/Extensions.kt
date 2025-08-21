@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -8,6 +10,9 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Defines commands and events for browser extensions.
+ */
 public val CDP.extensions: Extensions
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Extensions(this))
 

@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -6,6 +8,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * This domain provides experimental commands only supported in headless mode.
+ */
 public val CDP.headlessExperimental: HeadlessExperimental
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(HeadlessExperimental(this))
 

@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -11,6 +13,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Actions and events related to the inspected page belong to the page domain.
+ */
 public val CDP.page: Page
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Page(this))
 
@@ -299,8 +304,7 @@ public class Page(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
-     * Issued for every compilation cache generated. Is only available
-     * if Page.setGenerateCompilationCache is enabled.
+     * Issued for every compilation cache generated.
      */
     public val compilationCacheProduced: Flow<CompilationCacheProducedParameter> = cdp
         .events
@@ -1756,6 +1760,9 @@ public class Page(
         @SerialName("ambient-light-sensor")
         AMBIENT_LIGHT_SENSOR,
 
+        @SerialName("aria-notify")
+        ARIA_NOTIFY,
+
         @SerialName("attribution-reporting")
         ATTRIBUTION_REPORTING,
 
@@ -1869,6 +1876,9 @@ public class Page(
 
         @SerialName("device-attributes")
         DEVICE_ATTRIBUTES,
+
+        @SerialName("digital-credentials-create")
+        DIGITAL_CREDENTIALS_CREATE,
 
         @SerialName("digital-credentials-get")
         DIGITAL_CREDENTIALS_GET,
@@ -3861,8 +3871,7 @@ public class Page(
     )
 
     /**
-     * Issued for every compilation cache generated. Is only available
-     * if Page.setGenerateCompilationCache is enabled.
+     * Issued for every compilation cache generated.
      */
     @Serializable
     public data class CompilationCacheProducedParameter(
@@ -4207,6 +4216,10 @@ public class Page(
          * User friendly error message, present if and only if navigation has failed.
          */
         public val errorText: String?,
+        /**
+         * Whether the navigation resulted in a download.
+         */
+        public val isDownload: Boolean?,
     )
 
     @Serializable

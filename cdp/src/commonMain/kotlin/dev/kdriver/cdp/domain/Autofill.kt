@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -11,6 +13,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Defines commands and events for Autofill.
+ */
 public val CDP.autofill: Autofill
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Autofill(this))
 

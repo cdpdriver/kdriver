@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -7,6 +9,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * This domain allows interacting with the browser to control PWAs.
+ */
 public val CDP.pwa: PWA
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(PWA(this))
 

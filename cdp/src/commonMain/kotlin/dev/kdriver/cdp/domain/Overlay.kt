@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -12,6 +14,9 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * This domain provides various functionality related to drawing atop the inspected page.
+ */
 public val CDP.overlay: Overlay
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Overlay(this))
 
@@ -1158,9 +1163,6 @@ public class Overlay(
 
         @SerialName("captureAreaScreenshot")
         CAPTUREAREASCREENSHOT,
-
-        @SerialName("showDistances")
-        SHOWDISTANCES,
 
         @SerialName("none")
         NONE,

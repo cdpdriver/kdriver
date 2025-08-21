@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -11,6 +13,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * The Browser domain defines methods and events for browser managing.
+ */
 public val CDP.browser: Browser
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Browser(this))
 
@@ -323,6 +328,32 @@ public class Browser(
     public suspend fun setWindowBounds(windowId: Int, bounds: Bounds) {
         val parameter = SetWindowBoundsParameter(windowId = windowId, bounds = bounds)
         setWindowBounds(parameter)
+    }
+
+    /**
+     * Set size of the browser contents resizing browser window as necessary.
+     */
+    public suspend fun setContentsSize(args: SetContentsSizeParameter, mode: CommandMode = CommandMode.DEFAULT) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Browser.setContentsSize", parameter, mode)
+    }
+
+    /**
+     * Set size of the browser contents resizing browser window as necessary.
+     *
+     * @param windowId Browser window id.
+     * @param width The window contents width in DIP. Assumes current width if omitted.
+     * Must be specified if 'height' is omitted.
+     * @param height The window contents height in DIP. Assumes current height if omitted.
+     * Must be specified if 'width' is omitted.
+     */
+    public suspend fun setContentsSize(
+        windowId: Int,
+        width: Int? = null,
+        height: Int? = null,
+    ) {
+        val parameter = SetContentsSizeParameter(windowId = windowId, width = width, height = height)
+        setContentsSize(parameter)
     }
 
     /**
@@ -951,6 +982,24 @@ public class Browser(
          * with 'left', 'top', 'width' or 'height'. Leaves unspecified fields unchanged.
          */
         public val bounds: Bounds,
+    )
+
+    @Serializable
+    public data class SetContentsSizeParameter(
+        /**
+         * Browser window id.
+         */
+        public val windowId: Int,
+        /**
+         * The window contents width in DIP. Assumes current width if omitted.
+         * Must be specified if 'height' is omitted.
+         */
+        public val width: Int? = null,
+        /**
+         * The window contents height in DIP. Assumes current height if omitted.
+         * Must be specified if 'width' is omitted.
+         */
+        public val height: Int? = null,
     )
 
     @Serializable

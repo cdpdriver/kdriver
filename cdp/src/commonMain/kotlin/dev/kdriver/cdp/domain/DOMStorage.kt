@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -10,6 +12,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Query and modify DOM storage.
+ */
 public val CDP.dOMStorage: DOMStorage
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(DOMStorage(this))
 

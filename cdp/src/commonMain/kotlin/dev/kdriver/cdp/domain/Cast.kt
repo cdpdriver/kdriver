@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -10,6 +12,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * A domain for interacting with Cast, Presentation API, and Remote Playback API
+ * functionalities.
+ */
 public val CDP.cast: Cast
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Cast(this))
 

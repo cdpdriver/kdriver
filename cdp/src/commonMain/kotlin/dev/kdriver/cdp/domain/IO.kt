@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -6,6 +8,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Input/Output operations for streams produced by DevTools.
+ */
 public val CDP.io: IO
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(IO(this))
 

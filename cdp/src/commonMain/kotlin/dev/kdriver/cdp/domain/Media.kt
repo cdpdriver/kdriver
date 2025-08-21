@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -10,6 +12,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 
+/**
+ * This domain allows detailed inspection of media elements
+ */
 public val CDP.media: Media
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Media(this))
 

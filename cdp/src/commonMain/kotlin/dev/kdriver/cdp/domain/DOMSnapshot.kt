@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -6,6 +8,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * This domain facilitates obtaining document snapshots with DOM, layout, and style information.
+ */
 public val CDP.dOMSnapshot: DOMSnapshot
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(DOMSnapshot(this))
 

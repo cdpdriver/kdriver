@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -12,6 +14,10 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Debugger domain exposes JavaScript debugging capabilities. It allows setting and removing
+ * breakpoints, stepping through execution, exploring stack traces, etc.
+ */
 public val CDP.debugger: Debugger
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Debugger(this))
 

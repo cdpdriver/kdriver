@@ -51,14 +51,23 @@ fun Domain.generateClassFile(domains: List<Domain>): FileSpec {
         .addImport(BASE_PACKAGE_NAME, "getGeneratedDomain", "cacheGeneratedDomain", "CommandMode")
         .addImport("kotlinx.serialization.json", "decodeFromJsonElement", "encodeToJsonElement")
         .addImport("kotlinx.coroutines.flow", "filter", "filterNotNull", "map")
+        .addAnnotation(
+            AnnotationSpec.builder(Suppress::class)
+                .addMember("%S", "ALL")
+                .useSiteTarget(AnnotationSpec.UseSiteTarget.FILE)
+                .build()
+        )
         .addProperty(
             PropertySpec.builder(domain.toLowerCamelCase(), ClassName(PACKAGE_NAME, domain))
-                .receiver(CDP)
-                .getter(
-                    FunSpec.getterBuilder()
-                        .addCode("return getGeneratedDomain() ?: cacheGeneratedDomain($domain(this))")
-                        .build()
-                )
+                .apply {
+                    description?.let { addKdoc(it) }
+                    receiver(CDP)
+                    getter(
+                        FunSpec.getterBuilder()
+                            .addCode("return getGeneratedDomain() ?: cacheGeneratedDomain($domain(this))")
+                            .build()
+                    )
+                }
                 .build()
         )
         .addType(domainClass)

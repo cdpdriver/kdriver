@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -5,6 +7,11 @@ import dev.kdriver.cdp.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * EventBreakpoints permits setting JavaScript breakpoints on operations and events
+ * occurring in native code invoked from JavaScript. Once breakpoint is hit, it is
+ * reported through Debugger domain, similarly to regular breakpoints being hit.
+ */
 public val CDP.eventBreakpoints: EventBreakpoints
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(EventBreakpoints(this))
 

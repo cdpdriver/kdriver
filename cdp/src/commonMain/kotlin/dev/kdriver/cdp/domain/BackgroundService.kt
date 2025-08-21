@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -11,6 +13,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Defines events for background web platform features.
+ */
 public val CDP.backgroundService: BackgroundService
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(BackgroundService(this))
 

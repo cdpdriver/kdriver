@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -10,6 +12,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Reporting of performance timeline events, as specified in
+ * https://w3c.github.io/performance-timeline/#dom-performanceobserver.
+ */
 public val CDP.performanceTimeline: PerformanceTimeline
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(PerformanceTimeline(this))
 

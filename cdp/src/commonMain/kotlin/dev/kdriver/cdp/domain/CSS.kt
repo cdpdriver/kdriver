@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -8,9 +10,18 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * This domain exposes CSS read/write operations. All CSS objects (stylesheets, rules, and styles)
+ * have an associated `id` used in subsequent operations on the related object. Each object type has
+ * a specific `id` structure, and those are not interchangeable between objects of different kinds.
+ * CSS objects can be loaded using the `get*ForNode()` calls (which accept a DOM node id). A client
+ * can also keep track of stylesheets via the `styleSheetAdded`/`styleSheetRemoved` events and
+ * subsequently load the required stylesheet contents using the `getStyleSheet[Text]()` methods.
+ */
 public val CDP.css: CSS
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(CSS(this))
 
@@ -297,8 +308,7 @@ public class CSS(
      * syntax as if null `propertyName` was provided. If the value cannot be
      * resolved even then, return the provided value without any changes.
      *
-     * @param values Substitution functions (var()/env()/attr()) and cascade-dependent
-     * keywords (revert/revert-layer) do not work.
+     * @param values Cascade-dependent keywords (revert/revert-layer) do not work.
      * @param nodeId Id of the node in whose context the expression is evaluated
      * @param propertyName Only longhands and custom property names are accepted.
      * @param pseudoType Pseudo element type, only works for pseudo elements that generate
@@ -410,6 +420,15 @@ public class CSS(
     public suspend fun getMatchedStylesForNode(nodeId: Int): GetMatchedStylesForNodeReturn {
         val parameter = GetMatchedStylesForNodeParameter(nodeId = nodeId)
         return getMatchedStylesForNode(parameter)
+    }
+
+    /**
+     * Returns the values of the default UA-defined environment variables used in env()
+     */
+    public suspend fun getEnvironmentVariables(mode: CommandMode = CommandMode.DEFAULT): GetEnvironmentVariablesReturn {
+        val parameter = null
+        val result = cdp.callCommand("CSS.getEnvironmentVariables", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
@@ -1524,6 +1543,10 @@ public class CSS(
          * true if the query contains scroll-state() queries.
          */
         public val queriesScrollState: Boolean? = null,
+        /**
+         * true if the query contains anchored() queries.
+         */
+        public val queriesAnchored: Boolean? = null,
     )
 
     /**
@@ -2156,8 +2179,7 @@ public class CSS(
     @Serializable
     public data class ResolveValuesParameter(
         /**
-         * Substitution functions (var()/env()/attr()) and cascade-dependent
-         * keywords (revert/revert-layer) do not work.
+         * Cascade-dependent keywords (revert/revert-layer) do not work.
          */
         public val values: List<String>,
         /**
@@ -2298,6 +2320,11 @@ public class CSS(
          * A list of CSS at-function rules referenced by styles of this node.
          */
         public val cssFunctionRules: List<CSSFunctionRule>?,
+    )
+
+    @Serializable
+    public data class GetEnvironmentVariablesReturn(
+        public val environmentVariables: Map<String, JsonElement>,
     )
 
     @Serializable

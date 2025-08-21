@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -11,6 +13,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Supports additional targets discovery and allows to attach to them.
+ */
 public val CDP.target: Target
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Target(this))
 
@@ -571,6 +576,28 @@ public class Target(
         setRemoteLocations(parameter)
     }
 
+    /**
+     * Opens a DevTools window for the target.
+     */
+    public suspend fun openDevTools(
+        args: OpenDevToolsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): OpenDevToolsReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("Target.openDevTools", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Opens a DevTools window for the target.
+     *
+     * @param targetId This can be the page or tab target ID.
+     */
+    public suspend fun openDevTools(targetId: String): OpenDevToolsReturn {
+        val parameter = OpenDevToolsParameter(targetId = targetId)
+        return openDevTools(parameter)
+    }
+
     @Serializable
     public data class TargetInfo(
         public val targetId: String,
@@ -1004,5 +1031,21 @@ public class Target(
          * List of remote locations.
          */
         public val locations: List<RemoteLocation>,
+    )
+
+    @Serializable
+    public data class OpenDevToolsParameter(
+        /**
+         * This can be the page or tab target ID.
+         */
+        public val targetId: String,
+    )
+
+    @Serializable
+    public data class OpenDevToolsReturn(
+        /**
+         * The targetId of DevTools page target.
+         */
+        public val targetId: String,
     )
 }

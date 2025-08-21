@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -119,21 +121,6 @@ public class ServiceWorker(
     public suspend fun enable(mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = null
         cdp.callCommand("ServiceWorker.enable", parameter, mode)
-    }
-
-    public suspend fun inspectWorker(args: InspectWorkerParameter, mode: CommandMode = CommandMode.DEFAULT) {
-        val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("ServiceWorker.inspectWorker", parameter, mode)
-    }
-
-    /**
-     *
-     *
-     * @param versionId No description
-     */
-    public suspend fun inspectWorker(versionId: String) {
-        val parameter = InspectWorkerParameter(versionId = versionId)
-        inspectWorker(parameter)
     }
 
     public suspend fun setForceUpdateOnPageLoad(
@@ -352,11 +339,6 @@ public class ServiceWorker(
         public val origin: String,
         public val registrationId: String,
         public val tag: String,
-    )
-
-    @Serializable
-    public data class InspectWorkerParameter(
-        public val versionId: String,
     )
 
     @Serializable

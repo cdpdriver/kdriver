@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -11,6 +13,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * This domain allows inspection of Web Audio API.
+ * https://webaudio.github.io/web-audio-api/
+ */
 public val CDP.webAudio: WebAudio
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(WebAudio(this))
 

@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -11,6 +13,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * A domain for letting clients substitute browser's network layer with client code.
+ */
 public val CDP.fetch: Fetch
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Fetch(this))
 

@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -10,6 +12,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Provides access to log entries.
+ */
 public val CDP.log: Log
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Log(this))
 

@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -9,6 +11,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 
+/**
+ * This domain is deprecated - use Runtime or Log instead.
+ */
 public val CDP.console: Console
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Console(this))
 

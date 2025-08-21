@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -12,6 +14,10 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Network domain allows tracking network activities of the page. It exposes information about http,
+ * file, data and other requests and responses, their headers, bodies, timing, etc.
+ */
 public val CDP.network: Network
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Network(this))
 
@@ -2215,6 +2221,11 @@ public class Network(
          * Security details for the request.
          */
         public val securityDetails: SecurityDetails? = null,
+        /**
+         * Indicates whether the request was sent through IP Protection proxies. If
+         * set to true, the request used the IP Protection privacy feature.
+         */
+        public val isIpProtectionUsed: Boolean? = null,
     )
 
     /**
@@ -3066,8 +3077,8 @@ public class Network(
         @SerialName("Loopback")
         LOOPBACK,
 
-        @SerialName("Private")
-        PRIVATE,
+        @SerialName("Local")
+        LOCAL,
 
         @SerialName("Public")
         PUBLIC,

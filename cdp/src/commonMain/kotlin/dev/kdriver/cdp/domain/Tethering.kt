@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -10,6 +12,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * The Tethering domain defines methods and events for browser port binding.
+ */
 public val CDP.tethering: Tethering
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Tethering(this))
 

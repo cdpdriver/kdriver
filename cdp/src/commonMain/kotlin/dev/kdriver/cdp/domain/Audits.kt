@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -11,6 +13,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * Audits domain allows investigation of page violations and possible improvements.
+ */
 public val CDP.audits: Audits
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Audits(this))
 
@@ -806,6 +811,21 @@ public class Audits(
         VALIDATIONFAILEDINTEGRITYMISMATCH,
     }
 
+    @Serializable
+    public enum class UnencodedDigestError {
+        @SerialName("MalformedDictionary")
+        MALFORMEDDICTIONARY,
+
+        @SerialName("UnknownAlgorithm")
+        UNKNOWNALGORITHM,
+
+        @SerialName("IncorrectDigestType")
+        INCORRECTDIGESTTYPE,
+
+        @SerialName("IncorrectDigestLength")
+        INCORRECTDIGESTLENGTH,
+    }
+
     /**
      * Details for issues around "Attribution Reporting API" usage.
      * Explainer: https://github.com/WICG/attribution-reporting-api
@@ -852,6 +872,12 @@ public class Audits(
         public val error: SRIMessageSignatureError,
         public val signatureBase: String,
         public val integrityAssertions: List<String>,
+        public val request: AffectedRequest,
+    )
+
+    @Serializable
+    public data class UnencodedDigestIssueDetails(
+        public val error: UnencodedDigestError,
         public val request: AffectedRequest,
     )
 
@@ -1299,6 +1325,9 @@ public class Audits(
 
         @SerialName("BlockedSubresource")
         BLOCKEDSUBRESOURCE,
+
+        @SerialName("NoisedCanvasReadback")
+        NOISEDCANVASREADBACK,
     }
 
     /**
@@ -1312,6 +1341,10 @@ public class Audits(
          * Applies to BlockedFrameNavigation and BlockedSubresource issue types.
          */
         public val request: AffectedRequest? = null,
+        /**
+         * Applies to NoisedCanvasReadback issue type.
+         */
+        public val sourceCodeLocation: SourceCodeLocation? = null,
     )
 
     /**
@@ -1393,6 +1426,9 @@ public class Audits(
         @SerialName("SRIMessageSignatureIssue")
         SRIMESSAGESIGNATUREISSUE,
 
+        @SerialName("UnencodedDigestIssue")
+        UNENCODEDDIGESTISSUE,
+
         @SerialName("UserReidentificationIssue")
         USERREIDENTIFICATIONISSUE,
     }
@@ -1430,6 +1466,7 @@ public class Audits(
         public val sharedDictionaryIssueDetails: SharedDictionaryIssueDetails? = null,
         public val elementAccessibilityIssueDetails: ElementAccessibilityIssueDetails? = null,
         public val sriMessageSignatureIssueDetails: SRIMessageSignatureIssueDetails? = null,
+        public val unencodedDigestIssueDetails: UnencodedDigestIssueDetails? = null,
         public val userReidentificationIssueDetails: UserReidentificationIssueDetails? = null,
     )
 

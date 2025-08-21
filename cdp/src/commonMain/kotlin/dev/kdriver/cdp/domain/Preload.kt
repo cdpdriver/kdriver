@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -136,6 +138,9 @@ public class Preload(
 
         @SerialName("InvalidRulesSkipped")
         INVALIDRULESSKIPPED,
+
+        @SerialName("InvalidRulesetLevelTag")
+        INVALIDRULESETLEVELTAG,
     }
 
     /**
@@ -418,6 +423,9 @@ public class Preload(
 
         @SerialName("BrowsingDataRemoved")
         BROWSINGDATAREMOVED,
+
+        @SerialName("PrerenderHostReused")
+        PRERENDERHOSTREUSED,
     }
 
     /**

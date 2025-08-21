@@ -1,3 +1,5 @@
+@file:Suppress("ALL")
+
 package dev.kdriver.cdp.domain
 
 import dev.kaccelero.serializers.Serialization
@@ -7,6 +9,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
+/**
+ * DOM debugging allows setting breakpoints on particular DOM operations and events. JavaScript
+ * execution will stop on these operations as if there was a regular breakpoint set.
+ */
 public val CDP.dOMDebugger: DOMDebugger
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(DOMDebugger(this))
 
