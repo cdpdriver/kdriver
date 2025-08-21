@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.serialization)
     alias(libs.plugins.kover)
+    alias(libs.plugins.detekt)
     alias(libs.plugins.dokka)
     alias(libs.plugins.ksp)
     alias(libs.plugins.maven)
@@ -95,4 +96,10 @@ kotlin {
             }
         }
     }
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom("${rootProject.projectDir}/detekt.yml")
+    source.from(file("src/commonMain/kotlin"))
 }

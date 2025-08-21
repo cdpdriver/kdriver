@@ -17,6 +17,7 @@ dependencyResolutionManagement {
             plugin("multiplatform", "org.jetbrains.kotlin.multiplatform").versionRef("kotlin")
             plugin("serialization", "org.jetbrains.kotlin.plugin.serialization").versionRef("kotlin")
             plugin("kover", "org.jetbrains.kotlinx.kover").version("0.8.3")
+            plugin("detekt", "io.gitlab.arturbosch.detekt").version("1.23.8")
             plugin("dokka", "org.jetbrains.dokka").version("2.0.0")
             plugin("ksp", "com.google.devtools.ksp").version("2.1.21-2.0.2")
             plugin("maven", "com.vanniktech.maven.publish").version("0.30.0")
