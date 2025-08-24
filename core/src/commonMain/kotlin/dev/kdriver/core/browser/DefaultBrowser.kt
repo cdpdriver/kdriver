@@ -40,7 +40,7 @@ open class DefaultBrowser(
     override val targets: MutableList<Connection> = mutableListOf()
 
     override val websocketUrl: String
-        get() = info?.webSocketDebuggerUrl ?: throw IllegalStateException("Browser not yet started. Call start() first")
+        get() = info?.webSocketDebuggerUrl ?: error("Browser not yet started. Call start() first")
 
     override val mainTab: Tab?
         get() = targets.filterIsInstance<Tab>().maxByOrNull { it.type == "page" }
@@ -100,7 +100,7 @@ open class DefaultBrowser(
     }
 
     override suspend fun get(url: String, newTab: Boolean, newWindow: Boolean): Tab {
-        val connection = connection ?: throw IllegalStateException("Browser not yet started. Call start() first")
+        val connection = connection ?: error("Browser not yet started. Call start() first")
 
         val future = CompletableDeferred<Target.TargetInfoChangedParameter>()
 
@@ -176,7 +176,7 @@ open class DefaultBrowser(
         }
 
         logger.info("Browser process started with PID: ${process?.pid()}")
-        http = HTTPApi(config.host ?: "127.0.0.1", config.port ?: throw IllegalStateException("Port not set"))
+        http = HTTPApi(config.host ?: "127.0.0.1", config.port ?: error("Port not set"))
 
         delay(config.browserConnectionTimeout)
         repeat(config.browserConnectionMaxTries) {
@@ -274,7 +274,7 @@ open class DefaultBrowser(
     }
 
     override suspend fun testConnection(): Boolean {
-        val http = http ?: throw IllegalStateException("HTTPApi not initialized")
+        val http = http ?: error("HTTPApi not initialized")
         return try {
             info = http.get<ContraDict>("version")
             true
@@ -301,7 +301,7 @@ open class DefaultBrowser(
 
     private suspend fun getTargets(): List<Target.TargetInfo> {
         val connection = this.connection
-            ?: throw IllegalStateException("Browser not yet started. Use browser.start() first.")
+            ?: error("Browser not yet started. Use browser.start() first.")
         val info = connection.target.getTargets()
         return info.targetInfos
     }

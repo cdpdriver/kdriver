@@ -51,7 +51,7 @@ open class DefaultTab(
         newTab: Boolean,
         newWindow: Boolean,
     ): Tab {
-        val browser = owner ?: throw IllegalStateException(
+        val browser = owner ?: error(
             "This tab has no browser reference, so you can't use get()"
         )
 
@@ -106,7 +106,7 @@ open class DefaultTab(
     ) {
         val ua = userAgent
             ?: evaluate<String>("navigator.userAgent")
-            ?: throw IllegalStateException("Could not read existing user agent from navigator object")
+            ?: error("Could not read existing user agent from navigator object")
 
         network.setUserAgentOverride(
             userAgent = ua,
@@ -162,7 +162,7 @@ open class DefaultTab(
 
         val stateName = availableStates.find { stateName ->
             state.lowercase().all { it in stateName }
-        } ?: throw IllegalStateException(
+        } ?: error(
             "Could not determine any of $availableStates from input '$state'"
         )
 
@@ -591,7 +591,7 @@ open class DefaultTab(
         format: ScreenshotFormat,
         fullPage: Boolean,
     ): String {
-        if (targetInfo == null) throw IllegalStateException("target is null")
+        if (targetInfo == null) error("target is null")
 
         wait() // update the target's url
 
@@ -618,7 +618,7 @@ open class DefaultTab(
         }
 
         val path = if (filename == null) {
-            val url = targetInfo?.url ?: throw IllegalStateException("target is null")
+            val url = targetInfo?.url ?: error("target is null")
             val uri = Url(url)
             val lastPart = uri.fullPath.substringAfterLast('/').substringBefore('?')
             val dtStr = Clock.System.now().toString().replace(":", "-").replace("T", "_").substringBefore('.')
