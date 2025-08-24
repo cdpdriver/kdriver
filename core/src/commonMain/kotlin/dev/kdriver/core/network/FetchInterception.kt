@@ -15,9 +15,25 @@ import dev.kdriver.cdp.domain.Network
  */
 interface FetchInterception {
 
+    /**
+     * The URL pattern to match requests and responses.
+     */
     val urlPattern: String
+
+    /**
+     * The stage of the fetch request to intercept (e.g., request or response).
+     */
     val requestStage: Fetch.RequestStage
+
+    /**
+     * The type of resource to intercept (e.g., document, script, etc.).
+     */
     val resourceType: Network.ResourceType
+
+    /**
+     * Resets the internal state, allowing the interception to be reused.
+     */
+    suspend fun reset()
 
     /**
      * Start intercepting fetch responses matching the pattern,

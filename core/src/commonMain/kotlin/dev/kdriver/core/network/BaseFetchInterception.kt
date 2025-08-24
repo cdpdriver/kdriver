@@ -21,7 +21,7 @@ open class BaseFetchInterception(
     override val resourceType: Network.ResourceType,
 ) : FetchInterception {
 
-    private val responseDeferred = CompletableDeferred<Fetch.RequestPausedParameter>()
+    private var responseDeferred = CompletableDeferred<Fetch.RequestPausedParameter>()
     private var job: Job? = null
 
     private val handler: suspend (Fetch.RequestPausedParameter) -> Unit = handler@{ event ->
@@ -30,7 +30,7 @@ open class BaseFetchInterception(
         job = null
     }
 
-    override suspend fun <R> use(block: suspend FetchInterception.() -> R): R {
+    private suspend fun setup() {
         val coroutineScope = CoroutineScope(coroutineContext)
         tab.fetch.enable(
             listOf(
@@ -44,11 +44,25 @@ open class BaseFetchInterception(
         job = coroutineScope.launch {
             tab.fetch.requestPaused.collect { handler(it) }
         }
+    }
+
+    private suspend fun teardown() {
+        job?.cancel()
+        tab.fetch.disable()
+    }
+
+    override suspend fun reset() {
+        responseDeferred = CompletableDeferred()
+        teardown()
+        setup()
+    }
+
+    override suspend fun <R> use(block: suspend FetchInterception.() -> R): R {
+        setup()
         try {
             return block()
         } finally {
-            job?.cancel()
-            tab.fetch.disable()
+            teardown()
         }
     }
 

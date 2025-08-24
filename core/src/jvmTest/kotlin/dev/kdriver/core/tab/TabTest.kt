@@ -22,7 +22,7 @@ class TabTest {
     @Test
     fun testSetUserAgentSetsNavigatorValues() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+        val tab = browser.mainTab ?: error("Main tab is not available")
 
         tab.setUserAgent(
             userAgent = "Test user agent",
@@ -43,7 +43,7 @@ class TabTest {
     @Test
     fun testSetUserAgentDefaultsExistingUserAgent() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+        val tab = browser.mainTab ?: error("Main tab is not available")
 
         val existingUserAgent = tab.evaluate<String>("navigator.userAgent")
 
@@ -62,7 +62,7 @@ class TabTest {
     @Test
     fun testEvaluateWaitPromiseSuccess() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+        val tab = browser.mainTab ?: error("Main tab is not available")
 
         val result = tab.evaluate<String>("new Promise(r => setTimeout(() => r(\"ok\")));", true)
 
@@ -74,7 +74,7 @@ class TabTest {
     @Test
     fun testEvaluateWaitPromiseFail() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+        val tab = browser.mainTab ?: error("Main tab is not available")
 
         val result = assertFailsWith<EvaluateException> {
             tab.evaluate<String>("new Promise((_, r) => setTimeout(() => r(\"fail\")));", true)
@@ -87,7 +87,7 @@ class TabTest {
     @Test
     fun testEvaluateWaitPromiseError() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+        val tab = browser.mainTab ?: error("Main tab is not available")
 
         val result = assertFailsWith<EvaluateException> {
             tab.evaluate<String>("(async() => { throw new Error(\"Custom error\") })()", true)
@@ -196,7 +196,7 @@ class TabTest {
     @Test
     fun testExpect() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+        val tab = browser.mainTab ?: error("Main tab is not available")
 
         tab.expect(Regex("groceries.html")) {
             tab.get(sampleFile("groceries.html"))
@@ -214,9 +214,33 @@ class TabTest {
     }
 
     @Test
+    fun testExpectWithReload() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.mainTab ?: error("Main tab is not available")
+
+        tab.expect(Regex("groceries.html")) {
+            tab.get(sampleFile("groceries.html"))
+            tab.waitForReadyState(ReadyState.COMPLETE)
+            reset()
+            tab.reload()
+            tab.waitForReadyState(ReadyState.COMPLETE)
+
+            val request = withTimeout(3000L) { this@expect.getRequest() }
+            val response = withTimeout(3000L) { this@expect.getResponse() }
+            val responseBody = withTimeout(3000L) { this@expect.getRawResponseBody() }
+
+            assertEquals(request.url, response.url)
+            assertEquals(200, response.status)
+            assertTrue(responseBody.body.isNotEmpty())
+        }
+
+        browser.stop()
+    }
+
+    @Test
     fun testIntercept() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+        val tab = browser.mainTab ?: error("Main tab is not available")
 
         val userData = tab.intercept(
             "*/user-data.json",
@@ -224,6 +248,30 @@ class TabTest {
             Network.ResourceType.XHR
         ) {
             tab.get(sampleFile("profile.html"))
+            val originalResponse = withTimeout(3000L) { getResponseBody<UserData>() }
+            withTimeout(3000L) { continueRequest() }
+            originalResponse
+        }
+
+        assertEquals("Zendriver", userData.name)
+        browser.stop()
+    }
+
+    @Test
+    fun testInterceptWithReload() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.mainTab ?: error("Main tab is not available")
+
+        val userData = tab.intercept(
+            "*/user-data.json",
+            Fetch.RequestStage.RESPONSE,
+            Network.ResourceType.XHR
+        ) {
+            tab.get(sampleFile("profile.html"))
+            withTimeout(3000L) { continueRequest() }
+
+            reset()
+            tab.reload()
             val originalResponse = withTimeout(3000L) { getResponseBody<UserData>() }
             withTimeout(3000L) { continueRequest() }
             originalResponse

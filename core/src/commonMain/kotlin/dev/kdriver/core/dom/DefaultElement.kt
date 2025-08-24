@@ -130,7 +130,7 @@ open class DefaultElement(
 
     override suspend fun click() {
         updateRemoteObject()
-        val objectId = remoteObject?.objectId ?: throw IllegalStateException("Could not resolve object id for $this")
+        val objectId = remoteObject?.objectId ?: error("Could not resolve object id for $this")
 
         val arguments = listOf(Runtime.CallArgument(objectId = objectId))
 

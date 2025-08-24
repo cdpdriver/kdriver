@@ -12,7 +12,15 @@ import dev.kdriver.cdp.domain.Network
  */
 interface RequestExpectation {
 
+    /**
+     * The URL pattern to match requests and responses.
+     */
     val urlPattern: Regex
+
+    /**
+     * Resets the internal state, allowing the expectation to be reused.
+     */
+    suspend fun reset()
 
     /**
      * Expect a request/response that matches the given [urlPattern].
