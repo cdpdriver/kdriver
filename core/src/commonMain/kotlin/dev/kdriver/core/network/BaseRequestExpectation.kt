@@ -21,9 +21,9 @@ open class BaseRequestExpectation(
     private var responseJob: Job? = null
     private var loadingFinishedJob: Job? = null
 
-    private val requestDeferred = CompletableDeferred<Network.RequestWillBeSentParameter>()
-    private val responseDeferred = CompletableDeferred<Network.ResponseReceivedParameter>()
-    private val loadingFinishedDeferred = CompletableDeferred<Network.LoadingFinishedParameter>()
+    private var requestDeferred = CompletableDeferred<Network.RequestWillBeSentParameter>()
+    private var responseDeferred = CompletableDeferred<Network.ResponseReceivedParameter>()
+    private var loadingFinishedDeferred = CompletableDeferred<Network.LoadingFinishedParameter>()
 
     private var requestId: String? = null
 
@@ -52,7 +52,7 @@ open class BaseRequestExpectation(
             loadingFinishedJob = null
         }
 
-    override suspend fun <T> use(block: suspend RequestExpectation.() -> T): T {
+    private suspend fun setup() {
         val coroutineScope = CoroutineScope(coroutineContext)
         tab.network.enable()
         requestJob = coroutineScope.launch {
@@ -64,12 +64,29 @@ open class BaseRequestExpectation(
         loadingFinishedJob = coroutineScope.launch {
             tab.network.loadingFinished.collect { loadingFinishedHandler(it) }
         }
+    }
+
+    private fun teardown() {
+        requestJob?.cancel()
+        responseJob?.cancel()
+        loadingFinishedJob?.cancel()
+    }
+
+    override suspend fun reset() {
+        requestDeferred = CompletableDeferred()
+        responseDeferred = CompletableDeferred()
+        loadingFinishedDeferred = CompletableDeferred()
+        requestId = null
+        teardown()
+        setup()
+    }
+
+    override suspend fun <T> use(block: suspend RequestExpectation.() -> T): T {
+        setup()
         try {
             return block()
         } finally {
-            requestJob?.cancel()
-            responseJob?.cancel()
-            loadingFinishedJob?.cancel()
+            teardown()
         }
     }
 

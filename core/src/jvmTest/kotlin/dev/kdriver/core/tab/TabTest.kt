@@ -214,6 +214,30 @@ class TabTest {
     }
 
     @Test
+    fun testExpectWithReload() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+
+        tab.expect(Regex("groceries.html")) {
+            tab.get(sampleFile("groceries.html"))
+            tab.waitForReadyState(ReadyState.COMPLETE)
+            reset()
+            tab.reload()
+            tab.waitForReadyState(ReadyState.COMPLETE)
+
+            val request = withTimeout(3000L) { this@expect.getRequest() }
+            val response = withTimeout(3000L) { this@expect.getResponse() }
+            val responseBody = withTimeout(3000L) { this@expect.getRawResponseBody() }
+
+            assertEquals(request.url, response.url)
+            assertEquals(200, response.status)
+            assertTrue(responseBody.body.isNotEmpty())
+        }
+
+        browser.stop()
+    }
+
+    @Test
     fun testIntercept() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
@@ -224,6 +248,30 @@ class TabTest {
             Network.ResourceType.XHR
         ) {
             tab.get(sampleFile("profile.html"))
+            val originalResponse = withTimeout(3000L) { getResponseBody<UserData>() }
+            withTimeout(3000L) { continueRequest() }
+            originalResponse
+        }
+
+        assertEquals("Zendriver", userData.name)
+        browser.stop()
+    }
+
+    @Test
+    fun testInterceptWithReload() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.mainTab ?: throw IllegalStateException("Main tab is not available")
+
+        val userData = tab.intercept(
+            "*/user-data.json",
+            Fetch.RequestStage.RESPONSE,
+            Network.ResourceType.XHR
+        ) {
+            tab.get(sampleFile("profile.html"))
+            withTimeout(3000L) { continueRequest() }
+
+            reset()
+            tab.reload()
             val originalResponse = withTimeout(3000L) { getResponseBody<UserData>() }
             withTimeout(3000L) { continueRequest() }
             originalResponse
