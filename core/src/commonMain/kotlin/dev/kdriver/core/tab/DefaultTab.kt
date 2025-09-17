@@ -11,10 +11,7 @@ import dev.kdriver.core.dom.NodeOrElement
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.exceptions.TimeoutWaitingForReadyStateException
-import dev.kdriver.core.network.BaseFetchInterception
-import dev.kdriver.core.network.BaseRequestExpectation
-import dev.kdriver.core.network.FetchInterception
-import dev.kdriver.core.network.RequestExpectation
+import dev.kdriver.core.network.*
 import dev.kdriver.core.utils.filterRecurse
 import io.ktor.http.*
 import io.ktor.util.logging.*
@@ -574,8 +571,18 @@ open class DefaultTab(
         // displays for a short time a red dot on the element
     }
 
-    override suspend fun <T> expect(urlPattern: Regex, block: suspend RequestExpectation.() -> T): T {
+    override suspend fun <T> expect(
+        urlPattern: Regex,
+        block: suspend RequestExpectation.() -> T,
+    ): T {
         return BaseRequestExpectation(this, urlPattern).use(block)
+    }
+
+    override suspend fun <T> expectBatch(
+        urlPatterns: List<Regex>,
+        block: suspend BatchRequestExpectation.() -> T,
+    ): T {
+        return BaseBatchRequestExpectation(this, urlPatterns).use(block)
     }
 
     override suspend fun <T> intercept(

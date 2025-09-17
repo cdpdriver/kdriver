@@ -238,6 +238,33 @@ class TabTest {
     }
 
     @Test
+    fun testExpectBatch() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.mainTab ?: error("Main tab is not available")
+
+        val pagePattern = Regex("profile.html")
+        val apiPattern = Regex("user-data.json")
+
+        tab.expectBatch(listOf(pagePattern, apiPattern)) {
+            tab.get(sampleFile("profile.html"))
+
+            val pageExp = expectations[pagePattern] ?: error("Missing expectation for profile.html")
+            val apiExp = expectations[apiPattern] ?: error("Missing expectation for user-data.json")
+
+            val pageResponse = withTimeout(3000L) { pageExp.getResponse() }
+            val apiResponse = withTimeout(3000L) { apiExp.getResponse() }
+
+            assertEquals(200, pageResponse.status)
+            assertEquals(200, apiResponse.status)
+
+            val userData = withTimeout(3000L) { apiExp.getResponseBody<UserData>() }
+            assertEquals("Zendriver", userData.name)
+        }
+
+        browser.stop()
+    }
+
+    @Test
     fun testIntercept() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: error("Main tab is not available")
