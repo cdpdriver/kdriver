@@ -8,6 +8,7 @@ import dev.kdriver.core.dom.Element
 import dev.kdriver.core.dom.NodeOrElement
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.exceptions.TimeoutWaitingForReadyStateException
+import dev.kdriver.core.network.BatchRequestExpectation
 import dev.kdriver.core.network.FetchInterception
 import dev.kdriver.core.network.RequestExpectation
 import kotlinx.io.files.Path
@@ -424,7 +425,22 @@ interface Tab : Connection {
      * @param urlPattern The regex pattern to match the request URL.
      * @param block The block to execute during which the expectation is active.
      */
-    suspend fun <T> expect(urlPattern: Regex, block: suspend RequestExpectation.() -> T): T
+    suspend fun <T> expect(
+        urlPattern: Regex,
+        block: suspend RequestExpectation.() -> T,
+    ): T
+
+    /**
+     * Expects multiple requests matching the given list of [urlPatterns].
+     * All expectations are active concurrently during [block].
+     *
+     * @param urlPatterns List of regex patterns to match request URLs.
+     * @param block The block to execute during which the expectations are active.
+     */
+    suspend fun <T> expectBatch(
+        urlPatterns: List<Regex>,
+        block: suspend BatchRequestExpectation.() -> T,
+    ): T
 
     /**
      * Intercepts network requests matching the given [urlPattern] and [requestStage].
