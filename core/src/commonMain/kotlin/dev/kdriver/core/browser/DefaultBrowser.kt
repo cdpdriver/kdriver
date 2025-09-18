@@ -17,6 +17,7 @@ import io.ktor.util.logging.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Default implementation of the [Browser] interface.
@@ -286,11 +287,15 @@ open class DefaultBrowser(
 
     override suspend fun stop() {
         logger.info("Stopping browser process with PID: ${process?.pid()}")
-        connection?.browser?.close()
+        logger.debug("Closing browser gracefully...")
+        withTimeoutOrNull(5.seconds) { connection?.browser?.close() }
+        logger.debug("Killing browser process...")
         process?.destroy()
         process = null
+        logger.debug("Closing connection...")
         connection?.close()
         connection = null
+        logger.debug("Canceling coroutine scope...")
         coroutineScope.cancel()
         logger.info("Browser process stopped")
     }
