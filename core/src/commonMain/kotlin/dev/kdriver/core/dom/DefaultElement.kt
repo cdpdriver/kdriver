@@ -5,6 +5,7 @@ import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.tab.Tab
 import dev.kdriver.core.tab.evaluate
 import dev.kdriver.core.utils.filterRecurse
+import dev.kdriver.core.utils.filterRecurseAll
 import io.ktor.util.logging.*
 import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
@@ -29,17 +30,7 @@ open class DefaultElement(
         get() = filterRecurse(node) { it.nodeType == 3 }?.nodeValue ?: ""
 
     override val textAll: String
-        get() = filterRecurse(node) { it.nodeType == 3 }?.let { textNode ->
-            buildString {
-                fun collectText(n: DOM.Node?) {
-                    if (n == null) return
-                    if (n.nodeType == 3) append(n.nodeValue)
-                    n.children?.forEach { collectText(it) }
-                    n.shadowRoots?.forEach { collectText(it) }
-                }
-                collectText(node)
-            }
-        } ?: ""
+        get() = filterRecurseAll(node) { it.nodeType == 3 }.joinToString(" ") { it.nodeValue }
 
     override val backendNodeId: Int
         get() = node.backendNodeId

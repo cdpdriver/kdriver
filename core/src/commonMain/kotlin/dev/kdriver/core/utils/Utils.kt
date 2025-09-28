@@ -22,6 +22,22 @@ fun filterRecurse(node: DOM.Node, predicate: (DOM.Node) -> Boolean): DOM.Node? {
     return null
 }
 
+fun filterRecurseAll(node: DOM.Node, predicate: (DOM.Node) -> Boolean): List<DOM.Node> {
+    val children = node.children ?: return emptyList()
+    val out = mutableListOf<DOM.Node>()
+    for (child in children) {
+        if (predicate(child)) {
+            out.add(child)
+        }
+        val shadowRoots = child.shadowRoots
+        if (shadowRoots != null && shadowRoots.isNotEmpty()) {
+            out.addAll(filterRecurseAll(shadowRoots[0], predicate))
+        }
+        out.addAll(filterRecurseAll(child, predicate))
+    }
+    return out
+}
+
 fun parseWebSocketUrl(url: String): WebSocketInfo {
     val uri = Url(url)
 
