@@ -46,6 +46,18 @@ actual fun findChromeExecutable(): Path? {
     throw UnsupportedOperationException()
 }
 
+actual fun findOperaExecutable(): Path? {
+    throw UnsupportedOperationException()
+}
+
+actual fun findBraveExecutable(): Path? {
+    throw UnsupportedOperationException()
+}
+
+actual fun findEdgeExecutable(): Path? {
+    throw UnsupportedOperationException()
+}
+
 actual fun freePort(): Int? {
     throw UnsupportedOperationException()
 }
