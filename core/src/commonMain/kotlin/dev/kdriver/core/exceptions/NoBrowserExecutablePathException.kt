@@ -9,7 +9,7 @@ package dev.kdriver.core.exceptions
  */
 class NoBrowserExecutablePathException : IllegalStateException(
     """
-    Browser executable path is not set and findChromeExecutable is not supported on this platform.
+    Browser executable path is not set and we were not able to locate any supported browser.
     Please specify browserExecutablePath parameter.
     """.trimIndent()
 )

@@ -4,7 +4,6 @@ import com.github.luben.zstd.ZstdInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.io.files.FileNotFoundException
 import kotlinx.io.files.Path
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -129,7 +128,6 @@ actual fun findChromeExecutable(): Path? {
             file.exists() && file.canExecute()
         }
         .minByOrNull { it.toString().length }
-        ?: throw FileNotFoundException("Could not find a valid Chrome browser binary. Please make sure Chrome is installed or specify the 'browserExecutablePath' parameter.")
 }
 
 actual fun findOperaExecutable(): Path? {
@@ -178,7 +176,6 @@ actual fun findOperaExecutable(): Path? {
             file.exists() && file.canExecute()
         }
         .minByOrNull { it.toString().length }
-        ?: throw FileNotFoundException("Could not find a valid Opera browser binary. Please make sure Opera is installed or specify the 'browserExecutablePath' parameter.")
 }
 
 actual fun findBraveExecutable(): Path? {
@@ -224,7 +221,6 @@ actual fun findBraveExecutable(): Path? {
             file.exists() && file.canExecute()
         }
         .minByOrNull { it.toString().length }
-        ?: throw FileNotFoundException("Could not find a valid Brave browser binary. Please make sure Brave is installed or specify the 'browserExecutablePath' parameter.")
 }
 
 actual fun findEdgeExecutable(): Path? {
@@ -272,7 +268,6 @@ actual fun findEdgeExecutable(): Path? {
             file.exists() && file.canExecute()
         }
         .minByOrNull { it.toString().length }
-        ?: throw FileNotFoundException("Could not find a valid Microsoft Edge browser binary. Please make sure Edge is installed or specify the 'browserExecutablePath' parameter.")
 }
 
 actual fun freePort(): Int? {

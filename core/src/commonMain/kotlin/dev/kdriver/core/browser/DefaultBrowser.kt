@@ -9,7 +9,6 @@ import dev.kdriver.core.connection.DefaultConnection
 import dev.kdriver.core.connection.OwnedConnection
 import dev.kdriver.core.exceptions.BrowserExecutableNotFoundException
 import dev.kdriver.core.exceptions.FailedToConnectToBrowserException
-import dev.kdriver.core.exceptions.NoBrowserExecutablePathException
 import dev.kdriver.core.tab.DefaultTab
 import dev.kdriver.core.tab.Tab
 import dev.kdriver.core.utils.*
@@ -163,7 +162,7 @@ open class DefaultBrowser(
         }
 
         if (!connectExisting) {
-            val exe = config.browserExecutablePath ?: throw NoBrowserExecutablePathException()
+            val exe = config.browserExecutablePath
 
             logger.info("BROWSER EXECUTABLE PATH: $exe")
             if (!exists(exe)) throw BrowserExecutableNotFoundException()
