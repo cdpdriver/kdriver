@@ -75,5 +75,8 @@ expect fun isRoot(): Boolean
 expect fun tempProfileDir(): Path
 expect fun exists(path: Path): Boolean
 expect fun findChromeExecutable(): Path?
+expect fun findOperaExecutable(): Path?
+expect fun findBraveExecutable(): Path?
+expect fun findEdgeExecutable(): Path?
 expect fun freePort(): Int?
 expect fun decompressIfNeeded(data: ByteArray): ByteArray

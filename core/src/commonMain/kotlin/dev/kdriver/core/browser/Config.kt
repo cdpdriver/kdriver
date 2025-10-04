@@ -1,9 +1,6 @@
 package dev.kdriver.core.browser
 
-import dev.kdriver.core.utils.findChromeExecutable
-import dev.kdriver.core.utils.isPosix
-import dev.kdriver.core.utils.isRoot
-import dev.kdriver.core.utils.tempProfileDir
+import dev.kdriver.core.utils.*
 import io.ktor.util.logging.*
 import kotlinx.io.files.Path
 
@@ -31,7 +28,11 @@ class Config(
     private val _browserArgs: MutableList<String> = browserArgs?.toMutableList() ?: mutableListOf()
     internal val _extensions: MutableList<Path> = mutableListOf()
 
-    val browserExecutablePath: Path? = browserExecutablePath ?: findChromeExecutable()
+    val browserExecutablePath: Path? = browserExecutablePath
+        ?: findChromeExecutable()
+        ?: findOperaExecutable()
+        ?: findBraveExecutable()
+        ?: findEdgeExecutable()
 
     var sandbox: Boolean = sandbox
         private set
