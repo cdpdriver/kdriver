@@ -12,7 +12,7 @@ To install, add the dependency to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("dev.kdriver:core:0.3.0")
+    implementation("dev.kdriver:core:0.3.1")
 }
 ```
 
