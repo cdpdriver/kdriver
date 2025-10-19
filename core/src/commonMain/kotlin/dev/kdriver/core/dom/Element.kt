@@ -160,6 +160,15 @@ interface Element {
     suspend fun sendFile(paths: List<Path>)
 
     /**
+     * Retrieves the value of the element, typically used for input fields.
+     *
+     * This method applies a JavaScript function to get the `value` property of the element.
+     *
+     * @return The value of the element, or null if it does not have a value.
+     */
+    suspend fun getInputValue(): String?
+
+    /**
      * Clears the input of the element by setting its value to an empty string.
      *
      * This method applies a JavaScript function to the element to clear its value.

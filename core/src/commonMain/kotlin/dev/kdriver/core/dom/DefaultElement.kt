@@ -183,6 +183,10 @@ open class DefaultElement(
         )
     }
 
+    override suspend fun getInputValue(): String? {
+        return apply<String>("(el) => el.value")
+    }
+
     override suspend fun clearInput() {
         apply<Unit>("function (element) { element.value = \"\" }")
     }
