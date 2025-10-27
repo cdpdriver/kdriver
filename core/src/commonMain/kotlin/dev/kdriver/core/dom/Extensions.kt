@@ -1,6 +1,7 @@
 package dev.kdriver.core.dom
 
 import dev.kaccelero.serializers.Serialization
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
@@ -15,12 +16,14 @@ import kotlinx.serialization.json.decodeFromJsonElement
  * @param jsFunction The JavaScript function to apply to the element.
  * @param awaitPromise If true, waits for any promises to resolve before returning the result.
  *
- * @return The result of the function call, or null if the result is not serializable.
+ * @return The result of the function call, or null if the result is not serializable or JavaScript returns null.
  */
 suspend inline fun <reified T> Element.apply(
     jsFunction: String,
     awaitPromise: Boolean = false,
 ): T? {
     val raw = rawApply(jsFunction, awaitPromise) ?: return null
+    // If JavaScript returned null, return Kotlin null for nullable types
+    if (raw is JsonNull) return null
     return Serialization.json.decodeFromJsonElement<T>(raw)
 }
