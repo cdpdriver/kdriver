@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Race Condition Test Page</title>
+    <style>
+        body {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        #test-container {
+            width: 500px;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f0f0f0;
+        }
+
+        .clickable {
+            width: 200px;
+            height: 50px;
+            background: #4CAF50;
+            color: white;
+        }
+
+        .clickable:hover {
+            background: #45a049;
+        }
+
+        #click-counter {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+    </style>
+    <script>
+        let clickCount = 0;
+        let mutationActive = false;
+        let mutationInterval = null;
+
+        function handleClick() {
+            clickCount++;
+            document.getElementById('click-counter').textContent = clickCount;
+            console.log('Button clicked! Total clicks: ' + clickCount);
+        }
+
+        function startMutations() {
+            if (mutationActive) return;
+            mutationActive = true;
+            document.getElementById('mutation-status').textContent = 'Active';
+
+            // Simulate React re-renders by replacing buttons with clones
+            mutationInterval = setInterval(() => {
+                const button = document.getElementById('target-button');
+                if (button && button.parentNode) {
+                    const newButton = button.cloneNode(true);
+                    // Preserve click handler
+                    newButton.onclick = handleClick;
+                    button.parentNode.replaceChild(newButton, button);
+                    console.log('Button replaced (simulating React re-render)');
+                }
+            }, 100); // Replace every 100ms
+        }
+
+        function stopMutations() {
+            if (!mutationActive) return;
+            mutationActive = false;
+            document.getElementById('mutation-status').textContent = 'Stopped';
+            if (mutationInterval) {
+                clearInterval(mutationInterval);
+                mutationInterval = null;
+            }
+        }
+
+        function resetCounter() {
+            clickCount = 0;
+            document.getElementById('click-counter').textContent = '0';
+        }
+
+        function detachElement() {
+            const button = document.getElementById('target-button');
+            if (button && button.parentNode) {
+                button.parentNode.removeChild(button);
+                console.log('Button permanently removed');
+            }
+        }
+
+        function restoreElement() {
+            const existing = document.getElementById('target-button');
+            if (existing) return; // Already exists
+
+            const container = document.getElementById('test-container');
+            const button = document.createElement('button');
+            button.id = 'target-button';
+            button.className = 'clickable';
+            button.textContent = 'Click Me (Test Target)';
+            button.onclick = handleClick;
+            container.insertBefore(button, container.firstChild);
+            console.log('Button restored');
+        }
+
+        function makeInvisible() {
+            const button = document.getElementById('target-button');
+            if (button) {
+                button.style.display = 'none';
+                console.log('Button hidden');
+            }
+        }
+
+        function makeVisible() {
+            const button = document.getElementById('target-button');
+            if (button) {
+                button.style.display = 'block';
+                console.log('Button visible');
+            }
+        }
+
+        function moveElement() {
+            const button = document.getElementById('target-button');
+            if (button) {
+                const currentTop = parseInt(button.style.top || '0');
+                button.style.position = 'relative';
+                button.style.top = (currentTop + 50) + 'px';
+                console.log('Button moved down 50px');
+            }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopMutations();
+        });
+    </script>
+</head>
+<body>
+<h1>Race Condition Test Page</h1>
+<p>This page simulates DOM mutations that can cause race conditions in CDP automation.</p>
+
+<div id="test-container">
+    <button class="clickable" id="target-button" onclick="handleClick()">
+        Click Me (Test Target)
+    </button>
+</div>
+
+<div id="status">
+    <p><strong>Click Counter:</strong> <span id="click-counter">0</span></p>
+    <p><strong>Mutation Status:</strong> <span id="mutation-status">Stopped</span></p>
+</div>
+
+<div style="margin-top: 20px;">
+    <h3>Mutation Controls</h3>
+    <button onclick="startMutations()">Start Mutations (Replace every 100ms)</button>
+    <button onclick="stopMutations()">Stop Mutations</button>
+    <button onclick="resetCounter()">Reset Counter</button>
+</div>
+
+<div style="margin-top: 20px;">
+    <h3>Element State Controls</h3>
+    <button onclick="detachElement()">Detach Element</button>
+    <button onclick="restoreElement()">Restore Element</button>
+    <button onclick="makeInvisible()">Make Invisible</button>
+    <button onclick="makeVisible()">Make Visible</button>
+    <button onclick="moveElement()">Move Element Down</button>
+</div>
+
+<div style="margin-top: 20px;">
+    <h3>Test Inputs</h3>
+    <input id="test-input" placeholder="Test input field" style="padding: 10px; width: 300px;" type="text"/>
+</div>
+</body>
+</html>

@@ -3,7 +3,6 @@ package dev.kdriver.core.dom
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.tab.Tab
-import dev.kdriver.core.tab.evaluate
 import dev.kdriver.core.utils.filterRecurse
 import dev.kdriver.core.utils.filterRecurseAll
 import io.ktor.util.logging.*
@@ -120,29 +119,48 @@ open class DefaultElement(
     }
 
     override suspend fun click() {
-        updateRemoteObject()
-        val objectId = remoteObject?.objectId ?: error("Could not resolve object id for $this")
-
-        val arguments = listOf(Runtime.CallArgument(objectId = objectId))
-
         flash()
-        tab.runtime.callFunctionOn(
-            functionDeclaration = "(el) => el.click()",
-            objectId = objectId,
-            arguments = arguments,
-            awaitPromise = true,
-            userGesture = true,
-            returnByValue = true
+        apply<Unit>(
+            jsFunction = """
+                function() {
+                    if (!this || !this.isConnected) {
+                        throw new Error('Element is detached from DOM');
+                    }
+                    this.click();
+                }
+            """.trimIndent()
         )
     }
 
     override suspend fun mouseMove() {
-        val position = getPosition()
-        if (position == null) {
+        // Execute position query atomically in a single JavaScript call
+        // This prevents race conditions where the element could be detached
+        // between getting position and dispatching mouse events
+        val coordinates = try {
+            apply<CoordinateResult?>(
+                jsFunction = """
+                    function() {
+                        if (!this || !this.isConnected) return null;
+                        const rect = this.getBoundingClientRect();
+                        if (rect.width === 0 || rect.height === 0) return null;
+                        return {
+                            x: rect.left + rect.width / 2,
+                            y: rect.top + rect.height / 2
+                        };
+                    }
+                """.trimIndent()
+            )
+        } catch (e: EvaluateException) {
+            logger.warn("Could not get coordinates for $this: ${e.jsError}")
+            return
+        }
+
+        if (coordinates == null) {
             logger.warn("Could not find location for $this, not moving mouse")
             return
         }
-        val (x, y) = position.center
+
+        val (x, y) = coordinates
         logger.debug("Mouse move to location $x, $y where $this is located")
 
         tab.input.dispatchMouseEvent(
@@ -159,7 +177,16 @@ open class DefaultElement(
     }
 
     override suspend fun focus() {
-        apply<Unit>("(elem) => elem.focus()")
+        apply<Unit>(
+            jsFunction = """
+                function() {
+                    if (!this || !this.isConnected) {
+                        throw new Error('Element is detached from DOM');
+                    }
+                    this.focus();
+                }
+            """.trimIndent()
+        )
     }
 
     override suspend fun sendKeys(text: String) {
@@ -223,8 +250,13 @@ open class DefaultElement(
         awaitPromise: Boolean,
     ): JsonElement? {
         val remoteObject = updateRemoteObject()
+
+        // Wrap user's function with connection validation
+        // This ensures the element is still connected before executing user code
+        val wrappedFunction = wrapSafe(jsFunction, validateVisible = false)
+
         val result = tab.runtime.callFunctionOn(
-            functionDeclaration = jsFunction,
+            functionDeclaration = wrappedFunction,
             objectId = remoteObject?.objectId,
             arguments = listOf(
                 Runtime.CallArgument(objectId = remoteObject?.objectId)
@@ -248,25 +280,45 @@ open class DefaultElement(
     }
 
     override suspend fun getPosition(abs: Boolean): Position? {
-        updateRemoteObject()
-
+        // Execute everything atomically in a single JavaScript call
+        // This prevents race conditions where:
+        // 1. Element could detach between updateRemoteObject() and getContentQuads()
+        // 2. Element could move between getBoundingRect() and scroll position query
         return try {
-            val quads = tab.dom.getContentQuads(objectId = remoteObject!!.objectId).quads
-            if (quads.isEmpty()) {
-                throw Exception("could not find position for $this")
+            val positionData = apply<PositionData?>(
+                jsFunction = """
+                    function() {
+                        if (!this || !this.isConnected) return null;
+                        const rect = this.getBoundingClientRect();
+                        if (rect.width === 0 || rect.height === 0) return null;
+                        return {
+                            left: rect.left,
+                            top: rect.top,
+                            right: rect.right,
+                            bottom: rect.bottom,
+                            scrollX: ${if (abs) "window.scrollX" else "0"},
+                            scrollY: ${if (abs) "window.scrollY" else "0"}
+                        };
+                    }
+                """.trimIndent()
+            ) ?: return null
+
+            // Convert to Position object
+            val points = listOf(
+                positionData.left, positionData.top,
+                positionData.right, positionData.top,
+                positionData.right, positionData.bottom,
+                positionData.left, positionData.bottom
+            )
+
+            Position(points).also { pos ->
+                if (abs) {
+                    pos.absX = positionData.left + positionData.scrollX + (positionData.right - positionData.left) / 2
+                    pos.absY = positionData.top + positionData.scrollY + (positionData.bottom - positionData.top) / 2
+                }
             }
-            val pos = Position(quads[0])
-            if (abs) {
-                val scrollY = tab.evaluate<Double>("window.scrollY") ?: 0.0
-                val scrollX = tab.evaluate<Double>("window.scrollX") ?: 0.0
-                val absX = pos.left + scrollX + pos.width / 2
-                val absY = pos.top + scrollY + pos.height / 2
-                pos.absX = absX
-                pos.absY = absY
-            }
-            pos
-        } catch (_: IndexOutOfBoundsException) {
-            logger.debug("no content quads for $this. mostly caused by element which is not 'in plain sight'")
+        } catch (e: EvaluateException) {
+            logger.debug("Could not get position for $this: ${e.jsError}")
             null
         }
     }
@@ -300,6 +352,41 @@ open class DefaultElement(
 
         return if (attrs.isNotBlank()) "<$tag $attrs>$content</$tag>"
         else "<$tag>$content</$tag>"
+    }
+
+    /**
+     * Wraps a user JavaScript function with connection validation.
+     *
+     * @param userFunction The JavaScript function to wrap (can be arrow function or function declaration)
+     * @param validateVisible If true, also validates element visibility
+     * @return A wrapped function that validates element state before executing user code
+     */
+    private fun wrapSafe(userFunction: String, validateVisible: Boolean = false): String {
+        val checks = buildString {
+            append(
+                """
+                    if (!this || !this.isConnected) {
+                        throw new Error('Element is detached from DOM');
+                    }
+                """.trimIndent()
+            )
+            if (validateVisible) append(
+                """
+                    const rect = this.getBoundingClientRect();
+                    if (rect.width === 0 || rect.height === 0) {
+                        throw new Error('Element is not visible');
+                    }
+                """.trimIndent()
+            )
+        }
+
+        return """
+            function(elem) {
+                $checks
+                const userFn = $userFunction;
+                return userFn.call(elem, elem);
+            }
+        """.trimIndent()
     }
 
 }
