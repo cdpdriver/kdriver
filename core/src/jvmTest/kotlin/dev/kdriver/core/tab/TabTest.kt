@@ -290,6 +290,11 @@ class TabTest {
 
     @Test
     fun testMaximize() = runBlocking {
+        // Skip on CI environments without display
+        if (System.getenv("CI") != null && System.getenv("DISPLAY") == null) {
+            return@runBlocking
+        }
+
         val browser = createBrowser(this, headless = false, sandbox = false)
         val tab = browser.mainTab ?: error("Main tab is not available")
 
@@ -301,6 +306,11 @@ class TabTest {
 
     @Test
     fun testMinimize() = runBlocking {
+        // Skip on CI environments without display
+        if (System.getenv("CI") != null && System.getenv("DISPLAY") == null) {
+            return@runBlocking
+        }
+
         val browser = createBrowser(this, headless = false, sandbox = false)
         val tab = browser.mainTab ?: error("Main tab is not available")
 
@@ -312,6 +322,11 @@ class TabTest {
 
     @Test
     fun testFullscreen() = runBlocking {
+        // Skip on CI environments without display
+        if (System.getenv("CI") != null && System.getenv("DISPLAY") == null) {
+            return@runBlocking
+        }
+
         val browser = createBrowser(this, headless = false, sandbox = false)
         val tab = browser.mainTab ?: error("Main tab is not available")
 
@@ -323,6 +338,11 @@ class TabTest {
 
     @Test
     fun testGetWindow() = runBlocking {
+        // Skip on CI environments without display
+        if (System.getenv("CI") != null && System.getenv("DISPLAY") == null) {
+            return@runBlocking
+        }
+
         val browser = createBrowser(this, headless = false, sandbox = false)
         val tab = browser.mainTab ?: error("Main tab is not available")
 
@@ -335,6 +355,11 @@ class TabTest {
 
     @Test
     fun testSetWindowState() = runBlocking {
+        // Skip on CI environments without display
+        if (System.getenv("CI") != null && System.getenv("DISPLAY") == null) {
+            return@runBlocking
+        }
+
         val browser = createBrowser(this, headless = false, sandbox = false)
         val tab = browser.mainTab ?: error("Main tab is not available")
 
