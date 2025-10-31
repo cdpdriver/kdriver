@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,8 +18,17 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 21
-      - name: Install dependencies and run tests
+      - name: Install dependencies and run JVM tests
         run: ./gradlew jvmTest koverXmlReport
+      - name: Run macOS native tests
+        if: runner.os == 'macOS'
+        run: ./gradlew macosArm64Test
+      - name: Run Linux native tests
+        if: runner.os == 'Linux'
+        run: ./gradlew linuxX64Test
+      - name: Run Windows native tests
+        if: runner.os == 'Windows'
+        run: ./gradlew mingwX64Test
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
