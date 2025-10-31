@@ -23,7 +23,7 @@ dependencyResolutionManagement {
             plugin("maven", "com.vanniktech.maven.publish").version("0.30.0")
 
             // Kaccelero
-            version("kaccelero", "0.6.6")
+            version("kaccelero", "0.6.7")
             library("kaccelero-core", "dev.kaccelero", "core").versionRef("kaccelero")
 
             // Ktor
