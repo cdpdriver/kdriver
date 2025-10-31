@@ -19,7 +19,7 @@ jobs:
           distribution: 'temurin'
           java-version: 21
       - name: Install dependencies and run JVM tests
-        run: ./gradlew jvmTest koverXmlReport
+        run: ./gradlew jvmTest
       - name: Run macOS native tests
         if: runner.os == 'macOS'
         run: ./gradlew macosArm64Test
@@ -29,6 +29,8 @@ jobs:
       - name: Run Windows native tests
         if: runner.os == 'Windows'
         run: ./gradlew mingwX64Test
+      - name: Generate coverage reports
+        run: ./gradlew koverXmlReport
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
