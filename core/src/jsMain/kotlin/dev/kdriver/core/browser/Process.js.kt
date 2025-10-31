@@ -1,7 +1,6 @@
-package dev.kdriver.core.utils
+package dev.kdriver.core.browser
 
 import kotlinx.io.files.Path
-
 
 actual abstract class Process {
     actual fun isAlive(): Boolean {
@@ -46,26 +45,10 @@ actual fun getEnv(name: String): String? {
     throw UnsupportedOperationException()
 }
 
-actual fun findChromeExecutable(): Path? {
-    throw UnsupportedOperationException()
-}
-
-actual fun findOperaExecutable(): Path? {
-    throw UnsupportedOperationException()
-}
-
-actual fun findBraveExecutable(): Path? {
-    throw UnsupportedOperationException()
-}
-
-actual fun findEdgeExecutable(): Path? {
-    throw UnsupportedOperationException()
-}
-
 actual fun freePort(): Int? {
     throw UnsupportedOperationException()
 }
 
-actual fun decompressIfNeeded(data: ByteArray): ByteArray {
+actual fun defaultBrowserSearchConfig(): BrowserSearchConfig {
     throw UnsupportedOperationException()
 }

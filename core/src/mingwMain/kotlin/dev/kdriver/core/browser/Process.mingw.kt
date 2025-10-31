@@ -1,4 +1,4 @@
-package dev.kdriver.core.utils
+package dev.kdriver.core.browser
 
 import kotlinx.cinterop.*
 import kotlinx.coroutines.Dispatchers
@@ -137,86 +137,6 @@ actual fun getEnv(name: String): String? {
     return getenv(name)?.toKString()
 }
 
-actual fun findChromeExecutable(): Path? = findBrowserExecutableCommon(
-    config = BrowserSearchConfig(searchWindowsProgramFiles = true),
-    pathSeparator = ";",
-    pathEnv = getEnv("PATH"),
-    executableNames = listOf("chrome.exe", "google-chrome.exe"),
-    windowsProgramFilesSuffixes = listOf(
-        "Google/Chrome/Application",
-        "Google/Chrome Beta/Application",
-        "Google/Chrome Canary/Application",
-        "Google/Chrome SxS/Application",
-    ),
-    windowsExecutableNames = listOf("chrome.exe"),
-    windowsProgramFilesGetter = {
-        listOfNotNull(
-            getEnv("PROGRAMFILES"),
-            getEnv("PROGRAMFILES(X86)"),
-            getEnv("LOCALAPPDATA"),
-            getEnv("PROGRAMW6432")
-        )
-    }
-)
-
-actual fun findOperaExecutable(): Path? = findBrowserExecutableCommon(
-    config = BrowserSearchConfig(searchWindowsProgramFiles = true),
-    pathSeparator = ";",
-    pathEnv = getEnv("PATH"),
-    executableNames = listOf("opera.exe"),
-    windowsProgramFilesSuffixes = listOf(
-        "Opera",
-        "Programs/Opera"
-    ),
-    windowsExecutableNames = listOf("opera.exe"),
-    windowsProgramFilesGetter = {
-        listOfNotNull(
-            getEnv("PROGRAMFILES"),
-            getEnv("PROGRAMFILES(X86)"),
-            getEnv("LOCALAPPDATA"),
-            getEnv("PROGRAMW6432")
-        )
-    }
-)
-
-actual fun findBraveExecutable(): Path? = findBrowserExecutableCommon(
-    config = BrowserSearchConfig(searchWindowsProgramFiles = true),
-    pathSeparator = ";",
-    pathEnv = getEnv("PATH"),
-    executableNames = listOf("brave.exe"),
-    windowsProgramFilesSuffixes = listOf(
-        "BraveSoftware/Brave-Browser/Application"
-    ),
-    windowsExecutableNames = listOf("brave.exe"),
-    windowsProgramFilesGetter = {
-        listOfNotNull(
-            getEnv("PROGRAMFILES"),
-            getEnv("PROGRAMFILES(X86)"),
-            getEnv("LOCALAPPDATA"),
-            getEnv("PROGRAMW6432")
-        )
-    }
-)
-
-actual fun findEdgeExecutable(): Path? = findBrowserExecutableCommon(
-    config = BrowserSearchConfig(searchWindowsProgramFiles = true),
-    pathSeparator = ";",
-    pathEnv = getEnv("PATH"),
-    executableNames = listOf("msedge.exe", "microsoft-edge.exe"),
-    windowsProgramFilesSuffixes = listOf(
-        "Microsoft/Edge/Application"
-    ),
-    windowsExecutableNames = listOf("msedge.exe"),
-    windowsProgramFilesGetter = {
-        listOfNotNull(
-            getEnv("PROGRAMFILES"),
-            getEnv("PROGRAMFILES(X86)"),
-            getEnv("LOCALAPPDATA"),
-            getEnv("PROGRAMW6432")
-        )
-    }
-)
-
 @OptIn(ExperimentalForeignApi::class)
 actual fun freePort(): Int? {
     // TODO: Implement Windows-specific freePort using Winsock
@@ -224,17 +144,6 @@ actual fun freePort(): Int? {
     return (49152..65535).random()
 }
 
-actual fun decompressIfNeeded(data: ByteArray): ByteArray {
-    return when {
-        isGzipCompressed(data) -> {
-            // Gzip decompression not readily available in Kotlin/Native for Windows
-            throw UnsupportedOperationException("Gzip decompression not yet supported on Windows native")
-        }
-
-        isZstdCompressed(data) -> {
-            throw UnsupportedOperationException("Zstandard decompression not yet supported on Windows native")
-        }
-
-        else -> data
-    }
+actual fun defaultBrowserSearchConfig(): BrowserSearchConfig {
+    return BrowserSearchConfig(";", searchWindowsProgramFiles = true)
 }

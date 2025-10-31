@@ -1,7 +1,6 @@
 package dev.kdriver.core.browser
 
 import dev.kdriver.core.exceptions.NoBrowserExecutablePathException
-import dev.kdriver.core.utils.*
 import io.ktor.util.logging.*
 import kotlinx.io.files.Path
 
@@ -30,10 +29,7 @@ class Config(
     internal val _extensions: MutableList<Path> = mutableListOf()
 
     val browserExecutablePath: Path = browserExecutablePath
-        ?: findChromeExecutable()
-        ?: findOperaExecutable()
-        ?: findBraveExecutable()
-        ?: findEdgeExecutable()
+        ?: defaultBrowserSearchConfig().findBrowserExecutable()
         ?: throw NoBrowserExecutablePathException()
 
     var sandbox: Boolean = sandbox

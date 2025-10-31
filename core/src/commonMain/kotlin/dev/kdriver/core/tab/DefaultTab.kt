@@ -8,11 +8,11 @@ import dev.kdriver.core.connection.DefaultConnection
 import dev.kdriver.core.dom.DefaultElement
 import dev.kdriver.core.dom.Element
 import dev.kdriver.core.dom.NodeOrElement
+import dev.kdriver.core.dom.filterRecurse
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.exceptions.TimeoutWaitingForReadyStateException
 import dev.kdriver.core.network.*
-import dev.kdriver.core.utils.filterRecurse
 import io.ktor.http.*
 import io.ktor.util.logging.*
 import io.ktor.utils.io.core.*
@@ -368,7 +368,7 @@ open class DefaultTab(
 
         val items = mutableListOf<Element>()
         for (nid in nodeIds) {
-            val innerNode = filterRecurse(doc) { it.nodeId == nid }
+            val innerNode = doc.filterRecurse { it.nodeId == nid }
             if (innerNode != null) {
                 val elem = DefaultElement(this, innerNode, doc)
                 items.add(elem)
@@ -420,7 +420,7 @@ open class DefaultTab(
 
         if (nodeId == null) return null
 
-        val foundNode = filterRecurse(doc) { it.nodeId == nodeId }
+        val foundNode = doc.filterRecurse { it.nodeId == nodeId }
         return foundNode?.let { DefaultElement(this, it, doc) }
     }
 
@@ -438,7 +438,7 @@ open class DefaultTab(
 
         val items = mutableListOf<Element>()
         for (nid in nodeIds) {
-            val node = filterRecurse(doc) { it.nodeId == nid }
+            val node = doc.filterRecurse { it.nodeId == nid }
             if (node == null) {
                 // Try to resolve the node if not found in the local tree
                 val resolvedNode = try {
@@ -473,11 +473,11 @@ open class DefaultTab(
 
         // since we already fetched the entire doc, including shadow and frames
         // let's also search through the iframes
-        val iframes = filterRecurse(doc) { it.nodeName == "IFRAME" }
+        val iframes = doc.filterRecurse { it.nodeName == "IFRAME" }
         if (iframes != null) {
             val iframeElems = listOf(DefaultElement(this, iframes, iframes.contentDocument ?: doc))
             for (iframeElem in iframeElems) {
-                val iframeTextNodes = filterRecurse(iframeElem.node) { n ->
+                val iframeTextNodes = iframeElem.node.filterRecurse { n ->
                     n.nodeType == 3 && n.nodeValue.contains(trimmedText, ignoreCase = true)
                 }
                 if (iframeTextNodes != null) {
