@@ -98,6 +98,11 @@ kotlin {
                 implementation(libs.tests.mockk)
             }
         }
+        val macosTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }
 
