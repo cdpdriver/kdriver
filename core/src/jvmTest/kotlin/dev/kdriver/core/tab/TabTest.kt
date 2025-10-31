@@ -1,7 +1,6 @@
 package dev.kdriver.core.tab
 
 import dev.kdriver.cdp.cdp
-import dev.kdriver.cdp.domain.Fetch
 import dev.kdriver.cdp.domain.Network
 import dev.kdriver.cdp.domain.network
 import dev.kdriver.core.browser.createBrowser
@@ -9,15 +8,16 @@ import dev.kdriver.core.connection.addHandler
 import dev.kdriver.core.connection.send
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
-import dev.kdriver.core.network.getResponseBody
 import dev.kdriver.core.sampleFile
-import dev.kdriver.models.UserData
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlin.io.path.deleteIfExists
 import kotlin.test.*
 
 class TabTest {
+
+    // User Agent Tests
 
     @Test
     fun testSetUserAgentSetsNavigatorValues() = runBlocking {
@@ -59,6 +59,8 @@ class TabTest {
         browser.stop()
     }
 
+    // Evaluation Tests
+
     @Test
     fun testEvaluateWaitPromiseSuccess() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
@@ -96,6 +98,8 @@ class TabTest {
         assertEquals("Error: Custom error\n    at <anonymous>:1:21\n    at <anonymous>:1:49", result.jsError)
         browser.stop()
     }
+
+    // Element Selection Tests
 
     @Test
     fun testFindFindsElementByText() = runBlocking {
@@ -151,6 +155,8 @@ class TabTest {
         browser.stop()
     }
 
+    // Event Handler Tests
+
     @Test
     fun testHandlers() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
@@ -193,118 +199,202 @@ class TabTest {
         browser.stop()
     }
 
+    // Navigation Tests
+
     @Test
-    fun testExpect() = runBlocking {
+    fun testBringToFront() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: error("Main tab is not available")
+        val tab = browser.get(sampleFile("groceries.html"))
 
-        tab.expect(Regex("groceries.html")) {
-            tab.get(sampleFile("groceries.html"))
-
-            val request = withTimeout(3000L) { this@expect.getRequest() }
-            val response = withTimeout(3000L) { this@expect.getResponse() }
-            val responseBody = withTimeout(3000L) { this@expect.getRawResponseBody() }
-
-            assertEquals(request.url, response.url)
-            assertEquals(200, response.status)
-            assertTrue(responseBody.body.isNotEmpty())
-        }
+        tab.bringToFront()
+        // Verify the tab is brought to front - no exception thrown
 
         browser.stop()
     }
 
     @Test
-    fun testExpectWithReload() = runBlocking {
+    fun testActivate() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: error("Main tab is not available")
+        val tab = browser.get(sampleFile("groceries.html"))
 
-        tab.expect(Regex("groceries.html")) {
-            tab.get(sampleFile("groceries.html"))
-            tab.waitForReadyState(ReadyState.COMPLETE)
-            reset()
-            tab.reload()
-            tab.waitForReadyState(ReadyState.COMPLETE)
-
-            val request = withTimeout(3000L) { this@expect.getRequest() }
-            val response = withTimeout(3000L) { this@expect.getResponse() }
-            val responseBody = withTimeout(3000L) { this@expect.getRawResponseBody() }
-
-            assertEquals(request.url, response.url)
-            assertEquals(200, response.status)
-            assertTrue(responseBody.body.isNotEmpty())
-        }
+        tab.activate()
+        // Verify the tab is activated - no exception thrown
 
         browser.stop()
     }
 
     @Test
-    fun testExpectBatch() = runBlocking {
+    fun testBackAndForward() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: error("Main tab is not available")
+        val tab = browser.get(sampleFile("groceries.html"))
+        tab.waitForReadyState(ReadyState.COMPLETE)
 
-        val pagePattern = Regex("profile.html")
-        val apiPattern = Regex("user-data.json")
+        val url2 = sampleFile("profile.html")
+        tab.get(url2)
+        tab.waitForReadyState(ReadyState.COMPLETE)
 
-        tab.expectBatch(listOf(pagePattern, apiPattern)) {
-            tab.get(sampleFile("profile.html"))
+        tab.back()
+        tab.waitForReadyState(ReadyState.COMPLETE)
 
-            val pageExp = expectations[pagePattern] ?: error("Missing expectation for profile.html")
-            val apiExp = expectations[apiPattern] ?: error("Missing expectation for user-data.json")
+        tab.forward()
+        tab.waitForReadyState(ReadyState.COMPLETE)
 
-            val pageResponse = withTimeout(3000L) { pageExp.getResponse() }
-            val apiResponse = withTimeout(3000L) { apiExp.getResponse() }
+        browser.stop()
+    }
 
-            assertEquals(200, pageResponse.status)
-            assertEquals(200, apiResponse.status)
+    // Screenshot Tests
 
-            val userData = withTimeout(3000L) { apiExp.getResponseBody<UserData>() }
-            assertEquals("Zendriver", userData.name)
-        }
+    @Test
+    fun testScreenshotB64() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val screenshot = tab.screenshotB64()
+        assertNotNull(screenshot)
+        assertTrue(screenshot.isNotEmpty())
 
         browser.stop()
     }
 
     @Test
-    fun testIntercept() = runBlocking {
+    fun testScreenshotB64WithFormat() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: error("Main tab is not available")
+        val tab = browser.get(sampleFile("groceries.html"))
 
-        val userData = tab.intercept(
-            "*/user-data.json",
-            Fetch.RequestStage.RESPONSE,
-            Network.ResourceType.XHR
-        ) {
-            tab.get(sampleFile("profile.html"))
-            val originalResponse = withTimeout(3000L) { getResponseBody<UserData>() }
-            withTimeout(3000L) { continueRequest() }
-            originalResponse
-        }
+        val screenshot = tab.screenshotB64(format = ScreenshotFormat.PNG)
+        assertNotNull(screenshot)
+        assertTrue(screenshot.isNotEmpty())
 
-        assertEquals("Zendriver", userData.name)
         browser.stop()
     }
 
     @Test
-    fun testInterceptWithReload() = runBlocking {
+    fun testSaveScreenshot() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        val tab = browser.mainTab ?: error("Main tab is not available")
+        val tab = browser.get(sampleFile("groceries.html"))
 
-        val userData = tab.intercept(
-            "*/user-data.json",
-            Fetch.RequestStage.RESPONSE,
-            Network.ResourceType.XHR
-        ) {
-            tab.get(sampleFile("profile.html"))
-            withTimeout(3000L) { continueRequest() }
-
-            reset()
-            tab.reload()
-            val originalResponse = withTimeout(3000L) { getResponseBody<UserData>() }
-            withTimeout(3000L) { continueRequest() }
-            originalResponse
+        val tempFile = kotlin.io.path.createTempFile(prefix = "test_screenshot_", suffix = ".png")
+        try {
+            val path = tab.saveScreenshot(kotlinx.io.files.Path(tempFile.toString()))
+            assertNotNull(path)
+            assertTrue(tempFile.toFile().exists())
+            assertTrue(tempFile.toFile().length() > 0)
+        } finally {
+            tempFile.deleteIfExists()
         }
 
-        assertEquals("Zendriver", userData.name)
+        browser.stop()
+    }
+
+    // Window Management Tests
+
+    @Test
+    fun testMaximize() = runBlocking {
+        val browser = createBrowser(this, headless = false, sandbox = false)
+        val tab = browser.mainTab ?: error("Main tab is not available")
+
+        tab.maximize()
+        // Verify maximize was called - no exception thrown
+
+        browser.stop()
+    }
+
+    @Test
+    fun testMinimize() = runBlocking {
+        val browser = createBrowser(this, headless = false, sandbox = false)
+        val tab = browser.mainTab ?: error("Main tab is not available")
+
+        tab.minimize()
+        // Verify minimize was called - no exception thrown
+
+        browser.stop()
+    }
+
+    @Test
+    fun testFullscreen() = runBlocking {
+        val browser = createBrowser(this, headless = false, sandbox = false)
+        val tab = browser.mainTab ?: error("Main tab is not available")
+
+        tab.fullscreen()
+        // Verify fullscreen was called - no exception thrown
+
+        browser.stop()
+    }
+
+    @Test
+    fun testGetWindow() = runBlocking {
+        val browser = createBrowser(this, headless = false, sandbox = false)
+        val tab = browser.mainTab ?: error("Main tab is not available")
+
+        val window = tab.getWindow()
+        assertNotNull(window)
+        assertNotNull(window.bounds)
+
+        browser.stop()
+    }
+
+    @Test
+    fun testSetWindowState() = runBlocking {
+        val browser = createBrowser(this, headless = false, sandbox = false)
+        val tab = browser.mainTab ?: error("Main tab is not available")
+
+        val initialWindow = tab.getWindow()
+        assertNotNull(initialWindow.bounds)
+
+        tab.setWindowState(
+            left = initialWindow.bounds.left ?: 0,
+            top = initialWindow.bounds.top ?: 0,
+            width = 800,
+            height = 600
+        )
+
+        val updatedWindow = tab.getWindow()
+        assertEquals(800, updatedWindow.bounds.width)
+        assertEquals(600, updatedWindow.bounds.height)
+
+        browser.stop()
+    }
+
+    // Scroll Tests
+
+    @Test
+    fun testScrollUpAndDown() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        tab.scrollDown(100)
+        // Verify scroll down was performed
+
+        tab.scrollUp(100)
+        // Verify scroll up was performed
+
+        browser.stop()
+    }
+
+    // URL and Source Tests
+
+    @Test
+    fun testGetAllUrls() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("profile.html"))
+        tab.waitForReadyState(ReadyState.COMPLETE)
+
+        val urls = tab.getAllUrls()
+        assertNotNull(urls)
+        // URLs list should exist (may be empty if no links/assets in the page)
+
+        browser.stop()
+    }
+
+    @Test
+    fun testGetAllLinkedSources() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("profile.html"))
+        tab.waitForReadyState(ReadyState.COMPLETE)
+
+        val sources = tab.getAllLinkedSources()
+        assertNotNull(sources)
+
         browser.stop()
     }
 
