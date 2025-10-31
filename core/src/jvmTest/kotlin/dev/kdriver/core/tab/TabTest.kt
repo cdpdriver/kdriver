@@ -6,6 +6,7 @@ import dev.kdriver.cdp.domain.network
 import dev.kdriver.core.browser.createBrowser
 import dev.kdriver.core.connection.addHandler
 import dev.kdriver.core.connection.send
+import dev.kdriver.core.dom.NodeOrElement
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
 import dev.kdriver.core.sampleFile
@@ -412,6 +413,18 @@ class TabTest {
     }
 
     @Test
+    fun testGetAllUrlsRelative() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("profile.html"))
+        tab.waitForReadyState(ReadyState.COMPLETE)
+
+        val urls = tab.getAllUrls(absolute = false)
+        assertNotNull(urls)
+
+        browser.stop()
+    }
+
+    @Test
     fun testGetAllLinkedSources() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get(sampleFile("profile.html"))
@@ -419,6 +432,87 @@ class TabTest {
 
         val sources = tab.getAllLinkedSources()
         assertNotNull(sources)
+
+        browser.stop()
+    }
+
+    // Mouse Operation Tests
+
+    @Test
+    fun testMouseMove() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        tab.mouseMove(100.0, 100.0)
+
+        browser.stop()
+    }
+
+    @Test
+    fun testMouseClick() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        tab.mouseClick(100.0, 100.0)
+
+        browser.stop()
+    }
+
+    // Advanced Selection Tests
+
+    @Test
+    fun testSelectWithTimeout() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val element = tab.select("li", timeout = 5000)
+        assertNotNull(element)
+
+        browser.stop()
+    }
+
+    @Test
+    fun testFindAllByText() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val elements = tab.findAll("Apples")
+        assertTrue(elements.isNotEmpty())
+
+        browser.stop()
+    }
+
+    @Test
+    fun testQuerySelectorWithNode() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val list = tab.select("ul")
+        val item = tab.querySelector("li", NodeOrElement.WrappedElement(list))
+        assertNotNull(item)
+
+        browser.stop()
+    }
+
+    @Test
+    fun testQuerySelectorAllWithNode() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val list = tab.select("ul")
+        val items = tab.querySelectorAll("li", NodeOrElement.WrappedElement(list))
+        assertTrue(items.isNotEmpty())
+
+        browser.stop()
+    }
+
+    @Test
+    fun testSelectAll() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+
+        val elements = tab.selectAll("li")
+        assertTrue(elements.isNotEmpty())
 
         browser.stop()
     }
