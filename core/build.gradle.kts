@@ -92,10 +92,17 @@ kotlin {
                 api(libs.ktor.client.darwin)
             }
         }
+        val posixMain by creating {
+            dependsOn(commonMain)
+        }
         val linuxMain by getting {
+            dependsOn(posixMain)
             dependencies {
                 api(libs.ktor.client.curl)
             }
+        }
+        val macosMain by getting {
+            dependsOn(posixMain)
         }
         val mingwMain by getting {
             dependencies {
