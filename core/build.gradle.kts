@@ -36,6 +36,13 @@ mavenPublishing {
 }
 
 kotlin {
+    // Native targets
+    macosX64()
+    macosArm64()
+    //linuxX64()
+    //linuxArm64()
+    //mingwX64()
+
     // jvm & js
     jvmToolchain(21)
     jvm {
@@ -78,6 +85,11 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 api(libs.ktor.client.js)
+            }
+        }
+        val appleMain by getting {
+            dependencies {
+                api(libs.ktor.client.darwin)
             }
         }
         val jvmTest by getting {

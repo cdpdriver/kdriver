@@ -34,6 +34,7 @@ dependencyResolutionManagement {
             library("ktor-client-apache", "io.ktor", "ktor-client-apache").versionRef("ktor")
             library("ktor-client-cio", "io.ktor", "ktor-client-cio").versionRef("ktor")
             library("ktor-client-js", "io.ktor", "ktor-client-js").versionRef("ktor")
+            library("ktor-client-darwin", "io.ktor", "ktor-client-darwin").versionRef("ktor")
 
             // Tests
             library("tests-mockk", "io.mockk:mockk:1.13.12")
