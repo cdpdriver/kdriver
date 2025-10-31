@@ -4,8 +4,7 @@ import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.*
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.browser.Browser
-import dev.kdriver.core.utils.getWebSocketClientEngine
-import dev.kdriver.core.utils.parseWebSocketUrl
+import dev.kdriver.core.browser.WebSocketInfo
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.http.*
@@ -205,6 +204,20 @@ open class DefaultConnection(
             )
         }
         prepareExpertDone = true
+    }
+
+    private fun parseWebSocketUrl(url: String): WebSocketInfo {
+        val uri = Url(url)
+
+        val host = uri.host
+        val port = if (uri.port != -1) uri.port else when (uri.protocol) {
+            URLProtocol.WS -> 80
+            URLProtocol.WSS -> 443
+            else -> throw IllegalArgumentException("Unsupported scheme: ${uri.protocol}")
+        }
+        val path = uri.encodedPath
+
+        return WebSocketInfo(host, port, path)
     }
 
     override fun toString(): String {

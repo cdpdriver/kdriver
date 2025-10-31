@@ -11,7 +11,6 @@ import dev.kdriver.core.exceptions.BrowserExecutableNotFoundException
 import dev.kdriver.core.exceptions.FailedToConnectToBrowserException
 import dev.kdriver.core.tab.DefaultTab
 import dev.kdriver.core.tab.Tab
-import dev.kdriver.core.utils.*
 import io.ktor.util.logging.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex

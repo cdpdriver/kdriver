@@ -1,4 +1,4 @@
-package dev.kdriver.core.utils
+package dev.kdriver.core.connection
 
 import io.ktor.client.engine.*
 

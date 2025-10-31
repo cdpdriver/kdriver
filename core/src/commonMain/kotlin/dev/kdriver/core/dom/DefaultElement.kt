@@ -3,8 +3,6 @@ package dev.kdriver.core.dom
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.tab.Tab
-import dev.kdriver.core.utils.filterRecurse
-import dev.kdriver.core.utils.filterRecurseAll
 import io.ktor.util.logging.*
 import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
@@ -26,10 +24,10 @@ open class DefaultElement(
         get() = node.nodeName.lowercase()
 
     override val text: String
-        get() = filterRecurse(node) { it.nodeType == 3 }?.nodeValue ?: ""
+        get() = node.filterRecurse { it.nodeType == 3 }?.nodeValue ?: ""
 
     override val textAll: String
-        get() = filterRecurseAll(node) { it.nodeType == 3 }.joinToString(" ") { it.nodeValue }
+        get() = node.filterRecurseAll { it.nodeType == 3 }.joinToString(" ") { it.nodeValue }
 
     override val backendNodeId: Int
         get() = node.backendNodeId
@@ -46,7 +44,7 @@ open class DefaultElement(
     override val parent: Element?
         get() {
             val tree = this.tree ?: throw RuntimeException("could not get parent since the element has no tree set")
-            val parentNode = filterRecurse(tree) { node -> node.nodeId == parentId } ?: return null
+            val parentNode = tree.filterRecurse { node -> node.nodeId == parentId } ?: return null
             return DefaultElement(tab, parentNode, tree)
         }
 
@@ -88,7 +86,7 @@ open class DefaultElement(
 
     override suspend fun update(nodeOverride: DOM.Node?): Element {
         val doc = nodeOverride ?: tab.dom.getDocument(depth = -1, pierce = true).root
-        val updatedNode = filterRecurse(doc) { it.backendNodeId == node.backendNodeId }
+        val updatedNode = doc.filterRecurse { it.backendNodeId == node.backendNodeId }
         if (updatedNode != null) {
             logger.debug("node seems changed, and has now been updated.")
             this.node = updatedNode
@@ -98,7 +96,7 @@ open class DefaultElement(
         remoteObject = tab.dom.resolveNode(backendNodeId = node.backendNodeId).`object`
 
         if (node.nodeName != "IFRAME") {
-            val parentNode = filterRecurse(doc) { it.nodeId == node.parentId }
+            val parentNode = doc.filterRecurse { it.nodeId == node.parentId }
             if (parentNode != null) {
                 // What's the point of this? (object is never used)
                 val _parent = DefaultElement(tab, parentNode, tree)

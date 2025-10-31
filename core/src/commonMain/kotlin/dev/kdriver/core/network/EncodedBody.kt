@@ -2,7 +2,6 @@ package dev.kdriver.core.network
 
 import dev.kdriver.cdp.domain.Fetch
 import dev.kdriver.cdp.domain.Network
-import dev.kdriver.core.utils.decompressIfNeeded
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -58,7 +57,7 @@ data class EncodedBody(
     val decodedBody: String
         get() {
             val rawBytes = if (base64Encoded) Base64.decode(body) else body.encodeToByteArray()
-            val decompressedBytes = decompressIfNeeded(rawBytes)
+            val decompressedBytes = rawBytes.decompressIfNeeded()
             return decompressedBytes.decodeToString()
         }
 
