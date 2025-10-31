@@ -87,116 +87,61 @@ actual fun exists(path: Path): Boolean {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual fun findChromeExecutable(): Path? {
-    val candidates = mutableListOf<Path>()
+actual fun getEnv(name: String): String? {
+    return getenv(name)?.toKString()
+}
 
-    // Check common macOS locations
-    candidates.addAll(
-        listOf(
-            Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
-            Path("/Applications/Chromium.app/Contents/MacOS/Chromium")
-        )
-    )
-
-    // Check PATH
-    val pathEnv = getenv("PATH")?.toKString() ?: ""
-    val paths = pathEnv.split(":")
-    val executables = listOf(
+actual fun findChromeExecutable(): Path? = findBrowserExecutableCommon(
+    config = BrowserSearchConfig(searchMacosApplications = true),
+    pathSeparator = ":",
+    pathEnv = getEnv("PATH"),
+    executableNames = listOf(
         "google-chrome",
         "chromium",
         "chromium-browser",
         "chrome",
         "google-chrome-stable"
-    )
+    ),
+    macosAppPaths = listOf(
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Chromium.app/Contents/MacOS/Chromium"
+    ),
+)
 
-    for (pathDir in paths) {
-        for (exe in executables) {
-            val candidate = Path("$pathDir/$exe")
-            candidates.add(candidate)
-        }
-    }
+actual fun findOperaExecutable(): Path? = findBrowserExecutableCommon(
+    config = BrowserSearchConfig(searchMacosApplications = true),
+    pathSeparator = ":",
+    pathEnv = getEnv("PATH"),
+    executableNames = listOf("opera"),
+    macosAppPaths = listOf(
+        "/Applications/Opera.app/Contents/MacOS/Opera"
+    ),
+)
 
-    return candidates
-        .filter { exists(it) && isExecutable(it) }
-        .minByOrNull { it.toString().length }
-}
+actual fun findBraveExecutable(): Path? = findBrowserExecutableCommon(
+    config = BrowserSearchConfig(searchMacosApplications = true),
+    pathSeparator = ":",
+    pathEnv = getEnv("PATH"),
+    executableNames = listOf("brave-browser", "brave"),
+    macosAppPaths = listOf(
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+    ),
+)
 
-@OptIn(ExperimentalForeignApi::class)
-actual fun findOperaExecutable(): Path? {
-    val candidates = mutableListOf<Path>()
-
-    // Check common macOS locations
-    candidates.add(Path("/Applications/Opera.app/Contents/MacOS/Opera"))
-
-    // Check PATH
-    val pathEnv = getenv("PATH")?.toKString() ?: ""
-    val paths = pathEnv.split(":")
-    val executables = listOf("opera")
-
-    for (pathDir in paths) {
-        for (exe in executables) {
-            val candidate = Path("$pathDir/$exe")
-            candidates.add(candidate)
-        }
-    }
-
-    return candidates
-        .filter { exists(it) && isExecutable(it) }
-        .minByOrNull { it.toString().length }
-}
-
-@OptIn(ExperimentalForeignApi::class)
-actual fun findBraveExecutable(): Path? {
-    val candidates = mutableListOf<Path>()
-
-    // Check common macOS locations
-    candidates.add(Path("/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"))
-
-    // Check PATH
-    val pathEnv = getenv("PATH")?.toKString() ?: ""
-    val paths = pathEnv.split(":")
-    val executables = listOf("brave-browser", "brave")
-
-    for (pathDir in paths) {
-        for (exe in executables) {
-            val candidate = Path("$pathDir/$exe")
-            candidates.add(candidate)
-        }
-    }
-
-    return candidates
-        .filter { exists(it) && isExecutable(it) }
-        .minByOrNull { it.toString().length }
-}
-
-@OptIn(ExperimentalForeignApi::class)
-actual fun findEdgeExecutable(): Path? {
-    val candidates = mutableListOf<Path>()
-
-    // Check common macOS locations
-    candidates.add(Path("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"))
-
-    // Check PATH
-    val pathEnv = getenv("PATH")?.toKString() ?: ""
-    val paths = pathEnv.split(":")
-    val executables = listOf(
+actual fun findEdgeExecutable(): Path? = findBrowserExecutableCommon(
+    config = BrowserSearchConfig(searchMacosApplications = true),
+    pathSeparator = ":",
+    pathEnv = getEnv("PATH"),
+    executableNames = listOf(
         "microsoft-edge",
         "microsoft-edge-stable",
         "microsoft-edge-beta",
         "microsoft-edge-dev"
-    )
-
-    for (pathDir in paths) {
-        for (exe in executables) {
-            val candidate = Path("$pathDir/$exe")
-            candidates.add(candidate)
-        }
-    }
-
-    return candidates
-        .filter { exists(it) && isExecutable(it) }
-        .minByOrNull { it.toString().length }
-}
+    ),
+    macosAppPaths = listOf(
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+    ),
+)
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun freePort(): Int? {
@@ -241,14 +186,6 @@ actual fun decompressIfNeeded(data: ByteArray): ByteArray {
         }
 
         else -> data
-    }
-}
-
-@OptIn(ExperimentalForeignApi::class)
-private fun isExecutable(path: Path): Boolean {
-    return memScoped {
-        val result = access(path.toString(), X_OK)
-        result == 0
     }
 }
 

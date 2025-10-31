@@ -74,200 +74,172 @@ actual fun exists(path: Path): Boolean {
     }
 }
 
+actual fun getEnv(name: String): String? {
+    return System.getenv(name)
+}
+
 actual fun findChromeExecutable(): Path? {
-    val candidates = mutableListOf<Path>()
     val os = System.getProperty("os.name").lowercase()
-    val paths = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
-    if (isPosix()) {
-        val executables = listOf(
+
+    val config = when {
+        os.contains("mac") -> BrowserSearchConfig(searchMacosApplications = true)
+        isPosix() -> BrowserSearchConfig(searchLinuxCommonPaths = true)
+        else -> BrowserSearchConfig(searchWindowsProgramFiles = true)
+    }
+
+    return findBrowserExecutableCommon(
+        config = config,
+        pathSeparator = File.pathSeparator,
+        pathEnv = getEnv("PATH"),
+        executableNames = listOf(
             "google-chrome",
             "chromium",
             "chromium-browser",
             "chrome",
             "google-chrome-stable"
-        )
-        for (path in paths) {
-            for (exe in executables) {
-                val candidate = File(path, exe)
-                if (candidate.exists() && candidate.canExecute()) {
-                    candidates.add(Path(candidate.absolutePath))
-                }
-            }
-        }
-        if (os.contains("mac")) {
-            candidates.addAll(
-                listOf(
-                    Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
-                    Path("/Applications/Chromium.app/Contents/MacOS/Chromium")
-                )
-            )
-        }
-    } else {
-        val programFiles = listOfNotNull(
-            System.getenv("PROGRAMFILES"),
-            System.getenv("PROGRAMFILES(X86)"),
-            System.getenv("LOCALAPPDATA"),
-            System.getenv("PROGRAMW6432")
-        )
-        val subPaths = listOf(
+        ),
+        macosAppPaths = listOf(
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium"
+        ),
+        linuxCommonPaths = listOf(
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium",
+            "/usr/bin/chromium-browser",
+            "/snap/bin/chromium",
+            "/opt/google/chrome/chrome",
+        ),
+        windowsProgramFilesSuffixes = listOf(
             "Google/Chrome/Application",
             "Google/Chrome Beta/Application",
             "Google/Chrome Canary/Application",
             "Google/Chrome SxS/Application",
-        )
-        for (base in programFiles) {
-            for (sub in subPaths) {
-                val candidate = File(base, "$sub/chrome.exe")
-                candidates.add(Path(candidate.absolutePath))
-            }
+        ),
+        windowsExecutableNames = listOf("chrome.exe"),
+        windowsProgramFilesGetter = {
+            listOfNotNull(
+                getEnv("PROGRAMFILES"),
+                getEnv("PROGRAMFILES(X86)"),
+                getEnv("LOCALAPPDATA"),
+                getEnv("PROGRAMW6432")
+            )
         }
-    }
-    return candidates
-        .filter {
-            val file = File(it.toString())
-            file.exists() && file.canExecute()
-        }
-        .minByOrNull { it.toString().length }
+    )
 }
 
 actual fun findOperaExecutable(): Path? {
-    val candidates = mutableListOf<Path>()
     val os = System.getProperty("os.name").lowercase()
-    val paths = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
-    if (isPosix()) {
-        val executables = listOf(
-            "opera"
-        )
-        for (path in paths) {
-            for (exe in executables) {
-                val candidate = File(path, exe)
-                if (candidate.exists() && candidate.canExecute()) {
-                    candidates.add(Path(candidate.absolutePath))
-                }
-            }
-        }
-        if (os.contains("mac")) {
-            candidates.add(Path("/Applications/Opera.app/Contents/MacOS/Opera"))
-        }
-    } else {
-        val programFiles = listOfNotNull(
-            System.getenv("PROGRAMFILES"),
-            System.getenv("PROGRAMFILES(X86)"),
-            System.getenv("LOCALAPPDATA"),
-            System.getenv("PROGRAMW6432")
-        )
-        val subPaths = listOf(
+
+    val config = when {
+        os.contains("mac") -> BrowserSearchConfig(searchMacosApplications = true)
+        isPosix() -> BrowserSearchConfig(searchLinuxCommonPaths = true)
+        else -> BrowserSearchConfig(searchWindowsProgramFiles = true)
+    }
+
+    return findBrowserExecutableCommon(
+        config = config,
+        pathSeparator = File.pathSeparator,
+        pathEnv = getEnv("PATH"),
+        executableNames = listOf("opera"),
+        macosAppPaths = listOf(
+            "/Applications/Opera.app/Contents/MacOS/Opera"
+        ),
+        linuxCommonPaths = listOf(
+            "/usr/bin/opera",
+            "/usr/local/bin/opera",
+        ),
+        windowsProgramFilesSuffixes = listOf(
             "Opera",
             "Programs/Opera"
-        )
-        val exes = listOf("opera.exe")
-        for (base in programFiles) {
-            for (sub in subPaths) {
-                for (exe in exes) {
-                    val candidate = File(base, "$sub/$exe")
-                    candidates.add(Path(candidate.absolutePath))
-                }
-            }
+        ),
+        windowsExecutableNames = listOf("opera.exe"),
+        windowsProgramFilesGetter = {
+            listOfNotNull(
+                getEnv("PROGRAMFILES"),
+                getEnv("PROGRAMFILES(X86)"),
+                getEnv("LOCALAPPDATA"),
+                getEnv("PROGRAMW6432")
+            )
         }
-    }
-    return candidates
-        .filter {
-            val file = File(it.toString())
-            file.exists() && file.canExecute()
-        }
-        .minByOrNull { it.toString().length }
+    )
 }
 
 actual fun findBraveExecutable(): Path? {
-    val candidates = mutableListOf<Path>()
     val os = System.getProperty("os.name").lowercase()
-    val paths = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
-    if (isPosix()) {
-        val executables = listOf(
-            "brave-browser",
-            "brave"
-        )
-        for (path in paths) {
-            for (exe in executables) {
-                val candidate = File(path, exe)
-                if (candidate.exists() && candidate.canExecute()) {
-                    candidates.add(Path(candidate.absolutePath))
-                }
-            }
-        }
-        if (os.contains("mac")) {
-            candidates.add(Path("/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"))
-        }
-    } else {
-        val roots = listOfNotNull(
-            System.getenv("PROGRAMFILES"),
-            System.getenv("PROGRAMFILES(X86)"),
-            System.getenv("LOCALAPPDATA"),
-            System.getenv("PROGRAMW6432")
-        )
-        val subPaths = listOf(
-            "BraveSoftware/Brave-Browser/Application"
-        )
-        for (base in roots) {
-            for (sub in subPaths) {
-                val candidate = File(base, "$sub/brave.exe")
-                candidates.add(Path(candidate.absolutePath))
-            }
-        }
+
+    val config = when {
+        os.contains("mac") -> BrowserSearchConfig(searchMacosApplications = true)
+        isPosix() -> BrowserSearchConfig(searchLinuxCommonPaths = true)
+        else -> BrowserSearchConfig(searchWindowsProgramFiles = true)
     }
-    return candidates
-        .filter {
-            val file = File(it.toString())
-            file.exists() && file.canExecute()
+
+    return findBrowserExecutableCommon(
+        config = config,
+        pathSeparator = File.pathSeparator,
+        pathEnv = getEnv("PATH"),
+        executableNames = listOf("brave-browser", "brave"),
+        macosAppPaths = listOf(
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        ),
+        linuxCommonPaths = listOf(
+            "/usr/bin/brave-browser",
+            "/usr/bin/brave",
+            "/snap/bin/brave",
+        ),
+        windowsProgramFilesSuffixes = listOf(
+            "BraveSoftware/Brave-Browser/Application"
+        ),
+        windowsExecutableNames = listOf("brave.exe"),
+        windowsProgramFilesGetter = {
+            listOfNotNull(
+                getEnv("PROGRAMFILES"),
+                getEnv("PROGRAMFILES(X86)"),
+                getEnv("LOCALAPPDATA"),
+                getEnv("PROGRAMW6432")
+            )
         }
-        .minByOrNull { it.toString().length }
+    )
 }
 
 actual fun findEdgeExecutable(): Path? {
-    val candidates = mutableListOf<Path>()
     val os = System.getProperty("os.name").lowercase()
-    val paths = System.getenv("PATH")?.split(File.pathSeparator) ?: emptyList()
-    if (isPosix()) {
-        val executables = listOf(
+
+    val config = when {
+        os.contains("mac") -> BrowserSearchConfig(searchMacosApplications = true)
+        isPosix() -> BrowserSearchConfig(searchLinuxCommonPaths = true)
+        else -> BrowserSearchConfig(searchWindowsProgramFiles = true)
+    }
+
+    return findBrowserExecutableCommon(
+        config = config,
+        pathSeparator = File.pathSeparator,
+        pathEnv = getEnv("PATH"),
+        executableNames = listOf(
             "microsoft-edge",
             "microsoft-edge-stable",
             "microsoft-edge-beta",
             "microsoft-edge-dev"
-        )
-        for (path in paths) {
-            for (exe in executables) {
-                val candidate = File(path, exe)
-                if (candidate.exists() && candidate.canExecute()) {
-                    candidates.add(Path(candidate.absolutePath))
-                }
-            }
-        }
-        if (os.contains("mac")) {
-            candidates.add(Path("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"))
-        }
-    } else {
-        val roots = listOfNotNull(
-            System.getenv("PROGRAMFILES"),
-            System.getenv("PROGRAMFILES(X86)"),
-            System.getenv("LOCALAPPDATA"),
-            System.getenv("PROGRAMW6432")
-        )
-        val subPaths = listOf(
+        ),
+        macosAppPaths = listOf(
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+        ),
+        linuxCommonPaths = listOf(
+            "/usr/bin/microsoft-edge",
+            "/usr/bin/microsoft-edge-stable",
+        ),
+        windowsProgramFilesSuffixes = listOf(
             "Microsoft/Edge/Application"
-        )
-        for (base in roots) {
-            for (sub in subPaths) {
-                val candidate = File(base, "$sub/msedge.exe")
-                candidates.add(Path(candidate.absolutePath))
-            }
+        ),
+        windowsExecutableNames = listOf("msedge.exe"),
+        windowsProgramFilesGetter = {
+            listOfNotNull(
+                getEnv("PROGRAMFILES"),
+                getEnv("PROGRAMFILES(X86)"),
+                getEnv("LOCALAPPDATA"),
+                getEnv("PROGRAMW6432")
+            )
         }
-    }
-    return candidates
-        .filter {
-            val file = File(it.toString())
-            file.exists() && file.canExecute()
-        }
-        .minByOrNull { it.toString().length }
+    )
 }
 
 actual fun freePort(): Int? {

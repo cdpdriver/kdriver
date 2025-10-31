@@ -42,6 +42,10 @@ actual fun exists(path: Path): Boolean {
     throw UnsupportedOperationException()
 }
 
+actual fun getEnv(name: String): String? {
+    throw UnsupportedOperationException()
+}
+
 actual fun findChromeExecutable(): Path? {
     throw UnsupportedOperationException()
 }
