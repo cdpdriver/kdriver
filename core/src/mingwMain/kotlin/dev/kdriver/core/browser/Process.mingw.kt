@@ -124,11 +124,10 @@ actual fun tempProfileDir(): Path {
     return Path(profilePath)
 }
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, UnsafeNumber::class)
 actual fun exists(path: Path): Boolean {
-    // Simplified check - just return true for now to unblock compilation
-    // TODO: Properly implement using GetFileAttributesW
-    return true
+    val attributes = GetFileAttributesW(path.toString())
+    return attributes != INVALID_FILE_ATTRIBUTES
 }
 
 @OptIn(ExperimentalForeignApi::class)
