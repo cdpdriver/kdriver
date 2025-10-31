@@ -1,5 +1,6 @@
 package dev.kdriver.core.browser
 
+import dev.kdriver.core.sampleFile
 import dev.kdriver.core.tab.ReadyState
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -83,6 +84,71 @@ class BrowserTest {
         browser1.stop()
         browser2.stop()
         browser3.stop()
+    }
+
+    @Test
+    fun testBrowserWait() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+
+        val result = browser.wait(100)
+
+        assertNotNull(result)
+        browser.stop()
+    }
+
+    @Test
+    fun testGetWebsocketUrl() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+
+        val url = browser.websocketUrl
+
+        assertNotNull(url)
+        assertTrue(url.startsWith("ws://"))
+        browser.stop()
+    }
+
+    @Test
+    fun testGetTabs() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        browser.get(sampleFile("groceries.html"))
+
+        val tabs = browser.tabs
+
+        assertNotNull(tabs)
+        assertTrue(tabs.isNotEmpty())
+        browser.stop()
+    }
+
+    @Test
+    fun testGetTargets() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+
+        val targets = browser.targets
+
+        assertNotNull(targets)
+        browser.stop()
+    }
+
+    @Test
+    fun testUpdateTargets() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        browser.get(sampleFile("groceries.html"))
+
+        browser.updateTargets()
+
+        assertTrue(browser.targets.isNotEmpty())
+        browser.stop()
+    }
+
+    @Test
+    fun testGetWithNewTab() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+
+        val initialTabCount = browser.tabs.size
+        browser.get(sampleFile("profile.html"), newTab = true)
+
+        assertTrue(browser.tabs.size > initialTabCount)
+        browser.stop()
     }
 
 }
