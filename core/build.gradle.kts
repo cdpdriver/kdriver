@@ -39,9 +39,9 @@ kotlin {
     // Native targets
     macosX64()
     macosArm64()
-    //linuxX64()
-    //linuxArm64()
-    //mingwX64()
+    linuxX64()
+    linuxArm64()
+    mingwX64()
 
     // jvm & js
     jvmToolchain(21)
@@ -92,6 +92,16 @@ kotlin {
                 api(libs.ktor.client.darwin)
             }
         }
+        val linuxMain by getting {
+            dependencies {
+                api(libs.ktor.client.curl)
+            }
+        }
+        val mingwMain by getting {
+            dependencies {
+                api(libs.ktor.client.winhttp)
+            }
+        }
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))
@@ -99,6 +109,16 @@ kotlin {
             }
         }
         val macosTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+        val linuxTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+        val mingwTest by getting {
             dependencies {
                 implementation(kotlin("test"))
             }
