@@ -219,7 +219,9 @@ open class DefaultBrowser(
                     val result = connection.extensions.loadUnpacked(extensionPath.toString())
                     logger.info("Successfully loaded extension from $extensionPath with ID: ${result.id}")
                 } catch (e: Exception) {
-                    logger.warn("Failed to load extension from $extensionPath: ${e.message}")
+                    logger.error("Failed to load extension from $extensionPath: ${e.message}")
+                    e.printStackTrace()
+                    throw e
                 }
             }
         }

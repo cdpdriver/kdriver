@@ -1,6 +1,8 @@
 package dev.kdriver.core.browser
 
+import dev.kdriver.core.extensions.addExtension
 import dev.kdriver.core.sampleFile
+import dev.kdriver.core.samplePath
 import dev.kdriver.core.tab.ReadyState
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -148,6 +150,40 @@ class BrowserTest {
         browser.get(sampleFile("profile.html"), newTab = true)
 
         assertTrue(browser.tabs.size > initialTabCount)
+        browser.stop()
+    }
+
+    @Test
+    fun testExtensionLoading() = runBlocking {
+        val config = Config(headless = true, sandbox = false)
+        config.addExtension(samplePath("extension"))
+
+        assertTrue(config.extensions.isNotEmpty())
+        assertEquals(1, config.extensions.size)
+
+        val browser = createBrowser(this, config)
+        assertNotNull(browser)
+        assertNotNull(browser.connection)
+
+        // Navigate to a test page
+        val tab = browser.get("https://example.com")
+        tab.waitForReadyState(ReadyState.COMPLETE)
+
+        // Wait for extension to inject content
+        tab.wait(5000)
+
+        // Verify the extension marker element exists
+        val markerElement = tab.select("#kdriver-extension-marker", timeout = 10000)
+        assertNotNull(
+            markerElement,
+            "Extension marker element should exist, indicating the extension loaded successfully"
+        )
+        assertEquals("KDriver Extension Active", markerElement.text)
+
+        // Verify the data attribute
+        val dataAttr = markerElement["data-extension-loaded"]
+        assertEquals("true", dataAttr)
+
         browser.stop()
     }
 
