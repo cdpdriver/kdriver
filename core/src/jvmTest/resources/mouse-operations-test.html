@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Mouse Operations Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .hover-target {
+            width: 200px;
+            height: 100px;
+            background-color: #f0f0f0;
+            border: 2px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .hover-target:hover {
+            background-color: #4CAF50;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .hover-tooltip-container {
+            position: relative;
+            display: inline-block;
+            margin: 20px;
+        }
+
+        .hover-button {
+            padding: 10px 20px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .tooltip {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .hover-tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .click-counter {
+            padding: 15px;
+            margin: 20px;
+            border: 2px solid #333;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        .modal {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 300px;
+            position: relative;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-button:hover {
+            color: #000;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            margin: 20px;
+        }
+
+        .dropdown-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+
+        .dropdown.open .dropdown-content {
+            display: block;
+        }
+
+        .event-log {
+            margin: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .context-menu-target {
+            width: 200px;
+            height: 100px;
+            background-color: #e3f2fd;
+            border: 2px solid #2196F3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px;
+            cursor: context-menu;
+        }
+
+        .custom-context-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .custom-context-menu.active {
+            display: block;
+        }
+
+        .custom-context-menu a {
+            display: block;
+            padding: 10px 20px;
+            text-decoration: none;
+            color: black;
+        }
+
+        .custom-context-menu a:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+<h1>Mouse Operations Test Page</h1>
+
+<h2>1. Hover Effects</h2>
+<div class="hover-target" id="hover-target">
+    Hover over me!
+</div>
+<div id="hover-status">Hover status: Not hovered</div>
+
+<h2>2. Tooltip on Hover</h2>
+<div class="hover-tooltip-container" id="tooltip-container">
+    <button class="hover-button">Hover for tooltip</button>
+    <span class="tooltip" id="tooltip">This is a tooltip!</span>
+</div>
+
+<h2>3. Click Counter</h2>
+<div class="click-counter" id="click-counter">
+    Click count: <span id="click-count">0</span>
+    <br>Double-click count: <span id="double-click-count">0</span>
+    <br>Right-click count: <span id="right-click-count">0</span>
+</div>
+
+<h2>4. Modal Overlay</h2>
+<button id="open-modal-btn">Open Modal</button>
+<div class="overlay" id="modal-overlay">
+    <div class="modal" id="modal">
+        <span class="close-button" id="close-modal">&times;</span>
+        <h2>Modal Title</h2>
+        <p>This is a modal dialog. Click outside or on X to close.</p>
+    </div>
+</div>
+<div id="modal-status">Modal status: Closed</div>
+
+<h2>5. Dropdown Menu</h2>
+<div class="dropdown" id="dropdown">
+    <button class="dropdown-button" id="dropdown-button">Open Dropdown</button>
+    <div class="dropdown-content" id="dropdown-content">
+        <a data-value="option1" href="#">Option 1</a>
+        <a data-value="option2" href="#">Option 2</a>
+        <a data-value="option3" href="#">Option 3</a>
+    </div>
+</div>
+<div id="dropdown-status">Dropdown status: Closed</div>
+<div id="dropdown-selection">Selected: None</div>
+
+<h2>6. Right-Click Context Menu</h2>
+<div class="context-menu-target" id="context-menu-target">
+    Right-click me!
+</div>
+<div class="custom-context-menu" id="custom-context-menu">
+    <a data-action="copy" href="#">Copy</a>
+    <a data-action="paste" href="#">Paste</a>
+    <a data-action="delete" href="#">Delete</a>
+</div>
+<div id="context-menu-action">Context menu action: None</div>
+
+<h2>7. Event Log</h2>
+<div class="event-log" id="event-log"></div>
+
+<script>
+    // Event logger
+    function logEvent(message) {
+        const log = document.getElementById('event-log');
+        const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+        log.innerHTML = `[${timestamp}] ${message}<br>` + log.innerHTML;
+    }
+
+    // Hover target
+    const hoverTarget = document.getElementById('hover-target');
+    const hoverStatus = document.getElementById('hover-status');
+
+    hoverTarget.addEventListener('mouseenter', () => {
+        hoverStatus.textContent = 'Hover status: Hovered';
+        hoverTarget.setAttribute('data-hovered', 'true');
+        logEvent('Hover target: mouseenter');
+    });
+
+    hoverTarget.addEventListener('mouseleave', () => {
+        hoverStatus.textContent = 'Hover status: Not hovered';
+        hoverTarget.removeAttribute('data-hovered');
+        logEvent('Hover target: mouseleave');
+    });
+
+    hoverTarget.addEventListener('mousemove', () => {
+        logEvent('Hover target: mousemove');
+    });
+
+    // Click counter
+    const clickCounter = document.getElementById('click-counter');
+    const clickCount = document.getElementById('click-count');
+    const doubleClickCount = document.getElementById('double-click-count');
+    const rightClickCount = document.getElementById('right-click-count');
+    let clicks = 0;
+    let doubleClicks = 0;
+    let rightClicks = 0;
+
+    clickCounter.addEventListener('click', (e) => {
+        clicks++;
+        clickCount.textContent = clicks;
+        logEvent(`Click counter: click (total: ${clicks})`);
+    });
+
+    clickCounter.addEventListener('dblclick', (e) => {
+        doubleClicks++;
+        doubleClickCount.textContent = doubleClicks;
+        logEvent(`Click counter: dblclick (total: ${doubleClicks})`);
+    });
+
+    clickCounter.addEventListener('contextmenu', (e) => {
+        rightClicks++;
+        rightClickCount.textContent = rightClicks;
+        logEvent(`Click counter: contextmenu (total: ${rightClicks})`);
+    });
+
+    clickCounter.addEventListener('mousedown', (e) => {
+        logEvent(`Click counter: mousedown (button: ${e.button})`);
+    });
+
+    clickCounter.addEventListener('mouseup', (e) => {
+        logEvent(`Click counter: mouseup (button: ${e.button})`);
+    });
+
+    // Modal
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modal = document.getElementById('modal');
+    const openModalBtn = document.getElementById('open-modal-btn');
+    const closeModalBtn = document.getElementById('close-modal');
+    const modalStatus = document.getElementById('modal-status');
+
+    openModalBtn.addEventListener('click', () => {
+        modalOverlay.classList.add('active');
+        modalStatus.textContent = 'Modal status: Open';
+        logEvent('Modal: opened');
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        modalOverlay.classList.remove('active');
+        modalStatus.textContent = 'Modal status: Closed';
+        logEvent('Modal: closed via X button');
+    });
+
+    // Click outside to close modal
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            modalOverlay.classList.remove('active');
+            modalStatus.textContent = 'Modal status: Closed';
+            logEvent('Modal: closed via click outside');
+        }
+    });
+
+    // Dropdown
+    const dropdown = document.getElementById('dropdown');
+    const dropdownButton = document.getElementById('dropdown-button');
+    const dropdownContent = document.getElementById('dropdown-content');
+    const dropdownStatus = document.getElementById('dropdown-status');
+    const dropdownSelection = document.getElementById('dropdown-selection');
+
+    dropdownButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+        const isOpen = dropdown.classList.contains('open');
+        dropdownStatus.textContent = `Dropdown status: ${isOpen ? 'Open' : 'Closed'}`;
+        logEvent(`Dropdown: ${isOpen ? 'opened' : 'closed'}`);
+    });
+
+    dropdownContent.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const value = link.getAttribute('data-value');
+            dropdownSelection.textContent = `Selected: ${value}`;
+            dropdown.classList.remove('open');
+            dropdownStatus.textContent = 'Dropdown status: Closed';
+            logEvent(`Dropdown: selected ${value}`);
+        });
+    });
+
+    // Click outside to close dropdown
+    document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target)) {
+            if (dropdown.classList.contains('open')) {
+                dropdown.classList.remove('open');
+                dropdownStatus.textContent = 'Dropdown status: Closed';
+                logEvent('Dropdown: closed via click outside');
+            }
+        }
+    });
+
+    // Context menu
+    const contextMenuTarget = document.getElementById('context-menu-target');
+    const customContextMenu = document.getElementById('custom-context-menu');
+    const contextMenuAction = document.getElementById('context-menu-action');
+
+    contextMenuTarget.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        customContextMenu.style.left = e.pageX + 'px';
+        customContextMenu.style.top = e.pageY + 'px';
+        customContextMenu.classList.add('active');
+        logEvent('Context menu: opened');
+    });
+
+    customContextMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const action = link.getAttribute('data-action');
+            contextMenuAction.textContent = `Context menu action: ${action}`;
+            customContextMenu.classList.remove('active');
+            logEvent(`Context menu: ${action} selected`);
+        });
+    });
+
+    // Click outside to close context menu
+    document.addEventListener('click', () => {
+        if (customContextMenu.classList.contains('active')) {
+            customContextMenu.classList.remove('active');
+            logEvent('Context menu: closed via click outside');
+        }
+    });
+
+    logEvent('Page loaded and ready');
+</script>
+</body>
+</html>

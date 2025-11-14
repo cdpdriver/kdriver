@@ -1,6 +1,7 @@
 package dev.kdriver.core.dom
 
 import dev.kdriver.cdp.domain.DOM
+import dev.kdriver.cdp.domain.Input
 import dev.kdriver.cdp.domain.Runtime
 import dev.kdriver.core.tab.Tab
 import kotlinx.io.files.Path
@@ -113,12 +114,63 @@ interface Element {
     suspend fun click()
 
     /**
-     * Moves the mouse to the center of the element and simulates a mouse click.
+     * Moves the mouse to the center of the element WITHOUT clicking.
      *
-     * This method retrieves the position of the element, moves the mouse to that position,
-     * and dispatches mouse events to simulate a click.
+     * This method dispatches only a `mouseMoved` event to trigger hover/mouseover effects.
+     * The mouse position changes but no click occurs.
+     *
+     * **When to use:**
+     * - Triggering hover effects (tooltips, dropdown menus on hover, etc.)
+     * - Simulating mouse movement without interaction
+     * - Testing mouseover/mouseenter event handlers
+     *
+     * **When NOT to use:**
+     * - If you need to click the element, use [click] or [mouseClick] instead
+     *
+     * The position is retrieved atomically to prevent race conditions where the element
+     * could be detached or moved between getting position and dispatching events.
+     *
+     * @see click For JavaScript-based clicking (recommended for most cases)
+     * @see mouseClick For native CDP mouse click with full event sequence
      */
     suspend fun mouseMove()
+
+    /**
+     * Performs a native mouse click using Chrome DevTools Protocol events.
+     *
+     * Unlike [click] which uses JavaScript's `element.click()`, this method simulates
+     * actual mouse hardware events with the complete sequence: mouseMoved → mousePressed → mouseReleased.
+     *
+     * **When to use:**
+     * - Testing click-outside behavior (closing overlays, modals, dropdowns)
+     * - Right-click or middle-click operations
+     * - Clicks with keyboard modifiers (Ctrl+Click, Shift+Click, etc.)
+     * - Situations where JavaScript click() doesn't work properly
+     * - Testing more realistic user interactions
+     *
+     * **When NOT to use:**
+     * - Simple element clicks (use [click] instead - it's faster and more reliable)
+     *
+     * **Event sequence:**
+     * 1. `mouseMoved` - Moves cursor to element center
+     * 2. `mousePressed` - Button down event
+     * 3. `mouseReleased` - Button up event
+     *
+     * The position is retrieved atomically to prevent race conditions.
+     *
+     * @param button Which mouse button to use (default: LEFT)
+     * @param modifiers Keyboard modifiers as bitmask: Alt=1, Ctrl=2, Meta/Command=4, Shift=8 (default: 0).
+     *                  Multiple modifiers can be combined, e.g., Ctrl+Shift = 2+8 = 10
+     * @param clickCount Number of clicks: 1=single click, 2=double click, etc. (default: 1)
+     *
+     * @see click For JavaScript-based clicking (recommended for most cases)
+     * @see mouseMove For moving mouse without clicking (hover effects)
+     */
+    suspend fun mouseClick(
+        button: Input.MouseButton = Input.MouseButton.LEFT,
+        modifiers: Int = 0,
+        clickCount: Int = 1,
+    )
 
     /**
      * Focuses the element, making it the active element in the document.
