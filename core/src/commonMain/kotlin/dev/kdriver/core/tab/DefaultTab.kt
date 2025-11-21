@@ -18,7 +18,6 @@ import io.ktor.util.logging.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -26,7 +25,9 @@ import kotlinx.serialization.json.JsonElement
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.abs
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
 /**
  * Represents a browser tab, which is a connection to a specific target in the browser.
@@ -34,6 +35,7 @@ import kotlin.time.Duration.Companion.seconds
  * This class provides methods to interact with the tab, such as navigating to URLs,
  * managing history, evaluating JavaScript expressions, and manipulating the DOM.
  */
+@OptIn(ExperimentalTime::class)
 open class DefaultTab(
     websocketUrl: String,
     messageListeningScope: CoroutineScope,

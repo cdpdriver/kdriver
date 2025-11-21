@@ -166,11 +166,77 @@ open class DefaultElement(
             x = x,
             y = y
         )
+    }
+
+    override suspend fun mouseClick(
+        button: Input.MouseButton,
+        modifiers: Int,
+        clickCount: Int,
+    ) {
+        // Execute position query atomically in a single JavaScript call
+        // This prevents race conditions where the element could be detached
+        // between getting position and dispatching mouse events
+        val coordinates = try {
+            apply<CoordinateResult?>(
+                jsFunction = """
+                    function() {
+                        if (!this || !this.isConnected) return null;
+                        const rect = this.getBoundingClientRect();
+                        if (rect.width === 0 || rect.height === 0) return null;
+                        return {
+                            x: rect.left + rect.width / 2,
+                            y: rect.top + rect.height / 2
+                        };
+                    }
+                """.trimIndent()
+            )
+        } catch (e: EvaluateException) {
+            logger.warn("Could not get coordinates for $this: ${e.jsError}")
+            return
+        }
+
+        if (coordinates == null) {
+            logger.warn("Could not find location for $this, not clicking")
+            return
+        }
+
+        val (x, y) = coordinates
+        logger.debug("Mouse click at location $x, $y where $this is located (button=$button, modifiers=$modifiers, clickCount=$clickCount)")
+
+        // Dispatch complete mouse event sequence
+        // 1. Move mouse to position
+        tab.input.dispatchMouseEvent(
+            type = "mouseMoved",
+            x = x,
+            y = y
+        )
+
+        // Small delay to make it more realistic
+        tab.sleep(10)
+
+        // 2. Press mouse button
+        tab.input.dispatchMouseEvent(
+            type = "mousePressed",
+            x = x,
+            y = y,
+            button = button,
+            buttons = button.buttonsMask,
+            clickCount = clickCount,
+            modifiers = modifiers
+        )
+
+        // Delay between press and release (realistic click timing)
         tab.sleep(50)
+
+        // 3. Release mouse button
         tab.input.dispatchMouseEvent(
             type = "mouseReleased",
             x = x,
-            y = y
+            y = y,
+            button = button,
+            buttons = button.buttonsMask,
+            clickCount = clickCount,
+            modifiers = modifiers
         )
     }
 

@@ -1,7 +1,8 @@
 package dev.kdriver.core.dom
 
-import dev.kaccelero.serializers.Serialization
+import dev.kdriver.cdp.Serialization
 import dev.kdriver.cdp.domain.DOM
+import dev.kdriver.cdp.domain.Input
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.decodeFromJsonElement
 
@@ -75,3 +76,18 @@ fun DOM.Node.filterRecurseAll(predicate: (DOM.Node) -> Boolean): List<DOM.Node> 
     }
     return out
 }
+
+
+/**
+ * Converts MouseButton enum to the buttons bitmask value.
+ * Left=1, Right=2, Middle=4, Back=8, Forward=16, None=0
+ */
+val Input.MouseButton.buttonsMask: Int
+    get() = when (this) {
+        Input.MouseButton.LEFT -> 1
+        Input.MouseButton.RIGHT -> 2
+        Input.MouseButton.MIDDLE -> 4
+        Input.MouseButton.BACK -> 8
+        Input.MouseButton.FORWARD -> 16
+        Input.MouseButton.NONE -> 0
+    }
