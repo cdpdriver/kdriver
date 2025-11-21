@@ -16,13 +16,19 @@ import dev.kdriver.core.tab.ScreenshotFormat
 import dev.kdriver.core.tab.Tab
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.api.trace.Tracer
+import io.opentelemetry.extension.kotlin.asContextElement
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
 import kotlin.reflect.KClass
 
 class OpenTelemetryTab(
     private val tab: Tab,
+    private val tracer: Tracer,
 ) : Tab {
 
     override suspend fun get(
@@ -312,15 +318,17 @@ class OpenTelemetryTab(
     override suspend fun <T> expect(
         urlPattern: Regex,
         block: suspend RequestExpectation.() -> T,
-    ): T = tab.expect(urlPattern, block).also {
-        // TODO: Create a span
+    ): T = executeInSpan("kdriver.tab.expect", SpanKind.INTERNAL) { span ->
+        span.setAttribute("urlPattern", urlPattern.pattern)
+        tab.expect(urlPattern, block)
     }
 
     override suspend fun <T> expectBatch(
         urlPatterns: List<Regex>,
         block: suspend BatchRequestExpectation.() -> T,
-    ): T = tab.expectBatch(urlPatterns, block).also {
-        // TODO: Create a span
+    ): T = executeInSpan("kdriver.tab.expectBatch", SpanKind.INTERNAL) { span ->
+        span.setAttribute("urlPatterns", urlPatterns.joinToString(",") { it.pattern })
+        tab.expectBatch(urlPatterns, block)
     }
 
     override suspend fun <T> intercept(
@@ -328,8 +336,11 @@ class OpenTelemetryTab(
         requestStage: Fetch.RequestStage,
         resourceType: Network.ResourceType,
         block: suspend FetchInterception.() -> T,
-    ): T = tab.intercept(urlPattern, requestStage, resourceType, block).also {
-        // TODO: Create a span
+    ): T = executeInSpan("kdriver.tab.intercept", SpanKind.INTERNAL) { span ->
+        span.setAttribute("urlPattern", urlPattern)
+        span.setAttribute("requestStage", requestStage.name)
+        span.setAttribute("resourceType", resourceType.name)
+        tab.intercept(urlPattern, requestStage, resourceType, block)
     }
 
     override suspend fun screenshotB64(
@@ -390,5 +401,31 @@ class OpenTelemetryTab(
 
     @InternalCdpApi
     override val generatedDomains: MutableMap<KClass<out Domain>, Domain> = tab.generatedDomains
+
+    /**
+     * Helper function to execute code within a span.
+     */
+    private suspend fun <T> executeInSpan(
+        spanName: String,
+        spanKind: SpanKind,
+        block: suspend (Span) -> T,
+    ): T {
+        val span = tracer.spanBuilder(spanName)
+            .setSpanKind(spanKind)
+            .startSpan()
+        return try {
+            withContext(span.asContextElement()) {
+                val result = block(span)
+                span.setStatus(StatusCode.OK)
+                result
+            }
+        } catch (e: Exception) {
+            span.recordException(e)
+            span.setStatus(StatusCode.ERROR, e.message ?: "Error in operation")
+            throw e
+        } finally {
+            span.end()
+        }
+    }
 
 }
