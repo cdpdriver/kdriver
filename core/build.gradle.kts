@@ -64,6 +64,7 @@ kotlin {
         all {
             languageSettings.apply {
                 optIn("dev.kdriver.cdp.InternalCdpApi")
+                optIn("kotlin.time.ExperimentalTime")
                 optIn("kotlin.js.ExperimentalJsExport")
             }
         }

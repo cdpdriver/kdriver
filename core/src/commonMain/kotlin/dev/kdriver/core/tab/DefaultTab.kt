@@ -27,7 +27,6 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.abs
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 
 /**
  * Represents a browser tab, which is a connection to a specific target in the browser.
@@ -35,7 +34,6 @@ import kotlin.time.ExperimentalTime
  * This class provides methods to interact with the tab, such as navigating to URLs,
  * managing history, evaluating JavaScript expressions, and manipulating the DOM.
  */
-@OptIn(ExperimentalTime::class)
 open class DefaultTab(
     websocketUrl: String,
     messageListeningScope: CoroutineScope,

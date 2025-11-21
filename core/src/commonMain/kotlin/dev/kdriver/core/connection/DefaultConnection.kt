@@ -21,12 +21,10 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.reflect.KClass
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 /**
  * Default implementation of the [Connection] interface.
  */
-@OptIn(ExperimentalTime::class)
 open class DefaultConnection(
     private val websocketUrl: String,
     private val messageListeningScope: CoroutineScope,
