@@ -64,6 +64,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.tests.mockk)
+                implementation(libs.opentelemetry.sdk.testing)
             }
         }
     }
