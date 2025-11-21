@@ -13,3 +13,4 @@ rootProject.name = "kdriver"
 includeBuild("cdp-generate")
 include(":cdp")
 include(":core")
+include(":opentelemetry")
