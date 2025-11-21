@@ -2,7 +2,6 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter

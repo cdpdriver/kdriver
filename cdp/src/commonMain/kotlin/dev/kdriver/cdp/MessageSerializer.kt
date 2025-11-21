@@ -1,6 +1,5 @@
 package dev.kdriver.cdp
 
-import dev.kaccelero.serializers.Serialization
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor

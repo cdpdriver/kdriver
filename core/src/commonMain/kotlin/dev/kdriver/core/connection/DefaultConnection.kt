@@ -1,6 +1,5 @@
 package dev.kdriver.core.connection
 
-import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.*
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.browser.Browser
@@ -18,14 +17,16 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.reflect.KClass
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * Default implementation of the [Connection] interface.
  */
+@OptIn(ExperimentalTime::class)
 open class DefaultConnection(
     private val websocketUrl: String,
     private val messageListeningScope: CoroutineScope,

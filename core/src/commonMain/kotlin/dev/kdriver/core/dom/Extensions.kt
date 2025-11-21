@@ -1,6 +1,6 @@
 package dev.kdriver.core.dom
 
-import dev.kaccelero.serializers.Serialization
+import dev.kdriver.cdp.Serialization
 import dev.kdriver.cdp.domain.DOM
 import dev.kdriver.cdp.domain.Input
 import kotlinx.serialization.json.JsonNull

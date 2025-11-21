@@ -1,6 +1,6 @@
 package dev.kdriver.core.network
 
-import dev.kaccelero.serializers.Serialization
+import dev.kdriver.cdp.Serialization
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
