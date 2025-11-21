@@ -70,26 +70,26 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api(project(":cdp"))
-                api(libs.ktor.serialization.kotlinx.json)
-                api(libs.ktor.client.content.negotiation)
+                api(libs.ktor.serializationKotlinxJson)
+                api(libs.ktor.clientContentNegotiation)
                 api(libs.kotlinx.io)
             }
         }
         val jvmMain by getting {
             dependencies {
-                api(libs.ktor.client.apache)
-                api(libs.ktor.client.cio)
+                api(libs.ktor.clientApache)
+                api(libs.ktor.clientCio)
                 api(libs.zstd)
             }
         }
         val jsMain by getting {
             dependencies {
-                api(libs.ktor.client.js)
+                api(libs.ktor.clientJs)
             }
         }
         val appleMain by getting {
             dependencies {
-                api(libs.ktor.client.darwin)
+                api(libs.ktor.clientDarwin)
             }
         }
         val posixMain by creating {
@@ -98,7 +98,7 @@ kotlin {
         val linuxMain by getting {
             dependsOn(posixMain)
             dependencies {
-                api(libs.ktor.client.curl)
+                api(libs.ktor.clientCurl)
             }
         }
         val macosMain by getting {
@@ -106,7 +106,7 @@ kotlin {
         }
         val mingwMain by getting {
             dependencies {
-                api(libs.ktor.client.winhttp)
+                api(libs.ktor.clientWinhttp)
             }
         }
         val jvmTest by getting {

@@ -2,7 +2,6 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kaccelero.serializers.Serialization
 import dev.kdriver.cdp.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.encodeToJsonElement

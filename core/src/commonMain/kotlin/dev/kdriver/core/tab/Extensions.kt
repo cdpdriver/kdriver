@@ -1,8 +1,7 @@
 package dev.kdriver.core.tab
 
-import dev.kaccelero.serializers.Serialization
+import dev.kdriver.cdp.Serialization
 import kotlinx.serialization.json.decodeFromJsonElement
-
 
 /**
  * Evaluates a JavaScript expression in the context of the tab.

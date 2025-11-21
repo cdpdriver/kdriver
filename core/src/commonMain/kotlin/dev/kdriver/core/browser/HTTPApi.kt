@@ -1,6 +1,6 @@
 package dev.kdriver.core.browser
 
-import dev.kaccelero.serializers.Serialization
+import dev.kdriver.cdp.Serialization
 import dev.kdriver.core.connection.getHttpApiClientEngine
 import io.ktor.client.*
 import io.ktor.client.call.*
