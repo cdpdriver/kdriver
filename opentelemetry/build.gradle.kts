@@ -12,8 +12,8 @@ mavenPublishing {
     publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
     pom {
-        name.set("core")
-        description.set("core of kdriver.")
+        name.set("opentelemetry")
+        description.set("opentelemetry integration for kdriver.")
         url.set(project.ext.get("url")?.toString())
         licenses {
             license {
@@ -36,14 +36,7 @@ mavenPublishing {
 }
 
 kotlin {
-    // Native targets
-    macosX64()
-    macosArm64()
-    linuxX64()
-    linuxArm64()
-    mingwX64()
-
-    // jvm & js
+    // jvm
     jvmToolchain(21)
     jvm {
         testRuns.named("test") {
@@ -52,83 +45,26 @@ kotlin {
             }
         }
     }
-    js {
-        generateTypeScriptDefinitions()
-        binaries.library()
-        nodejs()
-        browser()
-    }
 
     applyDefaultHierarchyTemplate()
     sourceSets {
         all {
             languageSettings.apply {
                 optIn("dev.kdriver.cdp.InternalCdpApi")
-                optIn("kotlin.time.ExperimentalTime")
                 optIn("kotlin.js.ExperimentalJsExport")
             }
         }
         val commonMain by getting {
             dependencies {
-                api(project(":cdp"))
-                api(libs.ktor.serializationKotlinxJson)
-                api(libs.ktor.clientContentNegotiation)
-                api(libs.kotlinx.io)
-            }
-        }
-        val jvmMain by getting {
-            dependencies {
-                api(libs.ktor.clientApache)
-                api(libs.ktor.clientCio)
-                api(libs.zstd)
-            }
-        }
-        val jsMain by getting {
-            dependencies {
-                api(libs.ktor.clientJs)
-            }
-        }
-        val appleMain by getting {
-            dependencies {
-                api(libs.ktor.clientDarwin)
-            }
-        }
-        val posixMain by creating {
-            dependsOn(commonMain)
-        }
-        val linuxMain by getting {
-            dependsOn(posixMain)
-            dependencies {
-                api(libs.ktor.clientCurl)
-            }
-        }
-        val macosMain by getting {
-            dependsOn(posixMain)
-        }
-        val mingwMain by getting {
-            dependencies {
-                api(libs.ktor.clientWinhttp)
+                api(project(":core"))
+                implementation(libs.opentelemetry.extension.kotlin)
             }
         }
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.tests.mockk)
-            }
-        }
-        val macosTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
-        }
-        val linuxTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
-        }
-        val mingwTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
+                implementation(libs.opentelemetry.sdk.testing)
             }
         }
     }
