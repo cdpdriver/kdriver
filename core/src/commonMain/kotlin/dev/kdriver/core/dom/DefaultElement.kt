@@ -20,6 +20,12 @@ open class DefaultElement(
 
     private var remoteObject: Runtime.RemoteObject? = null
 
+    // Track last mouse position for natural trajectories (P2 - Anti-detection)
+    companion object {
+        private var lastMouseX: Double? = null
+        private var lastMouseY: Double? = null
+    }
+
     override val tag: String
         get() = node.nodeName.lowercase()
 
@@ -130,6 +136,51 @@ open class DefaultElement(
         )
     }
 
+    /**
+     * Moves the mouse to the target coordinates using a natural Bezier curve trajectory (P2 - Anti-detection).
+     * This creates smooth, human-like mouse movements instead of instant teleportation.
+     *
+     * @param targetX Target X coordinate
+     * @param targetY Target Y coordinate
+     */
+    private suspend fun mouseMoveWithTrajectory(targetX: Double, targetY: Double) {
+        val startX = lastMouseX ?: kotlin.random.Random.nextDouble(100.0, 400.0)
+        val startY = lastMouseY ?: kotlin.random.Random.nextDouble(100.0, 300.0)
+
+        // Don't create trajectory if we're already at the target
+        if (startX == targetX && startY == targetY) {
+            return
+        }
+
+        // Random number of steps for natural variation (8-15 steps)
+        val steps = kotlin.random.Random.nextInt(8, 15)
+
+        // Control point for quadratic Bezier curve with random offset
+        val ctrlX = (startX + targetX) / 2 + kotlin.random.Random.nextDouble(-30.0, 30.0)
+        val ctrlY = (startY + targetY) / 2 + kotlin.random.Random.nextDouble(-20.0, 20.0)
+
+        logger.debug("Mouse trajectory from ($startX, $startY) to ($targetX, $targetY) via control point ($ctrlX, $ctrlY) in $steps steps")
+
+        for (i in 0..steps) {
+            val t = i.toDouble() / steps
+
+            // Quadratic Bezier curve formula: B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
+            val x = (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * ctrlX + t * t * targetX
+            val y = (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * ctrlY + t * t * targetY
+
+            tab.input.dispatchMouseEvent(type = "mouseMoved", x = x, y = y)
+
+            // Random delay between steps for natural variation
+            if (i < steps) {
+                tab.sleep(kotlin.random.Random.nextLong(8, 25))
+            }
+        }
+
+        // Update last position
+        lastMouseX = targetX
+        lastMouseY = targetY
+    }
+
     override suspend fun mouseMove() {
         // Execute position query atomically in a single JavaScript call
         // This prevents race conditions where the element could be detached
@@ -158,14 +209,18 @@ open class DefaultElement(
             return
         }
 
-        val (x, y) = coordinates
-        logger.debug("Mouse move to location $x, $y where $this is located")
+        val (centerX, centerY) = coordinates
 
-        tab.input.dispatchMouseEvent(
-            type = "mouseMoved",
-            x = x,
-            y = y
-        )
+        // Add jitter to mouse coordinates (P1 - Anti-detection)
+        val jitterX = (kotlin.random.Random.nextDouble() * 10 - 5)  // -5 to +5 pixels
+        val jitterY = (kotlin.random.Random.nextDouble() * 6 - 3)   // -3 to +3 pixels
+        val x = centerX + jitterX
+        val y = centerY + jitterY
+
+        logger.debug("Mouse move to location $x, $y (center: $centerX, $centerY, jitter: $jitterX, $jitterY) where $this is located")
+
+        // Use natural trajectory instead of instant teleportation (P2 - Anti-detection)
+        mouseMoveWithTrajectory(x, y)
     }
 
     override suspend fun mouseClick(
@@ -181,14 +236,28 @@ open class DefaultElement(
                 jsFunction = """
                     function() {
                         if (!this || !this.isConnected) return null;
-                        const rect = this.getBoundingClientRect();
-                        if (rect.width === 0 || rect.height === 0) return null;
-                        return {
-                            x: rect.left + rect.width / 2,
-                            y: rect.top + rect.height / 2
-                        };
+
+                        // Scroll element into view if not visible (P0 - CRITICAL FIX)
+                        // This ensures mouseClick() works even when elements are off-viewport
+                        this.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
+
+                        // Wait for scroll to complete using requestAnimationFrame
+                        return new Promise(resolve => {
+                            requestAnimationFrame(() => {
+                                const rect = this.getBoundingClientRect();
+                                if (rect.width === 0 || rect.height === 0) {
+                                    resolve(null);
+                                } else {
+                                    resolve({
+                                        x: rect.left + rect.width / 2,
+                                        y: rect.top + rect.height / 2
+                                    });
+                                }
+                            });
+                        });
                     }
-                """.trimIndent()
+                """.trimIndent(),
+                awaitPromise = true
             )
         } catch (e: EvaluateException) {
             logger.warn("Could not get coordinates for $this: ${e.jsError}")
@@ -200,19 +269,23 @@ open class DefaultElement(
             return
         }
 
-        val (x, y) = coordinates
-        logger.debug("Mouse click at location $x, $y where $this is located (button=$button, modifiers=$modifiers, clickCount=$clickCount)")
+        val (centerX, centerY) = coordinates
+
+        // Add jitter to click coordinates (P1 - Anti-detection)
+        // Humans don't click exactly at the mathematical center
+        val jitterX = (kotlin.random.Random.nextDouble() * 10 - 5)  // -5 to +5 pixels
+        val jitterY = (kotlin.random.Random.nextDouble() * 6 - 3)   // -3 to +3 pixels
+        val x = centerX + jitterX
+        val y = centerY + jitterY
+
+        logger.debug("Mouse click at location $x, $y (center: $centerX, $centerY, jitter: $jitterX, $jitterY) where $this is located (button=$button, modifiers=$modifiers, clickCount=$clickCount)")
 
         // Dispatch complete mouse event sequence
-        // 1. Move mouse to position
-        tab.input.dispatchMouseEvent(
-            type = "mouseMoved",
-            x = x,
-            y = y
-        )
+        // 1. Move mouse to position with natural trajectory (P2 - Anti-detection)
+        mouseMoveWithTrajectory(x, y)
 
-        // Small delay to make it more realistic
-        tab.sleep(10)
+        // Randomized delay to make it more realistic (P1 - Anti-detection)
+        tab.sleep(kotlin.random.Random.nextLong(5, 20))
 
         // 2. Press mouse button
         tab.input.dispatchMouseEvent(
@@ -225,8 +298,8 @@ open class DefaultElement(
             modifiers = modifiers
         )
 
-        // Delay between press and release (realistic click timing)
-        tab.sleep(50)
+        // Randomized delay between press and release (P1 - Anti-detection)
+        tab.sleep(kotlin.random.Random.nextLong(40, 120))
 
         // 3. Release mouse button
         tab.input.dispatchMouseEvent(
@@ -283,30 +356,60 @@ open class DefaultElement(
     }
 
     override suspend fun clearInputByDeleting() {
-        apply<Unit>(
-            jsFunction = """
-                async function clearByDeleting(n, d = 50) {
-                    n.focus();
-                    n.setSelectionRange(0, 0);
-                    while (n.value.length > 0) {
-                        n.dispatchEvent(
-                            new KeyboardEvent("keydown", {
-                                key: "Delete",
-                                code: "Delete",
-                                keyCode: 46,
-                                which: 46,
-                                bubbles: !0,
-                                cancelable: !0,
-                            })
-                        );
-                        n.value = n.value.slice(1);
-                        await new Promise((r) => setTimeout(r, d));
-                    }
-                    n.dispatchEvent(new Event("input", { bubbles: !0 }));
+        // Focus the element first
+        focus()
+
+        // Set selection range to the beginning and get initial value length atomically
+        val initialLength = apply<Int>("""
+            (el) => {
+                el.setSelectionRange(0, 0);
+                return el.value.length;
+            }
+        """.trimIndent()) ?: 0
+
+        // Delete each character using CDP Input.dispatchKeyEvent (P3 - Anti-detection)
+        // This generates isTrusted: true events unlike JavaScript KeyboardEvent dispatch
+        var remaining = initialLength
+        while (remaining > 0) {
+            // Dispatch keydown event
+            tab.input.dispatchKeyEvent(
+                type = "keyDown",
+                key = "Delete",
+                code = "Delete",
+                windowsVirtualKeyCode = 46,
+                nativeVirtualKeyCode = 46
+            )
+
+            // Dispatch keyup event
+            tab.input.dispatchKeyEvent(
+                type = "keyUp",
+                key = "Delete",
+                code = "Delete",
+                windowsVirtualKeyCode = 46,
+                nativeVirtualKeyCode = 46
+            )
+
+            // Actually remove the character from the input value and get remaining length
+            remaining = apply<Int>("""
+                (el) => {
+                    el.value = el.value.slice(1);
+                    return el.value.length;
                 }
-            """.trimIndent(),
-            awaitPromise = true
-        )
+            """.trimIndent()) ?: 0
+
+            // Random delay between deletions (50-100ms) for natural variation
+            if (remaining > 0) {
+                tab.sleep(kotlin.random.Random.nextLong(50, 100))
+            }
+        }
+
+        // Dispatch input event to notify the page of the change
+        apply<String?>("""
+            (el) => {
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                return null;
+            }
+        """.trimIndent())
     }
 
     override suspend fun rawApply(
