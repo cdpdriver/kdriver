@@ -199,6 +199,16 @@ interface Tab : Connection {
     suspend fun scrollUp(amount: Int = 25, speed: Int = 800)
 
     /**
+     * Scrolls the page naturally using CDP's synthesizeScrollGesture (P3 - Anti-detection).
+     * This creates smooth, human-like scrolling instead of instant jumps.
+     *
+     * @param scrollX The horizontal distance to scroll in pixels (positive scrolls right, negative scrolls left)
+     * @param scrollY The vertical distance to scroll in pixels (positive scrolls down, negative scrolls up)
+     * @param speed Swipe speed in pixels per second. If null, uses random variation between 600-1200 for natural behavior
+     */
+    suspend fun scrollTo(scrollX: Double, scrollY: Double, speed: Int? = null)
+
+    /**
      * Waits for the document's ready state to reach a specified state.
      *
      * This method continuously checks the document's ready state until it matches the specified state or a timeout occurs.

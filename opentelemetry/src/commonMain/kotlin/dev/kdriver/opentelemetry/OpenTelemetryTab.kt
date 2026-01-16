@@ -154,6 +154,17 @@ class OpenTelemetryTab(
         )
     }
 
+    override suspend fun scrollTo(scrollX: Double, scrollY: Double, speed: Int?) =
+        tab.scrollTo(scrollX, scrollY, speed).also {
+            Span.current().addEvent(
+                "kdriver.tab.scrollTo", Attributes.builder()
+                    .put("scrollX", scrollX)
+                    .put("scrollY", scrollY)
+                    .put("speed", speed?.toLong() ?: 0L)
+                    .build()
+            )
+        }
+
     override suspend fun waitForReadyState(
         until: ReadyState,
         timeout: Long,

@@ -1,6 +1,7 @@
 package dev.kdriver.core.tab
 
 import dev.kdriver.cdp.CDPException
+import dev.kdriver.cdp.Serialization
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.cdp.domain.Input
 import dev.kdriver.core.browser.Browser
@@ -22,6 +23,7 @@ import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.abs
@@ -214,6 +216,47 @@ open class DefaultTab(
             speed = speed
         )
         delay((yDistance / speed).seconds)
+    }
+
+    override suspend fun scrollTo(scrollX: Double, scrollY: Double, speed: Int?) {
+        if (scrollX == 0.0 && scrollY == 0.0) {
+            return
+        }
+
+        // Get current viewport dimensions for scroll origin
+        val viewportJson = rawEvaluate(
+            """
+            ({
+                width: window.innerWidth,
+                height: window.innerHeight
+            })
+            """.trimIndent()
+        )!!
+        val viewportData = Serialization.json.decodeFromJsonElement<dev.kdriver.core.dom.ViewportData>(viewportJson)
+
+        val originX = viewportData.width / 2
+        val originY = viewportData.height / 2
+
+        // Use provided speed or add natural variation (P3 - Anti-detection)
+        val scrollSpeed = speed ?: kotlin.random.Random.nextInt(600, 1200)
+
+        // Use negative distances because CDP's synthesizeScrollGesture uses inverted Y-axis
+        // (positive yDistance scrolls UP, but we want positive scrollY to scroll DOWN)
+        input.synthesizeScrollGesture(
+            x = originX,
+            y = originY,
+            xDistance = -scrollX, // Negative because positive xDistance scrolls left
+            yDistance = -scrollY, // Negative because positive yDistance scrolls up
+            speed = scrollSpeed,
+            preventFling = true,
+            gestureSourceType = Input.GestureSourceType.MOUSE
+        )
+
+        // Add a small delay for the scroll animation to complete (P3 - Anti-detection)
+        // Calculate duration based on distance and speed
+        val distance = kotlin.math.sqrt(scrollX * scrollX + scrollY * scrollY)
+        val duration = (distance / scrollSpeed * 1000).toLong() // Convert to milliseconds
+        sleep(duration + kotlin.random.Random.nextLong(50, 150))
     }
 
     override suspend fun waitForReadyState(
