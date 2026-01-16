@@ -231,33 +231,69 @@ open class DefaultElement(
         // Execute position query atomically in a single JavaScript call
         // This prevents race conditions where the element could be detached
         // between getting position and dispatching mouse events
+        val scrollData = try {
+            apply<ScrollData?>(
+                jsFunction = """
+                    function() {
+                        if (!this || !this.isConnected) return null;
+
+                        const rect = this.getBoundingClientRect();
+                        if (rect.width === 0 || rect.height === 0) return null;
+
+                        // Check if element is visible in viewport
+                        const viewportHeight = window.innerHeight;
+                        const viewportWidth = window.innerWidth;
+                        const elementCenterY = rect.top + rect.height / 2;
+                        const elementCenterX = rect.left + rect.width / 2;
+
+                        // Calculate if we need to scroll
+                        const needsScrollY = elementCenterY < 0 || elementCenterY > viewportHeight;
+                        const needsScrollX = elementCenterX < 0 || elementCenterX > viewportWidth;
+
+                        // Calculate scroll distances to center the element
+                        const scrollY = needsScrollY ? elementCenterY - viewportHeight / 2 : 0;
+                        const scrollX = needsScrollX ? elementCenterX - viewportWidth / 2 : 0;
+
+                        return {
+                            x: rect.left + rect.width / 2,
+                            y: rect.top + rect.height / 2,
+                            scrollX: scrollX,
+                            scrollY: scrollY,
+                            needsScroll: needsScrollY || needsScrollX
+                        };
+                    }
+                """.trimIndent()
+            )
+        } catch (e: EvaluateException) {
+            logger.warn("Could not get coordinates for $this: ${e.jsError}")
+            return
+        }
+
+        if (scrollData == null) {
+            logger.warn("Could not find location for $this, not clicking")
+            return
+        }
+
+        // Scroll element into view naturally if needed (P3 - Anti-detection)
+        if (scrollData.needsScroll) {
+            logger.debug("Scrolling by (${scrollData.scrollX}, ${scrollData.scrollY}) to bring $this into view")
+            tab.scrollTo(scrollData.scrollX, scrollData.scrollY)
+        }
+
+        // Get updated coordinates after scrolling
         val coordinates = try {
             apply<CoordinateResult?>(
                 jsFunction = """
                     function() {
                         if (!this || !this.isConnected) return null;
-
-                        // Scroll element into view if not visible (P0 - CRITICAL FIX)
-                        // This ensures mouseClick() works even when elements are off-viewport
-                        this.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
-
-                        // Wait for scroll to complete using requestAnimationFrame
-                        return new Promise(resolve => {
-                            requestAnimationFrame(() => {
-                                const rect = this.getBoundingClientRect();
-                                if (rect.width === 0 || rect.height === 0) {
-                                    resolve(null);
-                                } else {
-                                    resolve({
-                                        x: rect.left + rect.width / 2,
-                                        y: rect.top + rect.height / 2
-                                    });
-                                }
-                            });
-                        });
+                        const rect = this.getBoundingClientRect();
+                        if (rect.width === 0 || rect.height === 0) return null;
+                        return {
+                            x: rect.left + rect.width / 2,
+                            y: rect.top + rect.height / 2
+                        };
                     }
-                """.trimIndent(),
-                awaitPromise = true
+                """.trimIndent()
             )
         } catch (e: EvaluateException) {
             logger.warn("Could not get coordinates for $this: ${e.jsError}")
@@ -360,12 +396,14 @@ open class DefaultElement(
         focus()
 
         // Set selection range to the beginning and get initial value length atomically
-        val initialLength = apply<Int>("""
+        val initialLength = apply<Int>(
+            """
             (el) => {
                 el.setSelectionRange(0, 0);
                 return el.value.length;
             }
-        """.trimIndent()) ?: 0
+        """.trimIndent()
+        ) ?: 0
 
         // Delete each character using CDP Input.dispatchKeyEvent (P3 - Anti-detection)
         // This generates isTrusted: true events unlike JavaScript KeyboardEvent dispatch
@@ -390,12 +428,14 @@ open class DefaultElement(
             )
 
             // Actually remove the character from the input value and get remaining length
-            remaining = apply<Int>("""
+            remaining = apply<Int>(
+                """
                 (el) => {
                     el.value = el.value.slice(1);
                     return el.value.length;
                 }
-            """.trimIndent()) ?: 0
+            """.trimIndent()
+            ) ?: 0
 
             // Random delay between deletions (50-100ms) for natural variation
             if (remaining > 0) {
@@ -404,12 +444,14 @@ open class DefaultElement(
         }
 
         // Dispatch input event to notify the page of the change
-        apply<String?>("""
+        apply<String?>(
+            """
             (el) => {
                 el.dispatchEvent(new Event('input', { bubbles: true }));
                 return null;
             }
-        """.trimIndent())
+        """.trimIndent()
+        )
     }
 
     override suspend fun rawApply(
