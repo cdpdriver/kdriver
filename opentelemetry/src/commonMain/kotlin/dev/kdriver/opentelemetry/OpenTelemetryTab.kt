@@ -31,6 +31,18 @@ class OpenTelemetryTab(
     private val tracer: Tracer,
 ) : Tab {
 
+    override var lastMouseX: Double?
+        get() = tab.lastMouseX
+        set(value) {
+            tab.lastMouseX = value
+        }
+
+    override var lastMouseY: Double?
+        get() = tab.lastMouseY
+        set(value) {
+            tab.lastMouseY = value
+        }
+
     override suspend fun get(
         url: String,
         newTab: Boolean,

@@ -34,6 +34,18 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 interface Tab : Connection {
 
     /**
+     * Last mouse X position for this tab (for natural trajectories in anti-detection).
+     * Each tab maintains its own mouse position to prevent concurrent operations from interfering.
+     */
+    var lastMouseX: Double?
+
+    /**
+     * Last mouse Y position for this tab (for natural trajectories in anti-detection).
+     * Each tab maintains its own mouse position to prevent concurrent operations from interfering.
+     */
+    var lastMouseY: Double?
+
+    /**
      * Navigate to a specified URL in the tab.
      *
      * @param url The URL to navigate to. Defaults to "about:blank".

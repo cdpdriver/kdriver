@@ -1,11 +1,13 @@
 package dev.kdriver.core.dom
 
+import dev.kdriver.cdp.Serialization
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.tab.Tab
 import io.ktor.util.logging.*
 import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.random.Random
 
 /**
@@ -20,12 +22,6 @@ open class DefaultElement(
     private val logger = KtorSimpleLogger("Element")
 
     private var remoteObject: Runtime.RemoteObject? = null
-
-    // Track last mouse position for natural trajectories (P2 - Anti-detection)
-    companion object {
-        private var lastMouseX: Double? = null
-        private var lastMouseY: Double? = null
-    }
 
     override val tag: String
         get() = node.nodeName.lowercase()
@@ -138,6 +134,76 @@ open class DefaultElement(
     }
 
     /**
+     * Gets stable element coordinates by waiting for position to stabilize across multiple frames.
+     * This prevents race conditions on slow systems where scroll or layout changes may still be in progress.
+     *
+     * @return Stable coordinates, or null if element is not visible/connected
+     */
+    private suspend fun getStableCoordinates(): CoordinateResult? {
+        return try {
+            apply<CoordinateResult?>(
+                jsFunction = """
+                    function() {
+                        if (!this || !this.isConnected) return null;
+
+                        return new Promise(resolve => {
+                            let lastTop = null;
+                            let lastLeft = null;
+                            let stableFrames = 0;
+                            const maxAttempts = 10;
+                            let attempts = 0;
+
+                            const checkStable = () => {
+                                attempts++;
+                                const rect = this.getBoundingClientRect();
+
+                                if (rect.width === 0 || rect.height === 0) {
+                                    resolve(null);
+                                    return;
+                                }
+
+                                if (lastTop !== null &&
+                                    Math.abs(rect.top - lastTop) < 1 &&
+                                    Math.abs(rect.left - lastLeft) < 1) {
+                                    stableFrames++;
+                                    if (stableFrames >= 2) {
+                                        resolve({
+                                            x: rect.left + rect.width / 2,
+                                            y: rect.top + rect.height / 2
+                                        });
+                                        return;
+                                    }
+                                } else {
+                                    stableFrames = 0;
+                                }
+
+                                lastTop = rect.top;
+                                lastLeft = rect.left;
+
+                                if (attempts < maxAttempts) {
+                                    requestAnimationFrame(checkStable);
+                                } else {
+                                    // Timeout: use current position
+                                    resolve({
+                                        x: rect.left + rect.width / 2,
+                                        y: rect.top + rect.height / 2
+                                    });
+                                }
+                            };
+
+                            requestAnimationFrame(checkStable);
+                        });
+                    }
+                """.trimIndent(),
+                awaitPromise = true
+            )
+        } catch (e: EvaluateException) {
+            logger.warn("Could not get stable coordinates for $this: ${e.jsError}")
+            null
+        }
+    }
+
+    /**
      * Moves the mouse to the target coordinates using a natural Bezier curve trajectory (P2 - Anti-detection).
      * This creates smooth, human-like mouse movements instead of instant teleportation.
      *
@@ -145,8 +211,42 @@ open class DefaultElement(
      * @param targetY Target Y coordinate
      */
     private suspend fun mouseMoveWithTrajectory(targetX: Double, targetY: Double) {
-        val startX = lastMouseX ?: Random.nextDouble(100.0, 400.0)
-        val startY = lastMouseY ?: Random.nextDouble(100.0, 300.0)
+        val startX: Double
+        val startY: Double
+
+        if (tab.lastMouseX != null && tab.lastMouseY != null) {
+            startX = tab.lastMouseX!!
+            startY = tab.lastMouseY!!
+        } else {
+            // Get actual viewport dimensions to avoid placing mouse outside visible area
+            val viewportData = try {
+                val viewportJson = tab.rawEvaluate(
+                    """
+                    ({
+                        width: window.innerWidth,
+                        height: window.innerHeight
+                    })
+                    """.trimIndent()
+                )
+                if (viewportJson != null) {
+                    Serialization.json.decodeFromJsonElement<dev.kdriver.core.dom.ViewportData>(viewportJson)
+                } else null
+            } catch (e: Exception) {
+                null
+            }
+
+            if (viewportData != null) {
+                // Use random position within viewport bounds, with margins
+                val maxX = (viewportData.width - 50).coerceAtLeast(100.0)
+                val maxY = (viewportData.height - 50).coerceAtLeast(100.0)
+                startX = Random.nextDouble(50.0, maxX)
+                startY = Random.nextDouble(50.0, maxY)
+            } else {
+                // Fallback: use target coordinates with offset if viewport query fails
+                startX = (targetX - Random.nextDouble(50.0, 150.0)).coerceAtLeast(0.0)
+                startY = (targetY - Random.nextDouble(50.0, 150.0)).coerceAtLeast(0.0)
+            }
+        }
 
         // Don't create trajectory if we're already at the target
         if (startX == targetX && startY == targetY) {
@@ -176,8 +276,8 @@ open class DefaultElement(
         }
 
         // Update last position
-        lastMouseX = targetX
-        lastMouseY = targetY
+        tab.lastMouseX = targetX
+        tab.lastMouseY = targetY
     }
 
     override suspend fun mouseMove() {
@@ -279,25 +379,9 @@ open class DefaultElement(
             tab.scrollTo(scrollData.scrollX, scrollData.scrollY)
         }
 
-        // Get updated coordinates after scrolling
-        val coordinates = try {
-            apply<CoordinateResult?>(
-                jsFunction = """
-                    function() {
-                        if (!this || !this.isConnected) return null;
-                        const rect = this.getBoundingClientRect();
-                        if (rect.width === 0 || rect.height === 0) return null;
-                        return {
-                            x: rect.left + rect.width / 2,
-                            y: rect.top + rect.height / 2
-                        };
-                    }
-                """.trimIndent()
-            )
-        } catch (e: EvaluateException) {
-            logger.warn("Could not get coordinates for $this: ${e.jsError}")
-            return
-        }
+        // Get updated coordinates after scrolling, waiting for position stability
+        // This is critical on slow systems where scroll may not complete immediately
+        val coordinates = getStableCoordinates()
 
         if (coordinates == null) {
             logger.warn("Could not find location for $this, not clicking")
@@ -322,30 +406,90 @@ open class DefaultElement(
         // Randomized delay to make it more realistic (P1 - Anti-detection)
         tab.sleep(Random.nextLong(5, 20))
 
-        // 2. Press mouse button
-        tab.input.dispatchMouseEvent(
-            type = "mousePressed",
-            x = x,
-            y = y,
-            button = button,
-            buttons = button.buttonsMask,
-            clickCount = clickCount,
-            modifiers = modifiers
-        )
+        // 2. Verify element hasn't moved during trajectory (handles React re-renders, animations, etc.)
+        val finalCoordinates = try {
+            apply<CoordinateResult?>(
+                jsFunction = """
+                    function() {
+                        if (!this || !this.isConnected) return null;
+                        const rect = this.getBoundingClientRect();
+                        if (rect.width === 0 || rect.height === 0) return null;
+                        return {
+                            x: rect.left + rect.width / 2,
+                            y: rect.top + rect.height / 2
+                        };
+                    }
+                """.trimIndent()
+            )
+        } catch (e: EvaluateException) {
+            null
+        }
 
-        // Randomized delay between press and release (P1 - Anti-detection)
-        tab.sleep(Random.nextLong(40, 120))
+        // Adjust click position if element moved significantly (>5px threshold)
+        val finalX: Double
+        val finalY: Double
+        if (finalCoordinates != null) {
+            val (finalCenterX, finalCenterY) = finalCoordinates
+            val deltaX = finalCenterX - centerX
+            val deltaY = finalCenterY - centerY
+            val moved = kotlin.math.sqrt(deltaX * deltaX + deltaY * deltaY) > 5.0
 
-        // 3. Release mouse button
-        tab.input.dispatchMouseEvent(
-            type = "mouseReleased",
-            x = x,
-            y = y,
-            button = button,
-            buttons = button.buttonsMask,
-            clickCount = clickCount,
-            modifiers = modifiers
-        )
+            if (moved) {
+                logger.debug("Element moved during trajectory by ($deltaX, $deltaY), adjusting click position")
+                finalX = finalCenterX + jitterX
+                finalY = finalCenterY + jitterY
+                // Move mouse to adjusted position
+                tab.input.dispatchMouseEvent(type = "mouseMoved", x = finalX, y = finalY)
+                tab.lastMouseX = finalX
+                tab.lastMouseY = finalY
+            } else {
+                finalX = x
+                finalY = y
+            }
+        } else {
+            // Element disappeared or error occurred, use original position
+            finalX = x
+            finalY = y
+        }
+
+        // 3. Press and release mouse button with guaranteed cleanup
+        // Use try-finally to ensure button state is always cleaned up even on error
+        try {
+            tab.input.dispatchMouseEvent(
+                type = "mousePressed",
+                x = finalX,
+                y = finalY,
+                button = button,
+                buttons = button.buttonsMask,
+                clickCount = clickCount,
+                modifiers = modifiers
+            )
+
+            // Randomized delay between press and release (P1 - Anti-detection)
+            tab.sleep(Random.nextLong(40, 120))
+
+            // 4. Release mouse button
+            tab.input.dispatchMouseEvent(
+                type = "mouseReleased",
+                x = finalX,
+                y = finalY,
+                button = button,
+                buttons = button.buttonsMask,
+                clickCount = clickCount,
+                modifiers = modifiers
+            )
+        } catch (e: Exception) {
+            // Ensure button is released even on error to prevent stuck button state
+            runCatching {
+                tab.input.dispatchMouseEvent(
+                    type = "mouseReleased",
+                    x = finalX,
+                    y = finalY,
+                    button = button
+                )
+            }
+            throw e
+        }
     }
 
     override suspend fun focus() {

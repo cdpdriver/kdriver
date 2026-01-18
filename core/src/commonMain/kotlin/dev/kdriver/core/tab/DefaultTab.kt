@@ -45,6 +45,11 @@ open class DefaultTab(
 
     private val logger = KtorSimpleLogger("Tab")
 
+    // Track last mouse position for natural trajectories (P2 - Anti-detection)
+    // Each tab maintains its own mouse position to prevent concurrent operations from interfering
+    override var lastMouseX: Double? = null
+    override var lastMouseY: Double? = null
+
     override suspend fun get(
         url: String,
         newTab: Boolean,
