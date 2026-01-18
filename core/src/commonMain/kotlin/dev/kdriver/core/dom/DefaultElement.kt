@@ -6,6 +6,7 @@ import dev.kdriver.core.tab.Tab
 import io.ktor.util.logging.*
 import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
+import kotlin.random.Random
 
 /**
  * Default implementation of the [Element] interface.
@@ -144,8 +145,8 @@ open class DefaultElement(
      * @param targetY Target Y coordinate
      */
     private suspend fun mouseMoveWithTrajectory(targetX: Double, targetY: Double) {
-        val startX = lastMouseX ?: kotlin.random.Random.nextDouble(100.0, 400.0)
-        val startY = lastMouseY ?: kotlin.random.Random.nextDouble(100.0, 300.0)
+        val startX = lastMouseX ?: Random.nextDouble(100.0, 400.0)
+        val startY = lastMouseY ?: Random.nextDouble(100.0, 300.0)
 
         // Don't create trajectory if we're already at the target
         if (startX == targetX && startY == targetY) {
@@ -153,11 +154,11 @@ open class DefaultElement(
         }
 
         // Random number of steps for natural variation (8-15 steps)
-        val steps = kotlin.random.Random.nextInt(8, 15)
+        val steps = Random.nextInt(8, 15)
 
         // Control point for quadratic Bezier curve with random offset
-        val ctrlX = (startX + targetX) / 2 + kotlin.random.Random.nextDouble(-30.0, 30.0)
-        val ctrlY = (startY + targetY) / 2 + kotlin.random.Random.nextDouble(-20.0, 20.0)
+        val ctrlX = (startX + targetX) / 2 + Random.nextDouble(-30.0, 30.0)
+        val ctrlY = (startY + targetY) / 2 + Random.nextDouble(-20.0, 20.0)
 
         logger.debug("Mouse trajectory from ($startX, $startY) to ($targetX, $targetY) via control point ($ctrlX, $ctrlY) in $steps steps")
 
@@ -171,9 +172,7 @@ open class DefaultElement(
             tab.input.dispatchMouseEvent(type = "mouseMoved", x = x, y = y)
 
             // Random delay between steps for natural variation
-            if (i < steps) {
-                tab.sleep(kotlin.random.Random.nextLong(8, 25))
-            }
+            if (i < steps) tab.sleep(Random.nextLong(8, 25))
         }
 
         // Update last position
@@ -212,8 +211,8 @@ open class DefaultElement(
         val (centerX, centerY) = coordinates
 
         // Add jitter to mouse coordinates (P1 - Anti-detection)
-        val jitterX = (kotlin.random.Random.nextDouble() * 10 - 5)  // -5 to +5 pixels
-        val jitterY = (kotlin.random.Random.nextDouble() * 6 - 3)   // -3 to +3 pixels
+        val jitterX = (Random.nextDouble() * 10 - 5)  // -5 to +5 pixels
+        val jitterY = (Random.nextDouble() * 6 - 3)   // -3 to +3 pixels
         val x = centerX + jitterX
         val y = centerY + jitterY
 
@@ -309,8 +308,8 @@ open class DefaultElement(
 
         // Add jitter to click coordinates (P1 - Anti-detection)
         // Humans don't click exactly at the mathematical center
-        val jitterX = (kotlin.random.Random.nextDouble() * 10 - 5)  // -5 to +5 pixels
-        val jitterY = (kotlin.random.Random.nextDouble() * 6 - 3)   // -3 to +3 pixels
+        val jitterX = (Random.nextDouble() * 10 - 5)  // -5 to +5 pixels
+        val jitterY = (Random.nextDouble() * 6 - 3)   // -3 to +3 pixels
         val x = centerX + jitterX
         val y = centerY + jitterY
 
@@ -321,7 +320,7 @@ open class DefaultElement(
         mouseMoveWithTrajectory(x, y)
 
         // Randomized delay to make it more realistic (P1 - Anti-detection)
-        tab.sleep(kotlin.random.Random.nextLong(5, 20))
+        tab.sleep(Random.nextLong(5, 20))
 
         // 2. Press mouse button
         tab.input.dispatchMouseEvent(
@@ -335,7 +334,7 @@ open class DefaultElement(
         )
 
         // Randomized delay between press and release (P1 - Anti-detection)
-        tab.sleep(kotlin.random.Random.nextLong(40, 120))
+        tab.sleep(Random.nextLong(40, 120))
 
         // 3. Release mouse button
         tab.input.dispatchMouseEvent(
@@ -392,7 +391,6 @@ open class DefaultElement(
     }
 
     override suspend fun clearInputByDeleting() {
-        // Focus the element first
         focus()
 
         // Set selection range to the beginning and get initial value length atomically
@@ -402,7 +400,7 @@ open class DefaultElement(
                 el.setSelectionRange(0, 0);
                 return el.value.length;
             }
-        """.trimIndent()
+            """.trimIndent()
         ) ?: 0
 
         // Delete each character using CDP Input.dispatchKeyEvent (P3 - Anti-detection)
@@ -432,26 +430,15 @@ open class DefaultElement(
                 """
                 (el) => {
                     el.value = el.value.slice(1);
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
                     return el.value.length;
                 }
-            """.trimIndent()
+                """.trimIndent()
             ) ?: 0
 
             // Random delay between deletions (50-100ms) for natural variation
-            if (remaining > 0) {
-                tab.sleep(kotlin.random.Random.nextLong(50, 100))
-            }
+            if (remaining > 0) tab.sleep(Random.nextLong(50, 100))
         }
-
-        // Dispatch input event to notify the page of the change
-        apply<String?>(
-            """
-            (el) => {
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-                return null;
-            }
-        """.trimIndent()
-        )
     }
 
     override suspend fun rawApply(
