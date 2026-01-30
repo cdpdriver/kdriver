@@ -30,6 +30,7 @@ class ConfigBuilder {
     var browserConnectionTimeout: Long = Defaults.BROWSER_CONNECTION_TIMEOUT
     var browserConnectionMaxTries: Int = Defaults.BROWSER_CONNECTION_MAX_TRIES
     var autoDiscoverTargets: Boolean = Defaults.AUTO_DISCOVER_TARGETS
+    var debugStringLimit: Int = Defaults.DEBUG_STRING_LIMIT
 
     /**
      * Builds the Config instance with the configured parameters.
@@ -49,6 +50,7 @@ class ConfigBuilder {
             browserConnectionTimeout = browserConnectionTimeout,
             browserConnectionMaxTries = browserConnectionMaxTries,
             autoDiscoverTargets = autoDiscoverTargets,
+            debugStringLimit = debugStringLimit
         )
     }
 }
