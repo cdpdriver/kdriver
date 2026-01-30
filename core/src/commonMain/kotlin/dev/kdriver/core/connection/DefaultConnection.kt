@@ -3,6 +3,7 @@ package dev.kdriver.core.connection
 import dev.kdriver.cdp.*
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.browser.Browser
+import dev.kdriver.core.browser.Config.Defaults
 import dev.kdriver.core.browser.WebSocketInfo
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
@@ -33,7 +34,6 @@ open class DefaultConnection(
 ) : OwnedConnection {
 
     private val logger = KtorSimpleLogger("Connection")
-    private val debugStringLimit = 64
 
     private val client = HttpClient(getWebSocketClientEngine()) {
         install(WebSockets)
@@ -82,7 +82,7 @@ open class DefaultConnection(
                     try {
                         frame as? Frame.Text ?: continue
                         val text = frame.readText()
-                        logger.debug("WS < CDP: ${text.take(debugStringLimit)}")
+                        logger.debug("WS < CDP: ${text.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
                         val received = Serialization.json.decodeFromString<Message>(text)
                         allMessages.emit(received)
                     } catch (e: Exception) {
@@ -108,7 +108,7 @@ open class DefaultConnection(
         val requestId = currentIdMutex.withLock { currentId++ }
         val jsonString = Serialization.json.encodeToString(Request(requestId, method, parameter))
         wsSession?.send(jsonString)
-        logger.debug("WS > CDP: ${jsonString.take(debugStringLimit)}")
+        logger.debug("WS > CDP: ${jsonString.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
 
         val result = responses.first { it.id == requestId }
         result.error?.throwAsException(method)

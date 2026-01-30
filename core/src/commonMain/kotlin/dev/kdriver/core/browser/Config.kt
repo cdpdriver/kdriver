@@ -18,6 +18,7 @@ class Config(
     val browserConnectionTimeout: Long = Defaults.BROWSER_CONNECTION_TIMEOUT,
     val browserConnectionMaxTries: Int = Defaults.BROWSER_CONNECTION_MAX_TRIES,
     val autoDiscoverTargets: Boolean = Defaults.AUTO_DISCOVER_TARGETS,
+    val debugStringLimit: Int = Defaults.DEBUG_STRING_LIMIT,
 ) {
 
     private val logger = KtorSimpleLogger("Config")
@@ -118,6 +119,7 @@ class Config(
         const val BROWSER_CONNECTION_TIMEOUT: Long = 500
         const val BROWSER_CONNECTION_MAX_TRIES: Int = 60
         const val AUTO_DISCOVER_TARGETS: Boolean = true
+        const val DEBUG_STRING_LIMIT: Int = 128
     }
 
 }
