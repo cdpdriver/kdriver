@@ -70,7 +70,7 @@ kotlin {
         }
         val commonMain by getting {
             dependencies {
-                api(project(":cdp"))
+                api(projects.cdp)
                 api(libs.ktor.serializationKotlinxJson)
                 api(libs.ktor.clientContentNegotiation)
                 api(libs.kotlinx.io)

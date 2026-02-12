@@ -56,7 +56,7 @@ kotlin {
         }
         val commonMain by getting {
             dependencies {
-                api(project(":core"))
+                api(projects.core)
                 implementation(libs.opentelemetry.extension.kotlin)
             }
         }
