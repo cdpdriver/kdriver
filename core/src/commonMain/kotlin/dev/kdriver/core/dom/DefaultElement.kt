@@ -531,7 +531,20 @@ open class DefaultElement(
     }
 
     override suspend fun clearInput() {
-        apply<Unit>("function (element) { element.value = \"\" }")
+        // Use the native prototype setter instead of a direct el.value assignment.
+        // Direct assignment (el.value = "") goes through React's instance-level tracker
+        // setter, updating trackerValue and the DOM simultaneously. When an input event
+        // then fires, React sees el.value === trackerValue and concludes nothing changed,
+        // so onChange is never called. The native prototype setter bypasses the tracker,
+        // so the subsequent input event correctly triggers React's onChange.
+        apply<Unit>(
+            """
+            (el) => {
+                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, '');
+                el.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
+            }
+            """.trimIndent()
+        )
     }
 
     override suspend fun clearInputByDeleting() {
@@ -548,10 +561,21 @@ open class DefaultElement(
         ) ?: 0
 
         // Delete each character using CDP Input.dispatchKeyEvent (P3 - Anti-detection)
-        // This generates isTrusted: true events unlike JavaScript KeyboardEvent dispatch
+        // This generates isTrusted: true events unlike JavaScript KeyboardEvent dispatch.
+        //
+        // CDP keyDown with key="Delete" at cursor position 0 uses the browser's native
+        // text-editing pipeline, which bypasses React's instance-level tracker setter.
+        // This means React sees a mismatch between el.value and trackerValue and correctly
+        // fires onChange — unlike a direct el.value assignment which updates both
+        // simultaneously, causing React to silently ignore the change.
+        //
+        // Cursor stays at position 0 across iterations: forward-delete (VK_DELETE=46)
+        // removes the character at the cursor without moving it, so each keyDown always
+        // operates at the start of the remaining text.
         var remaining = initialLength
         while (remaining > 0) {
-            // Dispatch keydown event
+            // Dispatch keydown event — this natively deletes one character and fires
+            // a real input event that React's change detection processes correctly
             tab.input.dispatchKeyEvent(
                 type = "keyDown",
                 key = "Delete",
@@ -569,16 +593,9 @@ open class DefaultElement(
                 nativeVirtualKeyCode = 46
             )
 
-            // Actually remove the character from the input value and get remaining length
-            remaining = apply<Int>(
-                """
-                (el) => {
-                    el.value = el.value.slice(1);
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-                    return el.value.length;
-                }
-                """.trimIndent()
-            ) ?: 0
+            // Read remaining length — the native keyDown already handled deletion
+            // and React notification; no JS value mutation needed here
+            remaining = apply<Int>("(el) => el.value.length") ?: 0
 
             // Random delay between deletions (50-100ms) for natural variation
             if (remaining > 0) tab.sleep(Random.nextLong(50, 100))
