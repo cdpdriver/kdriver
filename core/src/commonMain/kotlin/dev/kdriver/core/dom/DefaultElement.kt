@@ -550,12 +550,13 @@ open class DefaultElement(
     override suspend fun clearInputByDeleting() {
         focus()
 
-        // Set selection range to the beginning and get initial value length atomically
+        // Place cursor at the end and get initial value length atomically.
         val initialLength = apply<Int>(
             """
             (el) => {
-                el.setSelectionRange(0, 0);
-                return el.value.length;
+                const len = el.value.length;
+                el.setSelectionRange(len, len);
+                return len;
             }
             """.trimIndent()
         ) ?: 0
@@ -563,39 +564,50 @@ open class DefaultElement(
         // Delete each character using CDP Input.dispatchKeyEvent (P3 - Anti-detection)
         // This generates isTrusted: true events unlike JavaScript KeyboardEvent dispatch.
         //
-        // CDP keyDown with key="Delete" at cursor position 0 uses the browser's native
-        // text-editing pipeline, which bypasses React's instance-level tracker setter.
-        // This means React sees a mismatch between el.value and trackerValue and correctly
-        // fires onChange — unlike a direct el.value assignment which updates both
-        // simultaneously, causing React to silently ignore the change.
+        // We use Backspace (VK=8) with the cursor explicitly kept at the end of the
+        // remaining text. This is more reliable than forward-delete (VK_DELETE=46) at
+        // position 0: on some VM environments VK_DELETE is treated as backward-delete,
+        // making it a no-op at position 0 and causing an infinite loop.
         //
-        // Cursor stays at position 0 across iterations: forward-delete (VK_DELETE=46)
-        // removes the character at the cursor without moving it, so each keyDown always
-        // operates at the start of the remaining text.
+        // Backspace with cursor at end is unambiguous on every platform: it always
+        // removes the last character of the remaining text.
+        //
+        // Using the native browser pipeline (CDP keyDown) bypasses React's instance-level
+        // tracker setter, so React sees a mismatch between el.value and trackerValue and
+        // correctly fires onChange — unlike a direct el.value assignment which updates
+        // both simultaneously, causing React to silently ignore the change.
         var remaining = initialLength
         while (remaining > 0) {
             // Dispatch keydown event — this natively deletes one character and fires
             // a real input event that React's change detection processes correctly
             tab.input.dispatchKeyEvent(
                 type = "keyDown",
-                key = "Delete",
-                code = "Delete",
-                windowsVirtualKeyCode = 46,
-                nativeVirtualKeyCode = 46
+                key = "Backspace",
+                code = "Backspace",
+                windowsVirtualKeyCode = 8,
+                nativeVirtualKeyCode = 8
             )
 
             // Dispatch keyup event
             tab.input.dispatchKeyEvent(
                 type = "keyUp",
-                key = "Delete",
-                code = "Delete",
-                windowsVirtualKeyCode = 46,
-                nativeVirtualKeyCode = 46
+                key = "Backspace",
+                code = "Backspace",
+                windowsVirtualKeyCode = 8,
+                nativeVirtualKeyCode = 8
             )
 
-            // Read remaining length — the native keyDown already handled deletion
-            // and React notification; no JS value mutation needed here
-            remaining = apply<Int>("(el) => el.value.length") ?: 0
+            // Read remaining length and reset cursor to end so the next Backspace
+            // always has a character to delete regardless of where the browser left it
+            remaining = apply<Int>(
+                """
+                (el) => {
+                    const len = el.value.length;
+                    el.setSelectionRange(len, len);
+                    return len;
+                }
+                """.trimIndent()
+            ) ?: 0
 
             // Random delay between deletions (50-100ms) for natural variation
             if (remaining > 0) tab.sleep(Random.nextLong(50, 100))
