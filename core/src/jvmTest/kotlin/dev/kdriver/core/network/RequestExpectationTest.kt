@@ -33,6 +33,26 @@ class RequestExpectationTest {
     }
 
     @Test
+    fun testExpectNoFilter() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.mainTab ?: error("Main tab is not available")
+
+        tab.expect {
+            tab.get(sampleFile("groceries.html"))
+
+            val request = withTimeout(3000L) { this@expect.getRequest() }
+            val response = withTimeout(3000L) { this@expect.getResponse() }
+            val responseBody = withTimeout(3000L) { this@expect.getRawResponseBody() }
+
+            assertEquals(request.url, response.url)
+            assertEquals(200, response.status)
+            assertTrue(responseBody.body.isNotEmpty())
+        }
+
+        browser.stop()
+    }
+
+    @Test
     fun testExpectWithReload() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.mainTab ?: error("Main tab is not available")
