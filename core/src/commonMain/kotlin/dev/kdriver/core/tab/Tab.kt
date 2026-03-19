@@ -32,7 +32,6 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * ```
  */
 interface Tab : Connection {
-
     /**
      * Last mouse X position for this tab (for natural trajectories in anti-detection).
      * Each tab maintains its own mouse position to prevent concurrent operations from interfering.
@@ -448,7 +447,7 @@ interface Tab : Connection {
      * @param block The block to execute during which the expectation is active.
      */
     suspend fun <T> expect(
-        urlPattern: Regex,
+        urlPattern: Regex? = null,
         block: suspend RequestExpectation.() -> T,
     ): T
 
@@ -460,7 +459,7 @@ interface Tab : Connection {
      * @param block The block to execute during which the expectations are active.
      */
     suspend fun <T> expectBatch(
-        urlPatterns: List<Regex>,
+        urlPatterns: List<Regex?>,
         block: suspend BatchRequestExpectation.() -> T,
     ): T
 
@@ -479,9 +478,9 @@ interface Tab : Connection {
      * }
      */
     suspend fun <T> intercept(
-        urlPattern: String,
-        requestStage: Fetch.RequestStage,
-        resourceType: Network.ResourceType,
+        urlPattern: String? = null,
+        requestStage: Fetch.RequestStage? = null,
+        resourceType: Network.ResourceType? = null,
         block: suspend FetchInterception.() -> T,
     ): T
 
@@ -528,5 +527,4 @@ interface Tab : Connection {
      * @return List of URLs as [String].
      */
     suspend fun getAllUrls(absolute: Boolean = true): List<String>
-
 }

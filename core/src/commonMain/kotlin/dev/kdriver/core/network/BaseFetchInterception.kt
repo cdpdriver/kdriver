@@ -16,11 +16,10 @@ import kotlin.coroutines.coroutineContext
  */
 open class BaseFetchInterception(
     private val tab: Tab,
-    override val urlPattern: String,
-    override val requestStage: Fetch.RequestStage,
-    override val resourceType: Network.ResourceType,
+    override val urlPattern: String? = null,
+    override val requestStage: Fetch.RequestStage? = null,
+    override val resourceType: Network.ResourceType? = null,
 ) : FetchInterception {
-
     private var responseDeferred = CompletableDeferred<Fetch.RequestPausedParameter>()
     private var job: Job? = null
 
@@ -131,5 +130,4 @@ open class BaseFetchInterception(
             binaryResponseHeaders = binaryResponseHeaders
         )
     }
-
 }
