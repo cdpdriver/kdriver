@@ -30,7 +30,6 @@ class OpenTelemetryTab(
     private val tab: Tab,
     private val tracer: Tracer,
 ) : Tab {
-
     override var lastMouseX: Double?
         get() = tab.lastMouseX
         set(value) {
@@ -339,30 +338,30 @@ class OpenTelemetryTab(
     }
 
     override suspend fun <T> expect(
-        urlPattern: Regex,
+        urlPattern: Regex?,
         block: suspend RequestExpectation.() -> T,
     ): T = executeInSpan("kdriver.tab.expect", SpanKind.INTERNAL) { span ->
-        span.setAttribute("urlPattern", urlPattern.pattern)
+        urlPattern?.pattern?.let { span.setAttribute("urlPattern", it) }
         tab.expect(urlPattern, block)
     }
 
     override suspend fun <T> expectBatch(
-        urlPatterns: List<Regex>,
+        urlPatterns: List<Regex?>,
         block: suspend BatchRequestExpectation.() -> T,
     ): T = executeInSpan("kdriver.tab.expectBatch", SpanKind.INTERNAL) { span ->
-        span.setAttribute("urlPatterns", urlPatterns.joinToString(",") { it.pattern })
+        span.setAttribute("urlPatterns", urlPatterns.joinToString(",") { it?.pattern ?: "null" })
         tab.expectBatch(urlPatterns, block)
     }
 
     override suspend fun <T> intercept(
-        urlPattern: String,
-        requestStage: Fetch.RequestStage,
-        resourceType: Network.ResourceType,
+        urlPattern: String?,
+        requestStage: Fetch.RequestStage?,
+        resourceType: Network.ResourceType?,
         block: suspend FetchInterception.() -> T,
     ): T = executeInSpan("kdriver.tab.intercept", SpanKind.INTERNAL) { span ->
-        span.setAttribute("urlPattern", urlPattern)
-        span.setAttribute("requestStage", requestStage.name)
-        span.setAttribute("resourceType", resourceType.name)
+        urlPattern?.let { span.setAttribute("urlPattern", it) }
+        requestStage?.name?.let { span.setAttribute("requestStage", it) }
+        resourceType?.name?.let { span.setAttribute("resourceType", it) }
         tab.intercept(urlPattern, requestStage, resourceType, block)
     }
 
@@ -450,5 +449,4 @@ class OpenTelemetryTab(
             span.end()
         }
     }
-
 }
