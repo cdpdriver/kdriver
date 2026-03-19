@@ -620,23 +620,23 @@ open class DefaultTab(
     }
 
     override suspend fun <T> expect(
-        urlPattern: Regex,
+        urlPattern: Regex?,
         block: suspend RequestExpectation.() -> T,
     ): T {
         return BaseRequestExpectation(this, urlPattern).use(block)
     }
 
     override suspend fun <T> expectBatch(
-        urlPatterns: List<Regex>,
+        urlPatterns: List<Regex?>,
         block: suspend BatchRequestExpectation.() -> T,
     ): T {
         return BaseBatchRequestExpectation(this, urlPatterns).use(block)
     }
 
     override suspend fun <T> intercept(
-        urlPattern: String,
-        requestStage: Fetch.RequestStage,
-        resourceType: Network.ResourceType,
+        urlPattern: String?,
+        requestStage: Fetch.RequestStage?,
+        resourceType: Network.ResourceType?,
         block: suspend FetchInterception.() -> T,
     ): T {
         return BaseFetchInterception(this, urlPattern, requestStage, resourceType).use(block)

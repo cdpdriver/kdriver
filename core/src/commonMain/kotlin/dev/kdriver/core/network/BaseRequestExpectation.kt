@@ -14,9 +14,8 @@ import kotlin.coroutines.coroutineContext
  */
 open class BaseRequestExpectation(
     private val tab: Tab,
-    override val urlPattern: Regex,
+    override val urlPattern: Regex? = null,
 ) : RequestExpectation {
-
     private var requestJob: Job? = null
     private var responseJob: Job? = null
     private var loadingFinishedJob: Job? = null
@@ -29,7 +28,8 @@ open class BaseRequestExpectation(
 
     private val requestHandler: suspend (Network.RequestWillBeSentParameter) -> Unit =
         requestHandler@{ event ->
-            if (!urlPattern.containsMatchIn(event.request.url)) return@requestHandler
+            val urlPattern = urlPattern
+            if (urlPattern != null && !urlPattern.containsMatchIn(event.request.url)) return@requestHandler
             requestId = event.requestId
             requestDeferred.complete(event)
             requestJob?.cancel()
@@ -103,5 +103,4 @@ open class BaseRequestExpectation(
         loadingFinishedDeferred.await() // Ensure the loading is finished before fetching the body
         return EncodedBody(tab.network.getResponseBody(requestId))
     }
-
 }

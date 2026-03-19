@@ -14,21 +14,20 @@ import dev.kdriver.cdp.domain.Network
  * @param resourceType The type of resource to intercept (e.g., document, script, etc.).
  */
 interface FetchInterception {
-
     /**
      * The URL pattern to match requests and responses.
      */
-    val urlPattern: String
+    val urlPattern: String?
 
     /**
      * The stage of the fetch request to intercept (e.g., request or response).
      */
-    val requestStage: Fetch.RequestStage
+    val requestStage: Fetch.RequestStage?
 
     /**
      * The type of resource to intercept (e.g., document, script, etc.).
      */
-    val resourceType: Network.ResourceType
+    val resourceType: Network.ResourceType?
 
     /**
      * Resets the internal state, allowing the interception to be reused.
@@ -125,5 +124,4 @@ interface FetchInterception {
         responseHeaders: List<HeaderEntry>? = null,
         binaryResponseHeaders: String? = null,
     )
-
 }

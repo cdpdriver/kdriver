@@ -11,11 +11,10 @@ import dev.kdriver.cdp.domain.Network
  * @param urlPattern The URL pattern to match requests and responses.
  */
 interface RequestExpectation {
-
     /**
      * The URL pattern to match requests and responses.
      */
-    val urlPattern: Regex
+    val urlPattern: Regex?
 
     /**
      * Resets the internal state, allowing the expectation to be reused.
@@ -51,5 +50,4 @@ interface RequestExpectation {
      * Fetches the raw response body once it has been received.
      */
     suspend fun getRawResponseBody(): EncodedBody
-
 }
