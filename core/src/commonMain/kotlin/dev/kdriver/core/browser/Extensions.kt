@@ -18,7 +18,7 @@ import kotlinx.io.files.Path
  * @param browserArgs Optional list of additional arguments to pass to the browser executable.
  * @param sandbox If true, the browser will run in a sandboxed environment. Defaults to true.
  * @param lang The language to use for the browser.
- * @param host Optional host address for the browser connection. If not provided, defaults to "127.0.0.1".
+ * @param host Optional host address for the browser connection. If not provided, defaults to "0.0.0.0".
  * @param port Optional port for the browser connection. If not provided, a free port will be assigned.
  *
  * @return A new instance of the Browser class.

@@ -147,7 +147,7 @@ open class DefaultBrowser(
         val connectExisting = config.host != null && config.port != null
 
         if (!connectExisting) {
-            config.host = "127.0.0.1"
+            config.host = "0.0.0.0"
             config.port = freePort()
         }
 
@@ -175,7 +175,7 @@ open class DefaultBrowser(
         }
 
         logger.info("Browser process started with PID: ${process?.pid()}")
-        http = HTTPApi(config.host ?: "127.0.0.1", config.port ?: error("Port not set"))
+        http = HTTPApi(config.host ?: "0.0.0.0", config.port ?: error("Port not set"))
 
         delay(config.browserConnectionTimeout)
         repeat(config.browserConnectionMaxTries) {
