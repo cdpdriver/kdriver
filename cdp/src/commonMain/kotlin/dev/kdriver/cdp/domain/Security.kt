@@ -12,15 +12,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 
-/**
- * Security
- */
 public val CDP.security: Security
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Security(this))
 
-/**
- * Security
- */
 public class Security(
     private val cdp: CDP,
 ) : Domain {

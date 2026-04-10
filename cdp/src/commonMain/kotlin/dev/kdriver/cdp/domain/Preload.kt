@@ -128,6 +128,11 @@ public class Preload(
          * TODO(https://crbug.com/1425354): Replace this property with structured error.
          */
         public val errorMessage: String? = null,
+        /**
+         * For more details, see:
+         * https://github.com/WICG/nav-speculation/blob/main/speculation-rules-tags.md
+         */
+        public val tag: String? = null,
     )
 
     @Serializable
@@ -154,6 +159,9 @@ public class Preload(
 
         @SerialName("Prerender")
         PRERENDER,
+
+        @SerialName("PrerenderUntilScript")
+        PRERENDERUNTILSCRIPT,
     }
 
     /**
@@ -182,6 +190,7 @@ public class Preload(
         public val loaderId: String,
         public val action: SpeculationAction,
         public val url: String,
+        public val formSubmission: Boolean? = null,
         public val targetHint: SpeculationTargetHint? = null,
     )
 
@@ -425,6 +434,9 @@ public class Preload(
 
         @SerialName("PrerenderHostReused")
         PRERENDERHOSTREUSED,
+
+        @SerialName("FormSubmitWhenPrerendering")
+        FORMSUBMITWHENPRERENDERING,
     }
 
     /**

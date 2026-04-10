@@ -12,13 +12,13 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
- * This domain allows detailed inspection of media elements
+ * This domain allows detailed inspection of media elements.
  */
 public val CDP.media: Media
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Media(this))
 
 /**
- * This domain allows detailed inspection of media elements
+ * This domain allows detailed inspection of media elements.
  */
 public class Media(
     private val cdp: CDP,
@@ -67,12 +67,12 @@ public class Media(
 
     /**
      * Called whenever a player is created, or when a new agent joins and receives
-     * a list of active players. If an agent is restored, it will receive the full
-     * list of player ids and all events again.
+     * a list of active players. If an agent is restored, it will receive one
+     * event for each active player.
      */
-    public val playersCreated: Flow<PlayersCreatedParameter> = cdp
+    public val playerCreated: Flow<PlayerCreatedParameter> = cdp
         .events
-        .filter { it.method == "Media.playersCreated" }
+        .filter { it.method == "Media.playerCreated" }
         .map { it.params }
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
@@ -168,6 +168,12 @@ public class Media(
         public val `data`: Map<String, JsonElement>,
     )
 
+    @Serializable
+    public data class Player(
+        public val playerId: String,
+        public val domNodeId: Int? = null,
+    )
+
     /**
      * This can be called multiple times, and can be used to set / override /
      * remove player properties. A null propValue indicates removal.
@@ -208,11 +214,11 @@ public class Media(
 
     /**
      * Called whenever a player is created, or when a new agent joins and receives
-     * a list of active players. If an agent is restored, it will receive the full
-     * list of player ids and all events again.
+     * a list of active players. If an agent is restored, it will receive one
+     * event for each active player.
      */
     @Serializable
-    public data class PlayersCreatedParameter(
-        public val players: List<String>,
+    public data class PlayerCreatedParameter(
+        public val player: Player,
     )
 }

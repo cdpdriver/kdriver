@@ -86,26 +86,6 @@ public class Audits(
     }
 
     /**
-     * Runs the contrast check for the target page. Found issues are reported
-     * using Audits.issueAdded event.
-     */
-    public suspend fun checkContrast(args: CheckContrastParameter, mode: CommandMode = CommandMode.DEFAULT) {
-        val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Audits.checkContrast", parameter, mode)
-    }
-
-    /**
-     * Runs the contrast check for the target page. Found issues are reported
-     * using Audits.issueAdded event.
-     *
-     * @param reportAAA Whether to report WCAG AAA level issues. Default is false.
-     */
-    public suspend fun checkContrast(reportAAA: Boolean? = null) {
-        val parameter = CheckContrastParameter(reportAAA = reportAAA)
-        checkContrast(parameter)
-    }
-
-    /**
      * Runs the form issues check for the target page. Found issues are reported
      * using Audits.issueAdded event.
      */
@@ -161,12 +141,6 @@ public class Audits(
 
         @SerialName("ExcludeSameSiteStrict")
         EXCLUDESAMESITESTRICT,
-
-        @SerialName("ExcludeInvalidSameParty")
-        EXCLUDEINVALIDSAMEPARTY,
-
-        @SerialName("ExcludeSamePartyCrossPartyContext")
-        EXCLUDESAMEPARTYCROSSPARTYCONTEXT,
 
         @SerialName("ExcludeDomainNonASCII")
         EXCLUDEDOMAINNONASCII,
@@ -294,6 +268,21 @@ public class Audits(
          * The recommended solution to the issue.
          */
         public val insight: CookieIssueInsight? = null,
+    )
+
+    @Serializable
+    public enum class PerformanceIssueType {
+        @SerialName("DocumentCookie")
+        DOCUMENTCOOKIE,
+    }
+
+    /**
+     * Details for a performance issue.
+     */
+    @Serializable
+    public data class PerformanceIssueDetails(
+        public val performanceIssueType: PerformanceIssueType,
+        public val sourceCodeLocation: SourceCodeLocation? = null,
     )
 
     @Serializable
@@ -580,17 +569,6 @@ public class Audits(
         public val type: SharedArrayBufferIssueType,
     )
 
-    @Serializable
-    public data class LowTextContrastIssueDetails(
-        public val violatingNodeId: Int,
-        public val violatingNodeSelector: String,
-        public val contrastRatio: Double,
-        public val thresholdAA: Double,
-        public val thresholdAAA: Double,
-        public val fontSize: String,
-        public val fontWeight: String,
-    )
-
     /**
      * Details for a CORS related issue, e.g. a warning or error related to
      * CORS RFC1918 enforcement.
@@ -707,11 +685,17 @@ public class Audits(
         @SerialName("WriteErrorInvalidStructuredHeader")
         WRITEERRORINVALIDSTRUCTUREDHEADER,
 
+        @SerialName("WriteErrorInvalidTTLField")
+        WRITEERRORINVALIDTTLFIELD,
+
         @SerialName("WriteErrorNavigationRequest")
         WRITEERRORNAVIGATIONREQUEST,
 
         @SerialName("WriteErrorNoMatchField")
         WRITEERRORNOMATCHFIELD,
+
+        @SerialName("WriteErrorNonIntegerTTLField")
+        WRITEERRORNONINTEGERTTLFIELD,
 
         @SerialName("WriteErrorNonListMatchDestField")
         WRITEERRORNONLISTMATCHDESTFIELD,
@@ -825,6 +809,27 @@ public class Audits(
         INCORRECTDIGESTLENGTH,
     }
 
+    @Serializable
+    public enum class ConnectionAllowlistError {
+        @SerialName("InvalidHeader")
+        INVALIDHEADER,
+
+        @SerialName("MoreThanOneList")
+        MORETHANONELIST,
+
+        @SerialName("ItemNotInnerList")
+        ITEMNOTINNERLIST,
+
+        @SerialName("InvalidAllowlistItemType")
+        INVALIDALLOWLISTITEMTYPE,
+
+        @SerialName("ReportingEndpointNotToken")
+        REPORTINGENDPOINTNOTTOKEN,
+
+        @SerialName("InvalidUrlPattern")
+        INVALIDURLPATTERN,
+    }
+
     /**
      * Details for issues around "Attribution Reporting API" usage.
      * Explainer: https://github.com/WICG/attribution-reporting-api
@@ -881,6 +886,12 @@ public class Audits(
     )
 
     @Serializable
+    public data class ConnectionAllowlistIssueDetails(
+        public val error: ConnectionAllowlistError,
+        public val request: AffectedRequest,
+    )
+
+    @Serializable
     public enum class GenericIssueErrorType {
         @SerialName("FormLabelForNameError")
         FORMLABELFORNAMEERROR,
@@ -897,14 +908,14 @@ public class Audits(
         @SerialName("FormEmptyIdAndNameAttributesForInputError")
         FORMEMPTYIDANDNAMEATTRIBUTESFORINPUTERROR,
 
-        @SerialName("FormAriaLabelledByToNonExistingId")
-        FORMARIALABELLEDBYTONONEXISTINGID,
+        @SerialName("FormAriaLabelledByToNonExistingIdError")
+        FORMARIALABELLEDBYTONONEXISTINGIDERROR,
 
         @SerialName("FormInputAssignedAutocompleteValueToIdOrNameAttributeError")
         FORMINPUTASSIGNEDAUTOCOMPLETEVALUETOIDORNAMEATTRIBUTEERROR,
 
-        @SerialName("FormLabelHasNeitherForNorNestedInput")
-        FORMLABELHASNEITHERFORNORNESTEDINPUT,
+        @SerialName("FormLabelHasNeitherForNorNestedInputError")
+        FORMLABELHASNEITHERFORNORNESTEDINPUTERROR,
 
         @SerialName("FormLabelForMatchesNonExistingIdError")
         FORMLABELFORMATCHESNONEXISTINGIDERROR,
@@ -914,6 +925,21 @@ public class Audits(
 
         @SerialName("ResponseWasBlockedByORB")
         RESPONSEWASBLOCKEDBYORB,
+
+        @SerialName("NavigationEntryMarkedSkippable")
+        NAVIGATIONENTRYMARKEDSKIPPABLE,
+
+        @SerialName("AutofillAndManualTextPolicyControlledFeaturesInfo")
+        AUTOFILLANDMANUALTEXTPOLICYCONTROLLEDFEATURESINFO,
+
+        @SerialName("AutofillPolicyControlledFeatureInfo")
+        AUTOFILLPOLICYCONTROLLEDFEATUREINFO,
+
+        @SerialName("ManualTextPolicyControlledFeatureInfo")
+        MANUALTEXTPOLICYCONTROLLEDFEATUREINFO,
+
+        @SerialName("FormModelContextParameterMissingTitleAndDescription")
+        FORMMODELCONTEXTPARAMETERMISSINGTITLEANDDESCRIPTION,
     }
 
     /**
@@ -1033,18 +1059,6 @@ public class Audits(
         @SerialName("ConfigInvalidContentType")
         CONFIGINVALIDCONTENTTYPE,
 
-        @SerialName("ClientMetadataHttpNotFound")
-        CLIENTMETADATAHTTPNOTFOUND,
-
-        @SerialName("ClientMetadataNoResponse")
-        CLIENTMETADATANORESPONSE,
-
-        @SerialName("ClientMetadataInvalidResponse")
-        CLIENTMETADATAINVALIDRESPONSE,
-
-        @SerialName("ClientMetadataInvalidContentType")
-        CLIENTMETADATAINVALIDCONTENTTYPE,
-
         @SerialName("IdpNotPotentiallyTrustworthy")
         IDPNOTPOTENTIALLYTRUSTWORTHY,
 
@@ -1108,9 +1122,6 @@ public class Audits(
         @SerialName("SilentMediationFailure")
         SILENTMEDIATIONFAILURE,
 
-        @SerialName("ThirdPartyCookiesBlocked")
-        THIRDPARTYCOOKIESBLOCKED,
-
         @SerialName("NotSignedInWithIdp")
         NOTSIGNEDINWITHIDP,
 
@@ -1119,9 +1130,6 @@ public class Audits(
 
         @SerialName("ReplacedByActiveMode")
         REPLACEDBYACTIVEMODE,
-
-        @SerialName("InvalidFieldsSpecified")
-        INVALIDFIELDSSPECIFIED,
 
         @SerialName("RelyingPartyOriginIsOpaque")
         RELYINGPARTYORIGINISOPAQUE,
@@ -1346,6 +1354,129 @@ public class Audits(
         public val sourceCodeLocation: SourceCodeLocation? = null,
     )
 
+    @Serializable
+    public enum class PermissionElementIssueType {
+        @SerialName("InvalidType")
+        INVALIDTYPE,
+
+        @SerialName("FencedFrameDisallowed")
+        FENCEDFRAMEDISALLOWED,
+
+        @SerialName("CspFrameAncestorsMissing")
+        CSPFRAMEANCESTORSMISSING,
+
+        @SerialName("PermissionsPolicyBlocked")
+        PERMISSIONSPOLICYBLOCKED,
+
+        @SerialName("PaddingRightUnsupported")
+        PADDINGRIGHTUNSUPPORTED,
+
+        @SerialName("PaddingBottomUnsupported")
+        PADDINGBOTTOMUNSUPPORTED,
+
+        @SerialName("InsetBoxShadowUnsupported")
+        INSETBOXSHADOWUNSUPPORTED,
+
+        @SerialName("RequestInProgress")
+        REQUESTINPROGRESS,
+
+        @SerialName("UntrustedEvent")
+        UNTRUSTEDEVENT,
+
+        @SerialName("RegistrationFailed")
+        REGISTRATIONFAILED,
+
+        @SerialName("TypeNotSupported")
+        TYPENOTSUPPORTED,
+
+        @SerialName("InvalidTypeActivation")
+        INVALIDTYPEACTIVATION,
+
+        @SerialName("SecurityChecksFailed")
+        SECURITYCHECKSFAILED,
+
+        @SerialName("ActivationDisabled")
+        ACTIVATIONDISABLED,
+
+        @SerialName("GeolocationDeprecated")
+        GEOLOCATIONDEPRECATED,
+
+        @SerialName("InvalidDisplayStyle")
+        INVALIDDISPLAYSTYLE,
+
+        @SerialName("NonOpaqueColor")
+        NONOPAQUECOLOR,
+
+        @SerialName("LowContrast")
+        LOWCONTRAST,
+
+        @SerialName("FontSizeTooSmall")
+        FONTSIZETOOSMALL,
+
+        @SerialName("FontSizeTooLarge")
+        FONTSIZETOOLARGE,
+
+        @SerialName("InvalidSizeValue")
+        INVALIDSIZEVALUE,
+    }
+
+    /**
+     * This issue warns about improper usage of the <permission> element.
+     */
+    @Serializable
+    public data class PermissionElementIssueDetails(
+        public val issueType: PermissionElementIssueType,
+        /**
+         * The value of the type attribute.
+         */
+        public val type: String? = null,
+        /**
+         * The node ID of the <permission> element.
+         */
+        public val nodeId: Int? = null,
+        /**
+         * True if the issue is a warning, false if it is an error.
+         */
+        public val isWarning: Boolean? = null,
+        /**
+         * Fields for message construction:
+         * Used for messages that reference a specific permission name
+         */
+        public val permissionName: String? = null,
+        /**
+         * Used for messages about occlusion
+         */
+        public val occluderNodeInfo: String? = null,
+        /**
+         * Used for messages about occluder's parent
+         */
+        public val occluderParentNodeInfo: String? = null,
+        /**
+         * Used for messages about activation disabled reason
+         */
+        public val disableReason: String? = null,
+    )
+
+    /**
+     * The issue warns about blocked calls to privacy sensitive APIs via the
+     * Selective Permissions Intervention.
+     */
+    @Serializable
+    public data class SelectivePermissionsInterventionIssueDetails(
+        /**
+         * Which API was intervened on.
+         */
+        public val apiName: String,
+        /**
+         * Why the ad script using the API is considered an ad.
+         */
+        public val adAncestry: Network.AdAncestry,
+        /**
+         * The stack trace at the time of the intervention.
+         */
+        public val stackTrace: Runtime.StackTrace? = null,
+    )
+
     /**
      * A unique identifier for the type of issue. Each type may use one of the
      * optional fields in InspectorIssueDetails to convey more specific
@@ -1370,9 +1501,6 @@ public class Audits(
 
         @SerialName("SharedArrayBufferIssue")
         SHAREDARRAYBUFFERISSUE,
-
-        @SerialName("LowTextContrastIssue")
-        LOWTEXTCONTRASTISSUE,
 
         @SerialName("CorsIssue")
         CORSISSUE,
@@ -1428,8 +1556,20 @@ public class Audits(
         @SerialName("UnencodedDigestIssue")
         UNENCODEDDIGESTISSUE,
 
+        @SerialName("ConnectionAllowlistIssue")
+        CONNECTIONALLOWLISTISSUE,
+
         @SerialName("UserReidentificationIssue")
         USERREIDENTIFICATIONISSUE,
+
+        @SerialName("PermissionElementIssue")
+        PERMISSIONELEMENTISSUE,
+
+        @SerialName("PerformanceIssue")
+        PERFORMANCEISSUE,
+
+        @SerialName("SelectivePermissionsInterventionIssue")
+        SELECTIVEPERMISSIONSINTERVENTIONISSUE,
     }
 
     /**
@@ -1445,7 +1585,6 @@ public class Audits(
         public val heavyAdIssueDetails: HeavyAdIssueDetails? = null,
         public val contentSecurityPolicyIssueDetails: ContentSecurityPolicyIssueDetails? = null,
         public val sharedArrayBufferIssueDetails: SharedArrayBufferIssueDetails? = null,
-        public val lowTextContrastIssueDetails: LowTextContrastIssueDetails? = null,
         public val corsIssueDetails: CorsIssueDetails? = null,
         public val attributionReportingIssueDetails: AttributionReportingIssueDetails? = null,
         public val quirksModeIssueDetails: QuirksModeIssueDetails? = null,
@@ -1466,7 +1605,12 @@ public class Audits(
         public val elementAccessibilityIssueDetails: ElementAccessibilityIssueDetails? = null,
         public val sriMessageSignatureIssueDetails: SRIMessageSignatureIssueDetails? = null,
         public val unencodedDigestIssueDetails: UnencodedDigestIssueDetails? = null,
+        public val connectionAllowlistIssueDetails: ConnectionAllowlistIssueDetails? = null,
         public val userReidentificationIssueDetails: UserReidentificationIssueDetails? = null,
+        public val permissionElementIssueDetails: PermissionElementIssueDetails? = null,
+        public val performanceIssueDetails: PerformanceIssueDetails? = null,
+        public val selectivePermissionsInterventionIssueDetails:
+        SelectivePermissionsInterventionIssueDetails? = null,
     )
 
     /**
@@ -1522,14 +1666,6 @@ public class Audits(
          * Size after re-encoding.
          */
         public val encodedSize: Int,
-    )
-
-    @Serializable
-    public data class CheckContrastParameter(
-        /**
-         * Whether to report WCAG AAA level issues. Default is false.
-         */
-        public val reportAAA: Boolean? = null,
     )
 
     @Serializable

@@ -328,9 +328,9 @@ public class Animation(
          */
         public val iterationStart: Double,
         /**
-         * `AnimationEffect`'s iterations.
+         * `AnimationEffect`'s iterations. Omitted if the value is infinite.
          */
-        public val iterations: Double,
+        public val iterations: Double? = null,
         /**
          * `AnimationEffect`'s iteration duration.
          * Milliseconds for time based animations and

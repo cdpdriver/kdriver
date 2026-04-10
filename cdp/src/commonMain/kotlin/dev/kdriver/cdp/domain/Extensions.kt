@@ -22,6 +22,29 @@ public class Extensions(
     private val cdp: CDP,
 ) : Domain {
     /**
+     * Runs an extension default action.
+     * Available if the client is connected using the --remote-debugging-pipe
+     * flag and the --enable-unsafe-extension-debugging flag is set.
+     */
+    public suspend fun triggerAction(args: TriggerActionParameter, mode: CommandMode = CommandMode.DEFAULT) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Extensions.triggerAction", parameter, mode)
+    }
+
+    /**
+     * Runs an extension default action.
+     * Available if the client is connected using the --remote-debugging-pipe
+     * flag and the --enable-unsafe-extension-debugging flag is set.
+     *
+     * @param id Extension id.
+     * @param targetId A tab target ID to trigger the default extension action on.
+     */
+    public suspend fun triggerAction(id: String, targetId: String) {
+        val parameter = TriggerActionParameter(id = id, targetId = targetId)
+        triggerAction(parameter)
+    }
+
+    /**
      * Installs an unpacked extension from the filesystem similar to
      * --load-extension CLI flags. Returns extension ID once the extension
      * has been installed. Available if the client is connected using the
@@ -45,10 +68,22 @@ public class Extensions(
      * flag is set.
      *
      * @param path Absolute file path.
+     * @param enableInIncognito Enable the extension in incognito
      */
-    public suspend fun loadUnpacked(path: String): LoadUnpackedReturn {
-        val parameter = LoadUnpackedParameter(path = path)
+    public suspend fun loadUnpacked(path: String, enableInIncognito: Boolean? = null): LoadUnpackedReturn {
+        val parameter = LoadUnpackedParameter(path = path, enableInIncognito = enableInIncognito)
         return loadUnpacked(parameter)
+    }
+
+    /**
+     * Gets a list of all unpacked extensions.
+     * Available if the client is connected using the --remote-debugging-pipe flag
+     * and the --enable-unsafe-extension-debugging flag is set.
+     */
+    public suspend fun getExtensions(mode: CommandMode = CommandMode.DEFAULT): GetExtensionsReturn {
+        val parameter = null
+        val result = cdp.callCommand("Extensions.getExtensions", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
     /**
@@ -190,12 +225,55 @@ public class Extensions(
         MANAGED,
     }
 
+    /**
+     * Detailed information about an extension.
+     */
+    @Serializable
+    public data class ExtensionInfo(
+        /**
+         * Extension id.
+         */
+        public val id: String,
+        /**
+         * Extension name.
+         */
+        public val name: String,
+        /**
+         * Extension version.
+         */
+        public val version: String,
+        /**
+         * The path from which the extension was loaded.
+         */
+        public val path: String,
+        /**
+         * Extension enabled status.
+         */
+        public val enabled: Boolean,
+    )
+
+    @Serializable
+    public data class TriggerActionParameter(
+        /**
+         * Extension id.
+         */
+        public val id: String,
+        /**
+         * A tab target ID to trigger the default extension action on.
+         */
+        public val targetId: String,
+    )
+
     @Serializable
     public data class LoadUnpackedParameter(
         /**
          * Absolute file path.
          */
         public val path: String,
+        /**
+         * Enable the extension in incognito
+         */
+        public val enableInIncognito: Boolean? = null,
     )
 
     @Serializable
@@ -204,6 +282,11 @@ public class Extensions(
          * Extension id.
          */
         public val id: String,
+    )
+
+    @Serializable
+    public data class GetExtensionsReturn(
+        public val extensions: List<ExtensionInfo>,
     )
 
     @Serializable

@@ -35,6 +35,18 @@ public class Emulation(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
+     * Fired when a page calls screen.orientation.lock() or screen.orientation.unlock()
+     * while device emulation is enabled. This allows the DevTools frontend to update the
+     * emulated device orientation accordingly.
+     */
+    public val screenOrientationLockChanged: Flow<ScreenOrientationLockChangedParameter> = cdp
+        .events
+        .filter { it.method == "Emulation.screenOrientationLockChanged" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
      * Tells whether emulation is supported.
      */
     @Deprecated(message = "")
@@ -217,6 +229,12 @@ public class Emulation(
      * @param devicePosture If set, the posture of a foldable device. If not set the posture is set
      * to continuous.
      * Deprecated, use Emulation.setDevicePostureOverride.
+     * @param scrollbarType Scrollbar type. Default: `default`.
+     * @param screenOrientationLockEmulation If set to true, enables screen orientation lock emulation, which
+     * intercepts screen.orientation.lock() calls from the page and reports
+     * orientation changes via screenOrientationLockChanged events. This is
+     * useful for emulating mobile device orientation lock behavior in
+     * responsive design mode.
      */
     public suspend fun setDeviceMetricsOverride(
         width: Int,
@@ -233,6 +251,8 @@ public class Emulation(
         viewport: Page.Viewport? = null,
         displayFeature: DisplayFeature? = null,
         devicePosture: DevicePosture? = null,
+        scrollbarType: String? = null,
+        screenOrientationLockEmulation: Boolean? = null,
     ) {
         val parameter = SetDeviceMetricsOverrideParameter(
             width = width,
@@ -248,7 +268,9 @@ public class Emulation(
             screenOrientation = screenOrientation,
             viewport = viewport,
             displayFeature = displayFeature,
-            devicePosture = devicePosture
+            devicePosture = devicePosture,
+            scrollbarType = scrollbarType,
+            screenOrientationLockEmulation = screenOrientationLockEmulation
         )
         setDeviceMetricsOverride(parameter)
     }
@@ -1013,6 +1035,164 @@ public class Emulation(
         setSmallViewportHeightDifferenceOverride(parameter)
     }
 
+    /**
+     * Returns device's screen configuration. In headful mode, the physical screens configuration is returned,
+     * whereas in headless mode, a virtual headless screen configuration is provided instead.
+     */
+    public suspend fun getScreenInfos(mode: CommandMode = CommandMode.DEFAULT): GetScreenInfosReturn {
+        val parameter = null
+        val result = cdp.callCommand("Emulation.getScreenInfos", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Add a new screen to the device. Only supported in headless mode.
+     */
+    public suspend fun addScreen(args: AddScreenParameter, mode: CommandMode = CommandMode.DEFAULT): AddScreenReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("Emulation.addScreen", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Add a new screen to the device. Only supported in headless mode.
+     *
+     * @param left Offset of the left edge of the screen in pixels.
+     * @param top Offset of the top edge of the screen in pixels.
+     * @param width The width of the screen in pixels.
+     * @param height The height of the screen in pixels.
+     * @param workAreaInsets Specifies the screen's work area. Default is entire screen.
+     * @param devicePixelRatio Specifies the screen's device pixel ratio. Default is 1.
+     * @param rotation Specifies the screen's rotation angle. Available values are 0, 90, 180 and 270. Default is 0.
+     * @param colorDepth Specifies the screen's color depth in bits. Default is 24.
+     * @param label Specifies the descriptive label for the screen. Default is none.
+     * @param isInternal Indicates whether the screen is internal to the device or external, attached to the device. Default is false.
+     */
+    public suspend fun addScreen(
+        left: Int,
+        top: Int,
+        width: Int,
+        height: Int,
+        workAreaInsets: WorkAreaInsets? = null,
+        devicePixelRatio: Double? = null,
+        rotation: Int? = null,
+        colorDepth: Int? = null,
+        label: String? = null,
+        isInternal: Boolean? = null,
+    ): AddScreenReturn {
+        val parameter = AddScreenParameter(
+            left = left,
+            top = top,
+            width = width,
+            height = height,
+            workAreaInsets = workAreaInsets,
+            devicePixelRatio = devicePixelRatio,
+            rotation = rotation,
+            colorDepth = colorDepth,
+            label = label,
+            isInternal = isInternal
+        )
+        return addScreen(parameter)
+    }
+
+    /**
+     * Updates specified screen parameters. Only supported in headless mode.
+     */
+    public suspend fun updateScreen(
+        args: UpdateScreenParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): UpdateScreenReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("Emulation.updateScreen", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Updates specified screen parameters. Only supported in headless mode.
+     *
+     * @param screenId Target screen identifier.
+     * @param left Offset of the left edge of the screen in pixels.
+     * @param top Offset of the top edge of the screen in pixels.
+     * @param width The width of the screen in pixels.
+     * @param height The height of the screen in pixels.
+     * @param workAreaInsets Specifies the screen's work area.
+     * @param devicePixelRatio Specifies the screen's device pixel ratio.
+     * @param rotation Specifies the screen's rotation angle. Available values are 0, 90, 180 and 270.
+     * @param colorDepth Specifies the screen's color depth in bits.
+     * @param label Specifies the descriptive label for the screen.
+     * @param isInternal Indicates whether the screen is internal to the device or external, attached to the device. Default is false.
+     */
+    public suspend fun updateScreen(
+        screenId: String,
+        left: Int? = null,
+        top: Int? = null,
+        width: Int? = null,
+        height: Int? = null,
+        workAreaInsets: WorkAreaInsets? = null,
+        devicePixelRatio: Double? = null,
+        rotation: Int? = null,
+        colorDepth: Int? = null,
+        label: String? = null,
+        isInternal: Boolean? = null,
+    ): UpdateScreenReturn {
+        val parameter = UpdateScreenParameter(
+            screenId = screenId,
+            left = left,
+            top = top,
+            width = width,
+            height = height,
+            workAreaInsets = workAreaInsets,
+            devicePixelRatio = devicePixelRatio,
+            rotation = rotation,
+            colorDepth = colorDepth,
+            label = label,
+            isInternal = isInternal
+        )
+        return updateScreen(parameter)
+    }
+
+    /**
+     * Remove screen from the device. Only supported in headless mode.
+     */
+    public suspend fun removeScreen(args: RemoveScreenParameter, mode: CommandMode = CommandMode.DEFAULT) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.removeScreen", parameter, mode)
+    }
+
+    /**
+     * Remove screen from the device. Only supported in headless mode.
+     *
+     * @param screenId No description
+     */
+    public suspend fun removeScreen(screenId: String) {
+        val parameter = RemoveScreenParameter(screenId = screenId)
+        removeScreen(parameter)
+    }
+
+    /**
+     * Set primary screen. Only supported in headless mode.
+     * Note that this changes the coordinate system origin to the top-left
+     * of the new primary screen, updating the bounds and work areas
+     * of all existing screens accordingly.
+     */
+    public suspend fun setPrimaryScreen(args: SetPrimaryScreenParameter, mode: CommandMode = CommandMode.DEFAULT) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Emulation.setPrimaryScreen", parameter, mode)
+    }
+
+    /**
+     * Set primary screen. Only supported in headless mode.
+     * Note that this changes the coordinate system origin to the top-left
+     * of the new primary screen, updating the bounds and work areas
+     * of all existing screens accordingly.
+     *
+     * @param screenId No description
+     */
+    public suspend fun setPrimaryScreen(screenId: String) {
+        val parameter = SetPrimaryScreenParameter(screenId = screenId)
+        setPrimaryScreen(parameter)
+    }
+
     @Serializable
     public data class SafeAreaInsets(
         /**
@@ -1244,6 +1424,98 @@ public class Emulation(
         public val available: Boolean? = null,
     )
 
+    @Serializable
+    public data class WorkAreaInsets(
+        /**
+         * Work area top inset in pixels. Default is 0;
+         */
+        public val top: Int? = null,
+        /**
+         * Work area left inset in pixels. Default is 0;
+         */
+        public val left: Int? = null,
+        /**
+         * Work area bottom inset in pixels. Default is 0;
+         */
+        public val bottom: Int? = null,
+        /**
+         * Work area right inset in pixels. Default is 0;
+         */
+        public val right: Int? = null,
+    )
+
+    /**
+     * Screen information similar to the one returned by window.getScreenDetails() method,
+     * see https://w3c.github.io/window-management/#screendetailed.
+     */
+    @Serializable
+    public data class ScreenInfo(
+        /**
+         * Offset of the left edge of the screen.
+         */
+        public val left: Int,
+        /**
+         * Offset of the top edge of the screen.
+         */
+        public val top: Int,
+        /**
+         * Width of the screen.
+         */
+        public val width: Int,
+        /**
+         * Height of the screen.
+         */
+        public val height: Int,
+        /**
+         * Offset of the left edge of the available screen area.
+         */
+        public val availLeft: Int,
+        /**
+         * Offset of the top edge of the available screen area.
+         */
+        public val availTop: Int,
+        /**
+         * Width of the available screen area.
+         */
+        public val availWidth: Int,
+        /**
+         * Height of the available screen area.
+         */
+        public val availHeight: Int,
+        /**
+         * Specifies the screen's device pixel ratio.
+         */
+        public val devicePixelRatio: Double,
+        /**
+         * Specifies the screen's orientation.
+         */
+        public val orientation: ScreenOrientation,
+        /**
+         * Specifies the screen's color depth in bits.
+         */
+        public val colorDepth: Int,
+        /**
+         * Indicates whether the device has multiple screens.
+         */
+        public val isExtended: Boolean,
+        /**
+         * Indicates whether the screen is internal to the device or external, attached to the device.
+         */
+        public val isInternal: Boolean,
+        /**
+         * Indicates whether the screen is set as the the operating system primary screen.
+         */
+        public val isPrimary: Boolean,
+        /**
+         * Specifies the descriptive label for the screen.
+         */
+        public val label: String,
+        /**
+         * Specifies the unique identifier of the screen.
+         */
+        public val id: String,
+    )
+
     /**
      * Enum of image types that can be disabled.
      */
@@ -1252,9 +1524,29 @@ public class Emulation(
         @SerialName("avif")
         AVIF,
 
+        @SerialName("jxl")
+        JXL,
+
         @SerialName("webp")
         WEBP,
     }
+
+    /**
+     * Fired when a page calls screen.orientation.lock() or screen.orientation.unlock()
+     * while device emulation is enabled. This allows the DevTools frontend to update the
+     * emulated device orientation accordingly.
+     */
+    @Serializable
+    public data class ScreenOrientationLockChangedParameter(
+        /**
+         * Whether the screen orientation is currently locked.
+         */
+        public val locked: Boolean,
+        /**
+         * The orientation lock type requested by the page. Only set when locked is true.
+         */
+        public val orientation: ScreenOrientation? = null,
+    )
 
     @Serializable
     public data class CanEmulateReturn(
@@ -1367,6 +1659,18 @@ public class Emulation(
          * Deprecated, use Emulation.setDevicePostureOverride.
          */
         public val devicePosture: DevicePosture? = null,
+        /**
+         * Scrollbar type. Default: `default`.
+         */
+        public val scrollbarType: String? = null,
+        /**
+         * If set to true, enables screen orientation lock emulation, which
+         * intercepts screen.orientation.lock() calls from the page and reports
+         * orientation changes via screenOrientationLockChanged events. This is
+         * useful for emulating mobile device orientation lock behavior in
+         * responsive design mode.
+         */
+        public val screenOrientationLockEmulation: Boolean? = null,
     )
 
     @Serializable
@@ -1673,5 +1977,122 @@ public class Emulation(
          * of size 100lvh.
          */
         public val difference: Int,
+    )
+
+    @Serializable
+    public data class GetScreenInfosReturn(
+        public val screenInfos: List<ScreenInfo>,
+    )
+
+    @Serializable
+    public data class AddScreenParameter(
+        /**
+         * Offset of the left edge of the screen in pixels.
+         */
+        public val left: Int,
+        /**
+         * Offset of the top edge of the screen in pixels.
+         */
+        public val top: Int,
+        /**
+         * The width of the screen in pixels.
+         */
+        public val width: Int,
+        /**
+         * The height of the screen in pixels.
+         */
+        public val height: Int,
+        /**
+         * Specifies the screen's work area. Default is entire screen.
+         */
+        public val workAreaInsets: WorkAreaInsets? = null,
+        /**
+         * Specifies the screen's device pixel ratio. Default is 1.
+         */
+        public val devicePixelRatio: Double? = null,
+        /**
+         * Specifies the screen's rotation angle. Available values are 0, 90, 180 and 270. Default is 0.
+         */
+        public val rotation: Int? = null,
+        /**
+         * Specifies the screen's color depth in bits. Default is 24.
+         */
+        public val colorDepth: Int? = null,
+        /**
+         * Specifies the descriptive label for the screen. Default is none.
+         */
+        public val label: String? = null,
+        /**
+         * Indicates whether the screen is internal to the device or external, attached to the device. Default is false.
+         */
+        public val isInternal: Boolean? = null,
+    )
+
+    @Serializable
+    public data class AddScreenReturn(
+        public val screenInfo: ScreenInfo,
+    )
+
+    @Serializable
+    public data class UpdateScreenParameter(
+        /**
+         * Target screen identifier.
+         */
+        public val screenId: String,
+        /**
+         * Offset of the left edge of the screen in pixels.
+         */
+        public val left: Int? = null,
+        /**
+         * Offset of the top edge of the screen in pixels.
+         */
+        public val top: Int? = null,
+        /**
+         * The width of the screen in pixels.
+         */
+        public val width: Int? = null,
+        /**
+         * The height of the screen in pixels.
+         */
+        public val height: Int? = null,
+        /**
+         * Specifies the screen's work area.
+         */
+        public val workAreaInsets: WorkAreaInsets? = null,
+        /**
+         * Specifies the screen's device pixel ratio.
+         */
+        public val devicePixelRatio: Double? = null,
+        /**
+         * Specifies the screen's rotation angle. Available values are 0, 90, 180 and 270.
+         */
+        public val rotation: Int? = null,
+        /**
+         * Specifies the screen's color depth in bits.
+         */
+        public val colorDepth: Int? = null,
+        /**
+         * Specifies the descriptive label for the screen.
+         */
+        public val label: String? = null,
+        /**
+         * Indicates whether the screen is internal to the device or external, attached to the device. Default is false.
+         */
+        public val isInternal: Boolean? = null,
+    )
+
+    @Serializable
+    public data class UpdateScreenReturn(
+        public val screenInfo: ScreenInfo,
+    )
+
+    @Serializable
+    public data class RemoveScreenParameter(
+        public val screenId: String,
+    )
+
+    @Serializable
+    public data class SetPrimaryScreenParameter(
+        public val screenId: String,
     )
 }

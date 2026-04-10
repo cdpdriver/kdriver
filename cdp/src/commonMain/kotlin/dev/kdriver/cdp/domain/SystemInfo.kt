@@ -189,30 +189,6 @@ public class SystemInfo(
     }
 
     /**
-     * Describes a supported image decoding profile with its associated minimum and
-     * maximum resolutions and subsampling.
-     */
-    @Serializable
-    public data class ImageDecodeAcceleratorCapability(
-        /**
-         * Image coded, e.g. Jpeg.
-         */
-        public val imageType: ImageType,
-        /**
-         * Maximum supported dimensions of the image in pixels.
-         */
-        public val maxDimensions: Size,
-        /**
-         * Minimum supported dimensions of the image in pixels.
-         */
-        public val minDimensions: Size,
-        /**
-         * Optional array of supported subsampling formats, e.g. 4:2:0, if known.
-         */
-        public val subsamplings: List<SubsamplingFormat>,
-    )
-
-    /**
      * Provides information about the GPU(s) on the system.
      */
     @Serializable
@@ -241,10 +217,6 @@ public class SystemInfo(
          * Supported accelerated video encoding capabilities.
          */
         public val videoEncoding: List<VideoEncodeAcceleratorCapability>,
-        /**
-         * Supported accelerated image decoding capabilities.
-         */
-        public val imageDecoding: List<ImageDecodeAcceleratorCapability>,
     )
 
     /**

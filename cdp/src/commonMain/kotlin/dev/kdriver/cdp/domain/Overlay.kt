@@ -57,6 +57,26 @@ public class Overlay(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
+     * Fired when user asks to show the Inspect panel.
+     */
+    public val inspectPanelShowRequested: Flow<InspectPanelShowRequestedParameter> = cdp
+        .events
+        .filter { it.method == "Overlay.inspectPanelShowRequested" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when user asks to restore the Inspected Element floating window.
+     */
+    public val inspectedElementWindowRestored: Flow<InspectedElementWindowRestoredParameter> = cdp
+        .events
+        .filter { it.method == "Overlay.inspectedElementWindowRestored" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
      * Fired when user cancels the inspect mode.
      */
     public val inspectModeCanceled: Flow<Unit> = cdp
@@ -270,6 +290,9 @@ public class Overlay(
 
     /**
      * Highlights given rectangle. Coordinates are absolute with respect to the main frame viewport.
+     * Issue: the method does not handle device pixel ratio (DPR) correctly.
+     * The coordinates currently have to be adjusted by the client
+     * if DPR is not 1 (see crbug.com/437807128).
      */
     public suspend fun highlightRect(args: HighlightRectParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
@@ -278,6 +301,9 @@ public class Overlay(
 
     /**
      * Highlights given rectangle. Coordinates are absolute with respect to the main frame viewport.
+     * Issue: the method does not handle device pixel ratio (DPR) correctly.
+     * The coordinates currently have to be adjusted by the client
+     * if DPR is not 1 (see crbug.com/437807128).
      *
      * @param x X coordinate
      * @param y Y coordinate
@@ -515,6 +541,25 @@ public class Overlay(
         val parameter =
             SetShowContainerQueryOverlaysParameter(containerQueryHighlightConfigs = containerQueryHighlightConfigs)
         setShowContainerQueryOverlays(parameter)
+    }
+
+    public suspend fun setShowInspectedElementAnchor(
+        args: SetShowInspectedElementAnchorParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Overlay.setShowInspectedElementAnchor", parameter, mode)
+    }
+
+    /**
+     *
+     *
+     * @param inspectedElementAnchorConfig Node identifier for which to show an anchor for.
+     */
+    public suspend fun setShowInspectedElementAnchor(inspectedElementAnchorConfig: InspectedElementAnchorConfig) {
+        val parameter =
+            SetShowInspectedElementAnchorParameter(inspectedElementAnchorConfig = inspectedElementAnchorConfig)
+        setShowInspectedElementAnchor(parameter)
     }
 
     /**
@@ -1167,6 +1212,18 @@ public class Overlay(
         NONE,
     }
 
+    @Serializable
+    public data class InspectedElementAnchorConfig(
+        /**
+         * Identifier of the node to highlight.
+         */
+        public val nodeId: Int? = null,
+        /**
+         * Identifier of the backend node to highlight.
+         */
+        public val backendNodeId: Int? = null,
+    )
+
     /**
      * Fired when the node should be inspected. This happens after call to `setInspectMode` or when
      * user manually inspects an element.
@@ -1196,6 +1253,28 @@ public class Overlay(
          * Viewport to capture, in device independent pixels (dip).
          */
         public val viewport: Page.Viewport,
+    )
+
+    /**
+     * Fired when user asks to show the Inspect panel.
+     */
+    @Serializable
+    public data class InspectPanelShowRequestedParameter(
+        /**
+         * Id of the node to show in the panel.
+         */
+        public val backendNodeId: Int,
+    )
+
+    /**
+     * Fired when user asks to restore the Inspected Element floating window.
+     */
+    @Serializable
+    public data class InspectedElementWindowRestoredParameter(
+        /**
+         * Id of the node to restore the floating window for.
+         */
+        public val backendNodeId: Int,
     )
 
     @Serializable
@@ -1441,6 +1520,14 @@ public class Overlay(
          * An array of node identifiers and descriptors for the highlight appearance.
          */
         public val containerQueryHighlightConfigs: List<ContainerQueryHighlightConfig>,
+    )
+
+    @Serializable
+    public data class SetShowInspectedElementAnchorParameter(
+        /**
+         * Node identifier for which to show an anchor for.
+         */
+        public val inspectedElementAnchorConfig: InspectedElementAnchorConfig,
     )
 
     @Serializable

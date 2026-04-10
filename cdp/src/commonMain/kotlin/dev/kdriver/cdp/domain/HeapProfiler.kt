@@ -156,6 +156,7 @@ public class HeapProfiler(
      *
      * @param samplingInterval Average sample interval in bytes. Poisson distribution is used for the intervals. The
      * default value is 32768 bytes.
+     * @param stackDepth Maximum stack depth. The default value is 128.
      * @param includeObjectsCollectedByMajorGC By default, the sampling heap profiler reports only objects which are
      * still alive when the profile is returned via getSamplingProfile or
      * stopSampling, which is useful for determining what functions contribute
@@ -173,11 +174,13 @@ public class HeapProfiler(
      */
     public suspend fun startSampling(
         samplingInterval: Double? = null,
+        stackDepth: Double? = null,
         includeObjectsCollectedByMajorGC: Boolean? = null,
         includeObjectsCollectedByMinorGC: Boolean? = null,
     ) {
         val parameter = StartSamplingParameter(
             samplingInterval = samplingInterval,
+            stackDepth = stackDepth,
             includeObjectsCollectedByMajorGC = includeObjectsCollectedByMajorGC,
             includeObjectsCollectedByMinorGC = includeObjectsCollectedByMinorGC
         )
@@ -413,6 +416,10 @@ public class HeapProfiler(
          * default value is 32768 bytes.
          */
         public val samplingInterval: Double? = null,
+        /**
+         * Maximum stack depth. The default value is 128.
+         */
+        public val stackDepth: Double? = null,
         /**
          * By default, the sampling heap profiler reports only objects which are
          * still alive when the profile is returned via getSamplingProfile or

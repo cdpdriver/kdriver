@@ -66,6 +66,15 @@ public class Tracing(
     }
 
     /**
+     * Return a descriptor for all available tracing categories.
+     */
+    public suspend fun getTrackEventDescriptor(mode: CommandMode = CommandMode.DEFAULT): GetTrackEventDescriptorReturn {
+        val parameter = null
+        val result = cdp.callCommand("Tracing.getTrackEventDescriptor", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
      * Record a clock sync marker in the trace.
      */
     public suspend fun recordClockSyncMarker(
@@ -323,6 +332,14 @@ public class Tracing(
          * A list of supported tracing categories.
          */
         public val categories: List<String>,
+    )
+
+    @Serializable
+    public data class GetTrackEventDescriptorReturn(
+        /**
+         * Base64-encoded serialized perfetto.protos.TrackEventDescriptor protobuf message. (Encoded as a base64 string when passed over JSON)
+         */
+        public val descriptor: String,
     )
 
     @Serializable

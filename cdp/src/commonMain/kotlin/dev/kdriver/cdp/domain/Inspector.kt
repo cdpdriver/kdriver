@@ -47,6 +47,16 @@ public class Inspector(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
+     * Fired on worker targets when main worker script and any imported scripts have been evaluated.
+     */
+    public val workerScriptLoaded: Flow<Unit> = cdp
+        .events
+        .filter { it.method == "Inspector.workerScriptLoaded" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
      * Disables inspector domain notifications.
      */
     public suspend fun disable(mode: CommandMode = CommandMode.DEFAULT) {

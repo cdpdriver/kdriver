@@ -1621,6 +1621,30 @@ public class Page(
     }
 
     /**
+     * Get the annotated page content for the main frame.
+     * This is an experimental command that is subject to change.
+     */
+    public suspend fun getAnnotatedPageContent(
+        args: GetAnnotatedPageContentParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetAnnotatedPageContentReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("Page.getAnnotatedPageContent", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Get the annotated page content for the main frame.
+     * This is an experimental command that is subject to change.
+     *
+     * @param includeActionableInformation Whether to include actionable information. Defaults to true.
+     */
+    public suspend fun getAnnotatedPageContent(includeActionableInformation: Boolean? = null): GetAnnotatedPageContentReturn {
+        val parameter = GetAnnotatedPageContentParameter(includeActionableInformation = includeActionableInformation)
+        return getAnnotatedPageContent(parameter)
+    }
+
+    /**
      * Indicates whether a frame has been identified as an ad.
      */
     @Serializable
@@ -1654,45 +1678,6 @@ public class Page(
     public data class AdFrameStatus(
         public val adFrameType: AdFrameType,
         public val explanations: List<AdFrameExplanation>? = null,
-    )
-
-    /**
-     * Identifies the script which caused a script or frame to be labelled as an
-     * ad.
-     */
-    @Serializable
-    public data class AdScriptId(
-        /**
-         * Script Id of the script which caused a script or frame to be labelled as
-         * an ad.
-         */
-        public val scriptId: String,
-        /**
-         * Id of scriptId's debugger.
-         */
-        public val debuggerId: String,
-    )
-
-    /**
-     * Encapsulates the script ancestry and the root script filterlist rule that
-     * caused the frame to be labelled as an ad. Only created when `ancestryChain`
-     * is not empty.
-     */
-    @Serializable
-    public data class AdScriptAncestry(
-        /**
-         * A chain of `AdScriptId`s representing the ancestry of an ad script that
-         * led to the creation of a frame. The chain is ordered from the script
-         * itself (lower level) up to its root ancestor that was flagged by
-         * filterlist.
-         */
-        public val ancestryChain: List<AdScriptId>,
-        /**
-         * The filterlist rule that caused the root (last) script in
-         * `ancestryChain` to be ad-tagged. Only populated if the rule is
-         * available.
-         */
-        public val rootScriptFilterlistRule: String? = null,
     )
 
     /**
@@ -1764,6 +1749,9 @@ public class Page(
 
         @SerialName("attribution-reporting")
         ATTRIBUTION_REPORTING,
+
+        @SerialName("autofill")
+        AUTOFILL,
 
         @SerialName("autoplay")
         AUTOPLAY,
@@ -1885,6 +1873,9 @@ public class Page(
         @SerialName("direct-sockets")
         DIRECT_SOCKETS,
 
+        @SerialName("direct-sockets-multicast")
+        DIRECT_SOCKETS_MULTICAST,
+
         @SerialName("direct-sockets-private")
         DIRECT_SOCKETS_PRIVATE,
 
@@ -1902,9 +1893,6 @@ public class Page(
 
         @SerialName("execution-while-not-rendered")
         EXECUTION_WHILE_NOT_RENDERED,
-
-        @SerialName("fenced-unpartitioned-storage-read")
-        FENCED_UNPARTITIONED_STORAGE_READ,
 
         @SerialName("focus-without-user-activation")
         FOCUS_WITHOUT_USER_ACTIVATION,
@@ -1951,11 +1939,20 @@ public class Page(
         @SerialName("local-fonts")
         LOCAL_FONTS,
 
+        @SerialName("local-network")
+        LOCAL_NETWORK,
+
         @SerialName("local-network-access")
         LOCAL_NETWORK_ACCESS,
 
+        @SerialName("loopback-network")
+        LOOPBACK_NETWORK,
+
         @SerialName("magnetometer")
         MAGNETOMETER,
+
+        @SerialName("manual-text")
+        MANUAL_TEXT,
 
         @SerialName("media-playback-while-not-visible")
         MEDIA_PLAYBACK_WHILE_NOT_VISIBLE,
@@ -1977,9 +1974,6 @@ public class Page(
 
         @SerialName("picture-in-picture")
         PICTURE_IN_PICTURE,
-
-        @SerialName("popins")
-        POPINS,
 
         @SerialName("private-aggregation")
         PRIVATE_AGGREGATION,
@@ -2010,9 +2004,6 @@ public class Page(
 
         @SerialName("serial")
         SERIAL,
-
-        @SerialName("shared-autofill")
-        SHARED_AUTOFILL,
 
         @SerialName("shared-storage")
         SHARED_STORAGE,
@@ -3065,6 +3056,9 @@ public class Page(
         @SerialName("ForegroundCacheLimit")
         FOREGROUNDCACHELIMIT,
 
+        @SerialName("ForwardCacheDisabled")
+        FORWARDCACHEDISABLED,
+
         @SerialName("BrowsingInstanceNotSwapped")
         BROWSINGINSTANCENOTSWAPPED,
 
@@ -3188,11 +3182,20 @@ public class Page(
         @SerialName("SharedWorkerMessage")
         SHAREDWORKERMESSAGE,
 
+        @SerialName("SharedWorkerWithNoActiveClient")
+        SHAREDWORKERWITHNOACTIVECLIENT,
+
         @SerialName("WebLocks")
         WEBLOCKS,
 
+        @SerialName("WebLocksContention")
+        WEBLOCKSCONTENTION,
+
         @SerialName("WebHID")
         WEBHID,
+
+        @SerialName("WebBluetooth")
+        WEBBLUETOOTH,
 
         @SerialName("WebShare")
         WEBSHARE,
@@ -3260,14 +3263,14 @@ public class Page(
         @SerialName("JsNetworkRequestReceivedCacheControlNoStoreResource")
         JSNETWORKREQUESTRECEIVEDCACHECONTROLNOSTORERESOURCE,
 
-        @SerialName("WebRTCSticky")
-        WEBRTCSTICKY,
+        @SerialName("WebRTCUsedWithCCNS")
+        WEBRTCUSEDWITHCCNS,
 
-        @SerialName("WebTransportSticky")
-        WEBTRANSPORTSTICKY,
+        @SerialName("WebTransportUsedWithCCNS")
+        WEBTRANSPORTUSEDWITHCCNS,
 
-        @SerialName("WebSocketSticky")
-        WEBSOCKETSTICKY,
+        @SerialName("WebSocketUsedWithCCNS")
+        WEBSOCKETUSEDWITHCCNS,
 
         @SerialName("SmartCard")
         SMARTCARD,
@@ -4080,7 +4083,7 @@ public class Page(
          * stack) to more distant ancestors (that created the immediately preceding
          * script). Only sent if frame is labelled as an ad and ids are available.
          */
-        public val adScriptAncestry: AdScriptAncestry?,
+        public val adScriptAncestry: Network.AdAncestry?,
     )
 
     @Serializable
@@ -4666,5 +4669,23 @@ public class Page(
     @Serializable
     public data class SetPrerenderingAllowedParameter(
         public val isAllowed: Boolean,
+    )
+
+    @Serializable
+    public data class GetAnnotatedPageContentParameter(
+        /**
+         * Whether to include actionable information. Defaults to true.
+         */
+        public val includeActionableInformation: Boolean? = null,
+    )
+
+    @Serializable
+    public data class GetAnnotatedPageContentReturn(
+        /**
+         * The annotated page content as a base64 encoded protobuf.
+         * The format is defined by the `AnnotatedPageContent` message in
+         * components/optimization_guide/proto/features/common_quality_data.proto (Encoded as a base64 string when passed over JSON)
+         */
+        public val content: String,
     )
 }
