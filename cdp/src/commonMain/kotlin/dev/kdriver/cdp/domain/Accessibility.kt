@@ -2,17 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -472,7 +462,8 @@ public class Accessibility(
      * - from 'live' to 'root': attributes which apply to nodes in live regions
      * - from 'autocomplete' to 'valuetext': attributes which apply to widgets
      * - from 'checked' to 'selected': states which apply to widgets
-     * - from 'activedescendant' to 'owns' - relationships between elements other than parent/child/sibling.
+     * - from 'activedescendant' to 'owns': relationships between elements other than parent/child/sibling
+     * - from 'activeFullscreenElement' to 'uninteresting': reasons why this noode is hidden
      */
     @Serializable
     public enum class AXPropertyName {
@@ -598,6 +589,57 @@ public class Accessibility(
 
         @SerialName("url")
         URL,
+
+        @SerialName("activeFullscreenElement")
+        ACTIVEFULLSCREENELEMENT,
+
+        @SerialName("activeModalDialog")
+        ACTIVEMODALDIALOG,
+
+        @SerialName("activeAriaModalDialog")
+        ACTIVEARIAMODALDIALOG,
+
+        @SerialName("ariaHiddenElement")
+        ARIAHIDDENELEMENT,
+
+        @SerialName("ariaHiddenSubtree")
+        ARIAHIDDENSUBTREE,
+
+        @SerialName("emptyAlt")
+        EMPTYALT,
+
+        @SerialName("emptyText")
+        EMPTYTEXT,
+
+        @SerialName("inertElement")
+        INERTELEMENT,
+
+        @SerialName("inertSubtree")
+        INERTSUBTREE,
+
+        @SerialName("labelContainer")
+        LABELCONTAINER,
+
+        @SerialName("labelFor")
+        LABELFOR,
+
+        @SerialName("notRendered")
+        NOTRENDERED,
+
+        @SerialName("notVisible")
+        NOTVISIBLE,
+
+        @SerialName("presentationalRole")
+        PRESENTATIONALROLE,
+
+        @SerialName("probablyPresentational")
+        PROBABLYPRESENTATIONAL,
+
+        @SerialName("inactiveCarouselTabContent")
+        INACTIVECAROUSELTABCONTENT,
+
+        @SerialName("uninteresting")
+        UNINTERESTING,
     }
 
     /**

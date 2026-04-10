@@ -2,22 +2,13 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
 
 /**
  * This domain is deprecated - use Runtime or Log instead.

@@ -2,17 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -390,6 +380,9 @@ public class WebAuthn(
 
         @SerialName("ctap2_1")
         CTAP2_1,
+
+        @SerialName("ctap2_2")
+        CTAP2_2,
     }
 
     @Serializable
@@ -450,6 +443,18 @@ public class WebAuthn(
          * Defaults to false.
          */
         public val hasPrf: Boolean? = null,
+        /**
+         * If set to true, the authenticator will support the hmac-secret extension.
+         * https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-20210615.html#sctn-hmac-secret-extension
+         * Defaults to false.
+         */
+        public val hasHmacSecret: Boolean? = null,
+        /**
+         * If set to true, the authenticator will support the hmac-secret-mc extension.
+         * https://fidoalliance.org/specs/fido-v2.2-rd-20241003/fido-client-to-authenticator-protocol-v2.2-rd-20241003.html#sctn-hmac-secret-make-cred-extension
+         * Defaults to false.
+         */
+        public val hasHmacSecretMc: Boolean? = null,
         /**
          * If set to true, tests of user presence will succeed immediately.
          * Otherwise, they will not be resolved. Defaults to true.

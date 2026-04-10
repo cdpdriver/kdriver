@@ -2,18 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Double
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -56,7 +45,7 @@ public class Browser(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
-     * Set permission settings for given origin.
+     * Set permission settings for given embedding and embedded origins.
      */
     public suspend fun setPermission(args: SetPermissionParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
@@ -64,43 +53,52 @@ public class Browser(
     }
 
     /**
-     * Set permission settings for given origin.
+     * Set permission settings for given embedding and embedded origins.
      *
      * @param permission Descriptor of permission to override.
      * @param setting Setting of the permission.
-     * @param origin Origin the permission applies to, all origins if not specified.
+     * @param origin Embedding origin the permission applies to, all origins if not specified.
+     * @param embeddedOrigin Embedded origin the permission applies to. It is ignored unless the embedding origin is
+     * present and valid. If the embedding origin is provided but the embedded origin isn't, the
+     * embedding origin is used as the embedded origin.
      * @param browserContextId Context to override. When omitted, default browser context is used.
      */
     public suspend fun setPermission(
         permission: PermissionDescriptor,
         setting: PermissionSetting,
         origin: String? = null,
+        embeddedOrigin: String? = null,
         browserContextId: String? = null,
     ) {
         val parameter = SetPermissionParameter(
             permission = permission,
             setting = setting,
             origin = origin,
+            embeddedOrigin = embeddedOrigin,
             browserContextId = browserContextId
         )
         setPermission(parameter)
     }
 
     /**
-     * Grant specific permissions to the given origin and reject all others.
+     * Grant specific permissions to the given origin and reject all others. Deprecated. Use
+     * setPermission instead.
      */
+    @Deprecated(message = "")
     public suspend fun grantPermissions(args: GrantPermissionsParameter, mode: CommandMode = CommandMode.DEFAULT) {
         val parameter = Serialization.json.encodeToJsonElement(args)
         cdp.callCommand("Browser.grantPermissions", parameter, mode)
     }
 
     /**
-     * Grant specific permissions to the given origin and reject all others.
+     * Grant specific permissions to the given origin and reject all others. Deprecated. Use
+     * setPermission instead.
      *
      * @param permissions No description
      * @param origin Origin the permission applies to, all origins if not specified.
      * @param browserContextId BrowserContext to override permissions. When omitted, default browser context is used.
      */
+    @Deprecated(message = "")
     public suspend fun grantPermissions(
         permissions: List<PermissionType>,
         origin: String? = null,
@@ -565,8 +563,14 @@ public class Browser(
         @SerialName("localFonts")
         LOCALFONTS,
 
+        @SerialName("localNetwork")
+        LOCALNETWORK,
+
         @SerialName("localNetworkAccess")
         LOCALNETWORKACCESS,
+
+        @SerialName("loopbackNetwork")
+        LOOPBACKNETWORK,
 
         @SerialName("midi")
         MIDI,
@@ -804,9 +808,15 @@ public class Browser(
          */
         public val setting: PermissionSetting,
         /**
-         * Origin the permission applies to, all origins if not specified.
+         * Embedding origin the permission applies to, all origins if not specified.
          */
         public val origin: String? = null,
+        /**
+         * Embedded origin the permission applies to. It is ignored unless the embedding origin is
+         * present and valid. If the embedding origin is provided but the embedded origin isn't, the
+         * embedding origin is used as the embedded origin.
+         */
+        public val embeddedOrigin: String? = null,
         /**
          * Context to override. When omitted, default browser context is used.
          */

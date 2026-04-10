@@ -2,18 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Double
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -339,9 +328,9 @@ public class Animation(
          */
         public val iterationStart: Double,
         /**
-         * `AnimationEffect`'s iterations.
+         * `AnimationEffect`'s iterations. Omitted if the value is infinite.
          */
-        public val iterations: Double,
+        public val iterations: Double? = null,
         /**
          * `AnimationEffect`'s iteration duration.
          * Milliseconds for time based animations and

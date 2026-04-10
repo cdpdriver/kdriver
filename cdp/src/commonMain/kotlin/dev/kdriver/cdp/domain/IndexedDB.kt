@@ -2,21 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Double
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
+import dev.kdriver.cdp.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
@@ -172,7 +158,7 @@ public class IndexedDB(
      * @param storageBucket Storage bucket. If not specified, it uses the default bucket.
      * @param databaseName Database name.
      * @param objectStoreName Object store name.
-     * @param indexName Index name, empty string for object store data requests.
+     * @param indexName Index name. If not specified, it performs an object store data request.
      * @param skipCount Number of records to skip.
      * @param pageSize Number of records to fetch.
      * @param keyRange Key range.
@@ -183,7 +169,7 @@ public class IndexedDB(
         storageBucket: Storage.StorageBucket? = null,
         databaseName: String,
         objectStoreName: String,
-        indexName: String,
+        indexName: String? = null,
         skipCount: Int,
         pageSize: Int,
         keyRange: KeyRange? = null,
@@ -557,9 +543,9 @@ public class IndexedDB(
          */
         public val objectStoreName: String,
         /**
-         * Index name, empty string for object store data requests.
+         * Index name. If not specified, it performs an object store data request.
          */
-        public val indexName: String,
+        public val indexName: String? = null,
         /**
          * Number of records to skip.
          */

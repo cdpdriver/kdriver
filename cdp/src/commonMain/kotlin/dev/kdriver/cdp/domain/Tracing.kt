@@ -2,18 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Double
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
-import kotlin.collections.Map
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -73,6 +62,15 @@ public class Tracing(
     public suspend fun getCategories(mode: CommandMode = CommandMode.DEFAULT): GetCategoriesReturn {
         val parameter = null
         val result = cdp.callCommand("Tracing.getCategories", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Return a descriptor for all available tracing categories.
+     */
+    public suspend fun getTrackEventDescriptor(mode: CommandMode = CommandMode.DEFAULT): GetTrackEventDescriptorReturn {
+        val parameter = null
+        val result = cdp.callCommand("Tracing.getTrackEventDescriptor", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
     }
 
@@ -334,6 +332,14 @@ public class Tracing(
          * A list of supported tracing categories.
          */
         public val categories: List<String>,
+    )
+
+    @Serializable
+    public data class GetTrackEventDescriptorReturn(
+        /**
+         * Base64-encoded serialized perfetto.protos.TrackEventDescriptor protobuf message. (Encoded as a base64 string when passed over JSON)
+         */
+        public val descriptor: String,
     )
 
     @Serializable

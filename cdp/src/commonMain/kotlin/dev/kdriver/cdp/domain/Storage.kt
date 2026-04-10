@@ -2,19 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Double
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
-import kotlin.collections.Map
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -145,40 +133,11 @@ public class Storage(
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
 
-    public val attributionReportingSourceRegistered:
-            Flow<AttributionReportingSourceRegisteredParameter> = cdp
-        .events
-        .filter { it.method == "Storage.attributionReportingSourceRegistered" }
-        .map { it.params }
-        .filterNotNull()
-        .map { Serialization.json.decodeFromJsonElement(it) }
-
-    public val attributionReportingTriggerRegistered:
-            Flow<AttributionReportingTriggerRegisteredParameter> = cdp
-        .events
-        .filter { it.method == "Storage.attributionReportingTriggerRegistered" }
-        .map { it.params }
-        .filterNotNull()
-        .map { Serialization.json.decodeFromJsonElement(it) }
-
-    public val attributionReportingReportSent: Flow<AttributionReportingReportSentParameter> = cdp
-        .events
-        .filter { it.method == "Storage.attributionReportingReportSent" }
-        .map { it.params }
-        .filterNotNull()
-        .map { Serialization.json.decodeFromJsonElement(it) }
-
-    public val attributionReportingVerboseDebugReportSent:
-            Flow<AttributionReportingVerboseDebugReportSentParameter> = cdp
-        .events
-        .filter { it.method == "Storage.attributionReportingVerboseDebugReportSent" }
-        .map { it.params }
-        .filterNotNull()
-        .map { Serialization.json.decodeFromJsonElement(it) }
-
     /**
      * Returns a storage key given a frame id.
+     * Deprecated. Please use Storage.getStorageKey instead.
      */
+    @Deprecated(message = "")
     public suspend fun getStorageKeyForFrame(
         args: GetStorageKeyForFrameParameter,
         mode: CommandMode = CommandMode.DEFAULT,
@@ -190,12 +149,38 @@ public class Storage(
 
     /**
      * Returns a storage key given a frame id.
+     * Deprecated. Please use Storage.getStorageKey instead.
      *
      * @param frameId No description
      */
+    @Deprecated(message = "")
     public suspend fun getStorageKeyForFrame(frameId: String): GetStorageKeyForFrameReturn {
         val parameter = GetStorageKeyForFrameParameter(frameId = frameId)
         return getStorageKeyForFrame(parameter)
+    }
+
+    /**
+     * Returns storage key for the given frame. If no frame ID is provided,
+     * the storage key of the target executing this command is returned.
+     */
+    public suspend fun getStorageKey(
+        args: GetStorageKeyParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetStorageKeyReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("Storage.getStorageKey", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Returns storage key for the given frame. If no frame ID is provided,
+     * the storage key of the target executing this command is returned.
+     *
+     * @param frameId No description
+     */
+    public suspend fun getStorageKey(frameId: String? = null): GetStorageKeyReturn {
+        val parameter = GetStorageKeyParameter(frameId = frameId)
+        return getStorageKey(parameter)
     }
 
     /**
@@ -834,58 +819,6 @@ public class Storage(
     }
 
     /**
-     * https://wicg.github.io/attribution-reporting-api/
-     */
-    public suspend fun setAttributionReportingLocalTestingMode(
-        args: SetAttributionReportingLocalTestingModeParameter,
-        mode: CommandMode = CommandMode.DEFAULT,
-    ) {
-        val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setAttributionReportingLocalTestingMode", parameter, mode)
-    }
-
-    /**
-     * https://wicg.github.io/attribution-reporting-api/
-     *
-     * @param enabled If enabled, noise is suppressed and reports are sent immediately.
-     */
-    public suspend fun setAttributionReportingLocalTestingMode(enabled: Boolean) {
-        val parameter = SetAttributionReportingLocalTestingModeParameter(enabled = enabled)
-        setAttributionReportingLocalTestingMode(parameter)
-    }
-
-    /**
-     * Enables/disables issuing of Attribution Reporting events.
-     */
-    public suspend fun setAttributionReportingTracking(
-        args: SetAttributionReportingTrackingParameter,
-        mode: CommandMode = CommandMode.DEFAULT,
-    ) {
-        val parameter = Serialization.json.encodeToJsonElement(args)
-        cdp.callCommand("Storage.setAttributionReportingTracking", parameter, mode)
-    }
-
-    /**
-     * Enables/disables issuing of Attribution Reporting events.
-     *
-     * @param enable No description
-     */
-    public suspend fun setAttributionReportingTracking(enable: Boolean) {
-        val parameter = SetAttributionReportingTrackingParameter(enable = enable)
-        setAttributionReportingTracking(parameter)
-    }
-
-    /**
-     * Sends all pending Attribution Reports immediately, regardless of their
-     * scheduled report time.
-     */
-    public suspend fun sendPendingAttributionReports(mode: CommandMode = CommandMode.DEFAULT): SendPendingAttributionReportsReturn {
-        val parameter = null
-        val result = cdp.callCommand("Storage.sendPendingAttributionReports", parameter, mode)
-        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
-    }
-
-    /**
      * Returns the effective Related Website Sets in use by this profile for the browser
      * session. The effective Related Website Sets will not change during a browser session.
      */
@@ -893,39 +826,6 @@ public class Storage(
         val parameter = null
         val result = cdp.callCommand("Storage.getRelatedWebsiteSets", parameter, mode)
         return result!!.let { Serialization.json.decodeFromJsonElement(it) }
-    }
-
-    /**
-     * Returns the list of URLs from a page and its embedded resources that match
-     * existing grace period URL pattern rules.
-     * https://developers.google.com/privacy-sandbox/cookies/temporary-exceptions/grace-period
-     */
-    public suspend fun getAffectedUrlsForThirdPartyCookieMetadata(
-        args: GetAffectedUrlsForThirdPartyCookieMetadataParameter,
-        mode: CommandMode = CommandMode.DEFAULT,
-    ): GetAffectedUrlsForThirdPartyCookieMetadataReturn {
-        val parameter = Serialization.json.encodeToJsonElement(args)
-        val result = cdp.callCommand("Storage.getAffectedUrlsForThirdPartyCookieMetadata", parameter, mode)
-        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
-    }
-
-    /**
-     * Returns the list of URLs from a page and its embedded resources that match
-     * existing grace period URL pattern rules.
-     * https://developers.google.com/privacy-sandbox/cookies/temporary-exceptions/grace-period
-     *
-     * @param firstPartyUrl The URL of the page currently being visited.
-     * @param thirdPartyUrls The list of embedded resource URLs from the page.
-     */
-    public suspend fun getAffectedUrlsForThirdPartyCookieMetadata(
-        firstPartyUrl: String,
-        thirdPartyUrls: List<String>,
-    ): GetAffectedUrlsForThirdPartyCookieMetadataReturn {
-        val parameter = GetAffectedUrlsForThirdPartyCookieMetadataParameter(
-            firstPartyUrl = firstPartyUrl,
-            thirdPartyUrls = thirdPartyUrls
-        )
-        return getAffectedUrlsForThirdPartyCookieMetadata(parameter)
     }
 
     public suspend fun setProtectedAudienceKAnonymity(
@@ -1381,386 +1281,6 @@ public class Storage(
         public val durability: StorageBucketsDurability,
     )
 
-    @Serializable
-    public enum class AttributionReportingSourceType {
-        @SerialName("navigation")
-        NAVIGATION,
-
-        @SerialName("event")
-        EVENT,
-    }
-
-    @Serializable
-    public data class AttributionReportingFilterDataEntry(
-        public val key: String,
-        public val values: List<String>,
-    )
-
-    @Serializable
-    public data class AttributionReportingFilterConfig(
-        public val filterValues: List<AttributionReportingFilterDataEntry>,
-        /**
-         * duration in seconds
-         */
-        public val lookbackWindow: Int? = null,
-    )
-
-    @Serializable
-    public data class AttributionReportingFilterPair(
-        public val filters: List<AttributionReportingFilterConfig>,
-        public val notFilters: List<AttributionReportingFilterConfig>,
-    )
-
-    @Serializable
-    public data class AttributionReportingAggregationKeysEntry(
-        public val key: String,
-        public val `value`: String,
-    )
-
-    @Serializable
-    public data class AttributionReportingEventReportWindows(
-        /**
-         * duration in seconds
-         */
-        public val start: Int,
-        /**
-         * duration in seconds
-         */
-        public val ends: List<Int>,
-    )
-
-    @Serializable
-    public enum class AttributionReportingTriggerDataMatching {
-        @SerialName("exact")
-        EXACT,
-
-        @SerialName("modulus")
-        MODULUS,
-    }
-
-    @Serializable
-    public data class AttributionReportingAggregatableDebugReportingData(
-        public val keyPiece: String,
-        /**
-         * number instead of integer because not all uint32 can be represented by
-         * int
-         */
-        public val `value`: Double,
-        public val types: List<String>,
-    )
-
-    @Serializable
-    public data class AttributionReportingAggregatableDebugReportingConfig(
-        /**
-         * number instead of integer because not all uint32 can be represented by
-         * int, only present for source registrations
-         */
-        public val budget: Double? = null,
-        public val keyPiece: String,
-        public val debugData: List<AttributionReportingAggregatableDebugReportingData>,
-        public val aggregationCoordinatorOrigin: String? = null,
-    )
-
-    @Serializable
-    public data class AttributionScopesData(
-        public val values: List<String>,
-        /**
-         * number instead of integer because not all uint32 can be represented by
-         * int
-         */
-        public val limit: Double,
-        public val maxEventStates: Double,
-    )
-
-    @Serializable
-    public data class AttributionReportingNamedBudgetDef(
-        public val name: String,
-        public val budget: Int,
-    )
-
-    @Serializable
-    public data class AttributionReportingSourceRegistration(
-        public val time: Double,
-        /**
-         * duration in seconds
-         */
-        public val expiry: Int,
-        /**
-         * number instead of integer because not all uint32 can be represented by
-         * int
-         */
-        public val triggerData: List<Double>,
-        public val eventReportWindows: AttributionReportingEventReportWindows,
-        /**
-         * duration in seconds
-         */
-        public val aggregatableReportWindow: Int,
-        public val type: AttributionReportingSourceType,
-        public val sourceOrigin: String,
-        public val reportingOrigin: String,
-        public val destinationSites: List<String>,
-        public val eventId: String,
-        public val priority: String,
-        public val filterData: List<AttributionReportingFilterDataEntry>,
-        public val aggregationKeys: List<AttributionReportingAggregationKeysEntry>,
-        public val debugKey: String? = null,
-        public val triggerDataMatching: AttributionReportingTriggerDataMatching,
-        public val destinationLimitPriority: String,
-        public val aggregatableDebugReportingConfig:
-        AttributionReportingAggregatableDebugReportingConfig,
-        public val scopesData: AttributionScopesData? = null,
-        public val maxEventLevelReports: Int,
-        public val namedBudgets: List<AttributionReportingNamedBudgetDef>,
-        public val debugReporting: Boolean,
-        public val eventLevelEpsilon: Double,
-    )
-
-    @Serializable
-    public enum class AttributionReportingSourceRegistrationResult {
-        @SerialName("success")
-        SUCCESS,
-
-        @SerialName("internalError")
-        INTERNALERROR,
-
-        @SerialName("insufficientSourceCapacity")
-        INSUFFICIENTSOURCECAPACITY,
-
-        @SerialName("insufficientUniqueDestinationCapacity")
-        INSUFFICIENTUNIQUEDESTINATIONCAPACITY,
-
-        @SerialName("excessiveReportingOrigins")
-        EXCESSIVEREPORTINGORIGINS,
-
-        @SerialName("prohibitedByBrowserPolicy")
-        PROHIBITEDBYBROWSERPOLICY,
-
-        @SerialName("successNoised")
-        SUCCESSNOISED,
-
-        @SerialName("destinationReportingLimitReached")
-        DESTINATIONREPORTINGLIMITREACHED,
-
-        @SerialName("destinationGlobalLimitReached")
-        DESTINATIONGLOBALLIMITREACHED,
-
-        @SerialName("destinationBothLimitsReached")
-        DESTINATIONBOTHLIMITSREACHED,
-
-        @SerialName("reportingOriginsPerSiteLimitReached")
-        REPORTINGORIGINSPERSITELIMITREACHED,
-
-        @SerialName("exceedsMaxChannelCapacity")
-        EXCEEDSMAXCHANNELCAPACITY,
-
-        @SerialName("exceedsMaxScopesChannelCapacity")
-        EXCEEDSMAXSCOPESCHANNELCAPACITY,
-
-        @SerialName("exceedsMaxTriggerStateCardinality")
-        EXCEEDSMAXTRIGGERSTATECARDINALITY,
-
-        @SerialName("exceedsMaxEventStatesLimit")
-        EXCEEDSMAXEVENTSTATESLIMIT,
-
-        @SerialName("destinationPerDayReportingLimitReached")
-        DESTINATIONPERDAYREPORTINGLIMITREACHED,
-    }
-
-    @Serializable
-    public enum class AttributionReportingSourceRegistrationTimeConfig {
-        @SerialName("include")
-        INCLUDE,
-
-        @SerialName("exclude")
-        EXCLUDE,
-    }
-
-    @Serializable
-    public data class AttributionReportingAggregatableValueDictEntry(
-        public val key: String,
-        /**
-         * number instead of integer because not all uint32 can be represented by
-         * int
-         */
-        public val `value`: Double,
-        public val filteringId: String,
-    )
-
-    @Serializable
-    public data class AttributionReportingAggregatableValueEntry(
-        public val values: List<AttributionReportingAggregatableValueDictEntry>,
-        public val filters: AttributionReportingFilterPair,
-    )
-
-    @Serializable
-    public data class AttributionReportingEventTriggerData(
-        public val `data`: String,
-        public val priority: String,
-        public val dedupKey: String? = null,
-        public val filters: AttributionReportingFilterPair,
-    )
-
-    @Serializable
-    public data class AttributionReportingAggregatableTriggerData(
-        public val keyPiece: String,
-        public val sourceKeys: List<String>,
-        public val filters: AttributionReportingFilterPair,
-    )
-
-    @Serializable
-    public data class AttributionReportingAggregatableDedupKey(
-        public val dedupKey: String? = null,
-        public val filters: AttributionReportingFilterPair,
-    )
-
-    @Serializable
-    public data class AttributionReportingNamedBudgetCandidate(
-        public val name: String? = null,
-        public val filters: AttributionReportingFilterPair,
-    )
-
-    @Serializable
-    public data class AttributionReportingTriggerRegistration(
-        public val filters: AttributionReportingFilterPair,
-        public val debugKey: String? = null,
-        public val aggregatableDedupKeys: List<AttributionReportingAggregatableDedupKey>,
-        public val eventTriggerData: List<AttributionReportingEventTriggerData>,
-        public val aggregatableTriggerData: List<AttributionReportingAggregatableTriggerData>,
-        public val aggregatableValues: List<AttributionReportingAggregatableValueEntry>,
-        public val aggregatableFilteringIdMaxBytes: Int,
-        public val debugReporting: Boolean,
-        public val aggregationCoordinatorOrigin: String? = null,
-        public val sourceRegistrationTimeConfig: AttributionReportingSourceRegistrationTimeConfig,
-        public val triggerContextId: String? = null,
-        public val aggregatableDebugReportingConfig:
-        AttributionReportingAggregatableDebugReportingConfig,
-        public val scopes: List<String>,
-        public val namedBudgets: List<AttributionReportingNamedBudgetCandidate>,
-    )
-
-    @Serializable
-    public enum class AttributionReportingEventLevelResult {
-        @SerialName("success")
-        SUCCESS,
-
-        @SerialName("successDroppedLowerPriority")
-        SUCCESSDROPPEDLOWERPRIORITY,
-
-        @SerialName("internalError")
-        INTERNALERROR,
-
-        @SerialName("noCapacityForAttributionDestination")
-        NOCAPACITYFORATTRIBUTIONDESTINATION,
-
-        @SerialName("noMatchingSources")
-        NOMATCHINGSOURCES,
-
-        @SerialName("deduplicated")
-        DEDUPLICATED,
-
-        @SerialName("excessiveAttributions")
-        EXCESSIVEATTRIBUTIONS,
-
-        @SerialName("priorityTooLow")
-        PRIORITYTOOLOW,
-
-        @SerialName("neverAttributedSource")
-        NEVERATTRIBUTEDSOURCE,
-
-        @SerialName("excessiveReportingOrigins")
-        EXCESSIVEREPORTINGORIGINS,
-
-        @SerialName("noMatchingSourceFilterData")
-        NOMATCHINGSOURCEFILTERDATA,
-
-        @SerialName("prohibitedByBrowserPolicy")
-        PROHIBITEDBYBROWSERPOLICY,
-
-        @SerialName("noMatchingConfigurations")
-        NOMATCHINGCONFIGURATIONS,
-
-        @SerialName("excessiveReports")
-        EXCESSIVEREPORTS,
-
-        @SerialName("falselyAttributedSource")
-        FALSELYATTRIBUTEDSOURCE,
-
-        @SerialName("reportWindowPassed")
-        REPORTWINDOWPASSED,
-
-        @SerialName("notRegistered")
-        NOTREGISTERED,
-
-        @SerialName("reportWindowNotStarted")
-        REPORTWINDOWNOTSTARTED,
-
-        @SerialName("noMatchingTriggerData")
-        NOMATCHINGTRIGGERDATA,
-    }
-
-    @Serializable
-    public enum class AttributionReportingAggregatableResult {
-        @SerialName("success")
-        SUCCESS,
-
-        @SerialName("internalError")
-        INTERNALERROR,
-
-        @SerialName("noCapacityForAttributionDestination")
-        NOCAPACITYFORATTRIBUTIONDESTINATION,
-
-        @SerialName("noMatchingSources")
-        NOMATCHINGSOURCES,
-
-        @SerialName("excessiveAttributions")
-        EXCESSIVEATTRIBUTIONS,
-
-        @SerialName("excessiveReportingOrigins")
-        EXCESSIVEREPORTINGORIGINS,
-
-        @SerialName("noHistograms")
-        NOHISTOGRAMS,
-
-        @SerialName("insufficientBudget")
-        INSUFFICIENTBUDGET,
-
-        @SerialName("insufficientNamedBudget")
-        INSUFFICIENTNAMEDBUDGET,
-
-        @SerialName("noMatchingSourceFilterData")
-        NOMATCHINGSOURCEFILTERDATA,
-
-        @SerialName("notRegistered")
-        NOTREGISTERED,
-
-        @SerialName("prohibitedByBrowserPolicy")
-        PROHIBITEDBYBROWSERPOLICY,
-
-        @SerialName("deduplicated")
-        DEDUPLICATED,
-
-        @SerialName("reportWindowPassed")
-        REPORTWINDOWPASSED,
-
-        @SerialName("excessiveReports")
-        EXCESSIVEREPORTS,
-    }
-
-    @Serializable
-    public enum class AttributionReportingReportResult {
-        @SerialName("sent")
-        SENT,
-
-        @SerialName("prohibited")
-        PROHIBITED,
-
-        @SerialName("failedToAssemble")
-        FAILEDTOASSEMBLE,
-
-        @SerialName("expired")
-        EXPIRED,
-    }
-
     /**
      * A single Related Website Set object.
      */
@@ -2017,47 +1537,22 @@ public class Storage(
     )
 
     @Serializable
-    public data class AttributionReportingSourceRegisteredParameter(
-        public val registration: AttributionReportingSourceRegistration,
-        public val result: AttributionReportingSourceRegistrationResult,
-    )
-
-    @Serializable
-    public data class AttributionReportingTriggerRegisteredParameter(
-        public val registration: AttributionReportingTriggerRegistration,
-        public val eventLevel: AttributionReportingEventLevelResult,
-        public val aggregatable: AttributionReportingAggregatableResult,
-    )
-
-    @Serializable
-    public data class AttributionReportingReportSentParameter(
-        public val url: String,
-        public val body: Map<String, JsonElement>,
-        public val result: AttributionReportingReportResult,
-        /**
-         * If result is `sent`, populated with net/HTTP status.
-         */
-        public val netError: Int? = null,
-        public val netErrorName: String? = null,
-        public val httpStatusCode: Int? = null,
-    )
-
-    @Serializable
-    public data class AttributionReportingVerboseDebugReportSentParameter(
-        public val url: String,
-        public val body: List<Map<String, JsonElement>>? = null,
-        public val netError: Int? = null,
-        public val netErrorName: String? = null,
-        public val httpStatusCode: Int? = null,
-    )
-
-    @Serializable
     public data class GetStorageKeyForFrameParameter(
         public val frameId: String,
     )
 
     @Serializable
     public data class GetStorageKeyForFrameReturn(
+        public val storageKey: String,
+    )
+
+    @Serializable
+    public data class GetStorageKeyParameter(
+        public val frameId: String? = null,
+    )
+
+    @Serializable
+    public data class GetStorageKeyReturn(
         public val storageKey: String,
     )
 
@@ -2346,50 +1841,8 @@ public class Storage(
     )
 
     @Serializable
-    public data class SetAttributionReportingLocalTestingModeParameter(
-        /**
-         * If enabled, noise is suppressed and reports are sent immediately.
-         */
-        public val enabled: Boolean,
-    )
-
-    @Serializable
-    public data class SetAttributionReportingTrackingParameter(
-        public val enable: Boolean,
-    )
-
-    @Serializable
-    public data class SendPendingAttributionReportsReturn(
-        /**
-         * The number of reports that were sent.
-         */
-        public val numSent: Int,
-    )
-
-    @Serializable
     public data class GetRelatedWebsiteSetsReturn(
         public val sets: List<RelatedWebsiteSet>,
-    )
-
-    @Serializable
-    public data class GetAffectedUrlsForThirdPartyCookieMetadataParameter(
-        /**
-         * The URL of the page currently being visited.
-         */
-        public val firstPartyUrl: String,
-        /**
-         * The list of embedded resource URLs from the page.
-         */
-        public val thirdPartyUrls: List<String>,
-    )
-
-    @Serializable
-    public data class GetAffectedUrlsForThirdPartyCookieMetadataReturn(
-        /**
-         * Array of matching URLs. If there is a primary pattern match for the first-
-         * party URL, only the first-party URL is returned in the array.
-         */
-        public val matchedUrls: List<String>,
     )
 
     @Serializable

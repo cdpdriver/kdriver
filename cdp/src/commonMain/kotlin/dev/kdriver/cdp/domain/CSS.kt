@@ -2,20 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Double
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.Unit
-import kotlin.collections.List
-import kotlin.collections.Map
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -299,6 +286,8 @@ public class CSS(
      * to the provided property syntax, the value is parsed using combined
      * syntax as if null `propertyName` was provided. If the value cannot be
      * resolved even then, return the provided value without any changes.
+     * Note: this function currently does not resolve CSS random() function,
+     * it returns unmodified random() function parts.`
      */
     public suspend fun resolveValues(
         args: ResolveValuesParameter,
@@ -319,6 +308,8 @@ public class CSS(
      * to the provided property syntax, the value is parsed using combined
      * syntax as if null `propertyName` was provided. If the value cannot be
      * resolved even then, return the provided value without any changes.
+     * Note: this function currently does not resolve CSS random() function,
+     * it returns unmodified random() function parts.`
      *
      * @param values Cascade-dependent keywords (revert/revert-layer) do not work.
      * @param nodeId Id of the node in whose context the expression is evaluated
@@ -800,6 +791,34 @@ public class CSS(
     }
 
     /**
+     * Modifies the expression of a navigation at-rule.
+     */
+    public suspend fun setNavigationText(
+        args: SetNavigationTextParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): SetNavigationTextReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("CSS.setNavigationText", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Modifies the expression of a navigation at-rule.
+     *
+     * @param styleSheetId No description
+     * @param range No description
+     * @param text No description
+     */
+    public suspend fun setNavigationText(
+        styleSheetId: String,
+        range: SourceRange,
+        text: String,
+    ): SetNavigationTextReturn {
+        val parameter = SetNavigationTextParameter(styleSheetId = styleSheetId, range = range, text = text)
+        return setNavigationText(parameter)
+    }
+
+    /**
      * Modifies the expression of a scope at-rule.
      */
     public suspend fun setScopeText(
@@ -1234,6 +1253,10 @@ public class CSS(
          */
         public val style: CSSStyle,
         /**
+         * The BackendNodeId of the DOM node that constitutes the origin tree scope of this rule.
+         */
+        public val originTreeScopeNodeId: Int? = null,
+        /**
          * Media list array (for rules involving media queries). The array enumerates media queries
          * starting with the innermost one, going outwards.
          */
@@ -1267,6 +1290,11 @@ public class CSS(
          * The array enumerates @starting-style at-rules starting with the innermost one, going outwards.
          */
         public val startingStyles: List<CSSStartingStyle>? = null,
+        /**
+         * @navigation CSS at-rule array.
+         * The array enumerates @navigation at-rules starting with the innermost one, going outwards.
+         */
+        public val navigations: List<CSSNavigation>? = null,
     )
 
     /**
@@ -1295,6 +1323,9 @@ public class CSS(
 
         @SerialName("StartingStyleRule")
         STARTINGSTYLERULE,
+
+        @SerialName("NavigationRule")
+        NAVIGATIONRULE,
     }
 
     /**
@@ -1370,6 +1401,16 @@ public class CSS(
          * Computed style property value.
          */
         public val `value`: String,
+    )
+
+    @Serializable
+    public data class ComputedStyleExtraFields(
+        /**
+         * Returns whether or not this node is being rendered with base appearance,
+         * which happens when it has its appearance property set to base/base-select
+         * or it is in the subtree of an element being rendered with base appearance.
+         */
+        public val isAppearanceBase: Boolean,
     )
 
     /**
@@ -1574,6 +1615,30 @@ public class CSS(
          * Whether the supports condition is satisfied.
          */
         public val active: Boolean,
+        /**
+         * The associated rule header range in the enclosing stylesheet (if
+         * available).
+         */
+        public val range: SourceRange? = null,
+        /**
+         * Identifier of the stylesheet containing this object (if exists).
+         */
+        public val styleSheetId: String? = null,
+    )
+
+    /**
+     * CSS Navigation at-rule descriptor.
+     */
+    @Serializable
+    public data class CSSNavigation(
+        /**
+         * Navigation rule text.
+         */
+        public val text: String,
+        /**
+         * Whether the navigation condition is satisfied.
+         */
+        public val active: Boolean? = null,
         /**
          * The associated rule header range in the enclosing stylesheet (if
          * available).
@@ -1831,10 +1896,23 @@ public class CSS(
     )
 
     /**
-     * CSS font-palette-values rule representation.
+     * CSS generic @rule representation.
      */
     @Serializable
-    public data class CSSFontPaletteValuesRule(
+    public data class CSSAtRule(
+        /**
+         * Type of at-rule.
+         */
+        public val type: String,
+        /**
+         * Subsection of font-feature-values, if this is a subsection.
+         */
+        public val subsection: String? = null,
+        /**
+         * LINT.ThenChange(//third_party/blink/renderer/core/inspector/inspector_style_sheet.cc:FontVariantAlternatesFeatureType,//third_party/blink/renderer/core/inspector/inspector_css_agent.cc:FontVariantAlternatesFeatureType)
+         * Associated name, if applicable.
+         */
+        public val name: Value? = null,
         /**
          * The css style sheet identifier (absent for user agent stylesheet and user-specified
          * stylesheet rules) this rule came from.
@@ -1844,10 +1922,6 @@ public class CSS(
          * Parent stylesheet's origin.
          */
         public val origin: StyleSheetOrigin,
-        /**
-         * Associated font palette name.
-         */
-        public val fontPaletteName: Value,
         /**
          * Associated style declaration.
          */
@@ -1911,6 +1985,10 @@ public class CSS(
          */
         public val supports: CSSSupports? = null,
         /**
+         * @navigation condition. Only one type of condition should be set.
+         */
+        public val navigation: CSSNavigation? = null,
+        /**
          * Block body.
          */
         public val children: List<CSSFunctionNode>,
@@ -1961,6 +2039,10 @@ public class CSS(
          * Function body.
          */
         public val children: List<CSSFunctionNode>,
+        /**
+         * The BackendNodeId of the DOM node that constitutes the origin tree scope of this rule.
+         */
+        public val originTreeScopeNodeId: Int? = null,
     )
 
     /**
@@ -2186,6 +2268,11 @@ public class CSS(
          * Computed style for the specified DOM node.
          */
         public val computedStyle: List<CSSComputedStyleProperty>,
+        /**
+         * A list of non-standard "extra fields" which blink stores alongside each
+         * computed style.
+         */
+        public val extraFields: ComputedStyleExtraFields,
     )
 
     @Serializable
@@ -2321,9 +2408,9 @@ public class CSS(
          */
         public val cssPropertyRegistrations: List<CSSPropertyRegistration>?,
         /**
-         * A font-palette-values rule matching this node.
+         * A list of simple @rules matching this node or its pseudo-elements.
          */
-        public val cssFontPaletteValuesRule: CSSFontPaletteValuesRule?,
+        public val cssAtRules: List<CSSAtRule>?,
         /**
          * Id of the first parent element that does not have display: contents.
          */
@@ -2492,6 +2579,21 @@ public class CSS(
          * The resulting CSS Supports rule after modification.
          */
         public val supports: CSSSupports,
+    )
+
+    @Serializable
+    public data class SetNavigationTextParameter(
+        public val styleSheetId: String,
+        public val range: SourceRange,
+        public val text: String,
+    )
+
+    @Serializable
+    public data class SetNavigationTextReturn(
+        /**
+         * The resulting CSS Navigation rule after modification.
+         */
+        public val navigation: CSSNavigation,
     )
 
     @Serializable

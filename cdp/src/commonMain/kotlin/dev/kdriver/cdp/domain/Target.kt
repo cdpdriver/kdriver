@@ -2,19 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Deprecated
-import kotlin.Double
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -307,6 +295,13 @@ public class Target(
      * @param hidden Whether to create a hidden target. The hidden target is observable via protocol, but not
      * present in the tab UI strip. Cannot be created with `forTab: true`, `newWindow: true` or
      * `background: false`. The life-time of the tab is limited to the life-time of the session.
+     * @param focus If specified, the option is used to determine if the new target should
+     * be focused or not. By default, the focus behavior depends on the
+     * value of the background field. For example, background=false and focus=false
+     * will result in the target tab being opened but the browser window remain
+     * unchanged (if it was in the background, it will remain in the background)
+     * and background=false with focus=undefined will result in the window being focused.
+     * Using background: true and focus: true is not supported and will result in an error.
      */
     public suspend fun createTarget(
         url: String,
@@ -321,6 +316,7 @@ public class Target(
         background: Boolean? = null,
         forTab: Boolean? = null,
         hidden: Boolean? = null,
+        focus: Boolean? = null,
     ): CreateTargetReturn {
         val parameter = CreateTargetParameter(
             url = url,
@@ -334,7 +330,8 @@ public class Target(
             newWindow = newWindow,
             background = background,
             forTab = forTab,
-            hidden = hidden
+            hidden = hidden,
+            focus = focus
         )
         return createTarget(parameter)
     }
@@ -588,6 +585,30 @@ public class Target(
     }
 
     /**
+     * Gets the targetId of the DevTools page target opened for the given target
+     * (if any).
+     */
+    public suspend fun getDevToolsTarget(
+        args: GetDevToolsTargetParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): GetDevToolsTargetReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("Target.getDevToolsTarget", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Gets the targetId of the DevTools page target opened for the given target
+     * (if any).
+     *
+     * @param targetId Page or tab target ID.
+     */
+    public suspend fun getDevToolsTarget(targetId: String): GetDevToolsTargetReturn {
+        val parameter = GetDevToolsTargetParameter(targetId = targetId)
+        return getDevToolsTarget(parameter)
+    }
+
+    /**
      * Opens a DevTools window for the target.
      */
     public suspend fun openDevTools(
@@ -603,9 +624,12 @@ public class Target(
      * Opens a DevTools window for the target.
      *
      * @param targetId This can be the page or tab target ID.
+     * @param panelId The id of the panel we want DevTools to open initially. Currently
+     * supported panels are elements, console, network, sources, resources
+     * and performance.
      */
-    public suspend fun openDevTools(targetId: String): OpenDevToolsReturn {
-        val parameter = OpenDevToolsParameter(targetId = targetId)
+    public suspend fun openDevTools(targetId: String, panelId: String? = null): OpenDevToolsReturn {
+        val parameter = OpenDevToolsParameter(targetId = targetId, panelId = panelId)
         return openDevTools(parameter)
     }
 
@@ -634,6 +658,10 @@ public class Target(
          * Frame id of originating window (is only set if target has an opener).
          */
         public val openerFrameId: String? = null,
+        /**
+         * Id of the parent frame, only present for the "iframe" targets.
+         */
+        public val parentFrameId: String? = null,
         public val browserContextId: String? = null,
         /**
          * Provides additional details for specific target types. For example, for
@@ -861,6 +889,10 @@ public class Target(
          * An array of browser context ids.
          */
         public val browserContextIds: List<String>,
+        /**
+         * The id of the default browser context if available.
+         */
+        public val defaultBrowserContextId: String?,
     )
 
     @Serializable
@@ -918,6 +950,16 @@ public class Target(
          * `background: false`. The life-time of the tab is limited to the life-time of the session.
          */
         public val hidden: Boolean? = null,
+        /**
+         * If specified, the option is used to determine if the new target should
+         * be focused or not. By default, the focus behavior depends on the
+         * value of the background field. For example, background=false and focus=false
+         * will result in the target tab being opened but the browser window remain
+         * unchanged (if it was in the background, it will remain in the background)
+         * and background=false with focus=undefined will result in the window being focused.
+         * Using background: true and focus: true is not supported and will result in an error.
+         */
+        public val focus: Boolean? = null,
     )
 
     @Serializable
@@ -1045,11 +1087,33 @@ public class Target(
     )
 
     @Serializable
+    public data class GetDevToolsTargetParameter(
+        /**
+         * Page or tab target ID.
+         */
+        public val targetId: String,
+    )
+
+    @Serializable
+    public data class GetDevToolsTargetReturn(
+        /**
+         * The targetId of DevTools page target if exists.
+         */
+        public val targetId: String?,
+    )
+
+    @Serializable
     public data class OpenDevToolsParameter(
         /**
          * This can be the page or tab target ID.
          */
         public val targetId: String,
+        /**
+         * The id of the panel we want DevTools to open initially. Currently
+         * supported panels are elements, console, network, sources, resources
+         * and performance.
+         */
+        public val panelId: String? = null,
     )
 
     @Serializable

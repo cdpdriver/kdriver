@@ -2,16 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -58,14 +49,16 @@ public class Autofill(
      *
      * @param fieldId Identifies a field that serves as an anchor for autofill.
      * @param frameId Identifies the frame that field belongs to.
-     * @param card Credit card information to fill out the form. Credit card data is not saved.
+     * @param card Credit card information to fill out the form. Credit card data is not saved.  Mutually exclusive with `address`.
+     * @param address Address to fill out the form. Address data is not saved. Mutually exclusive with `card`.
      */
     public suspend fun trigger(
         fieldId: Int,
         frameId: String? = null,
-        card: CreditCard,
+        card: CreditCard? = null,
+        address: Address? = null,
     ) {
-        val parameter = TriggerParameter(fieldId = fieldId, frameId = frameId, card = card)
+        val parameter = TriggerParameter(fieldId = fieldId, frameId = frameId, card = card, address = address)
         trigger(parameter)
     }
 
@@ -131,6 +124,8 @@ public class Autofill(
     public data class AddressField(
         /**
          * address field name, for example GIVEN_NAME.
+         * The full list of supported field names:
+         * https://source.chromium.org/chromium/chromium/src/+/main:components/autofill/core/browser/field_types.cc;l=38
          */
         public val name: String,
         /**
@@ -247,9 +242,13 @@ public class Autofill(
          */
         public val frameId: String? = null,
         /**
-         * Credit card information to fill out the form. Credit card data is not saved.
+         * Credit card information to fill out the form. Credit card data is not saved.  Mutually exclusive with `address`.
          */
-        public val card: CreditCard,
+        public val card: CreditCard? = null,
+        /**
+         * Address to fill out the form. Address data is not saved. Mutually exclusive with `card`.
+         */
+        public val address: Address? = null,
     )
 
     @Serializable

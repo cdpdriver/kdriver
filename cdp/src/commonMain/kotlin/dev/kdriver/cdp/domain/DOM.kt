@@ -2,20 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Deprecated
-import kotlin.Double
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.Unit
-import kotlin.collections.List
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -56,6 +43,16 @@ public class DOM(
     public val attributeModified: Flow<AttributeModifiedParameter> = cdp
         .events
         .filter { it.method == "DOM.attributeModified" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when `Element`'s adoptedStyleSheets are modified.
+     */
+    public val adoptedStyleSheetsModified: Flow<AdoptedStyleSheetsModifiedParameter> = cdp
+        .events
+        .filter { it.method == "DOM.adoptedStyleSheetsModified" }
         .map { it.params }
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
@@ -166,6 +163,27 @@ public class DOM(
     public val scrollableFlagUpdated: Flow<ScrollableFlagUpdatedParameter> = cdp
         .events
         .filter { it.method == "DOM.scrollableFlagUpdated" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when a node's ad related state changes.
+     */
+    public val adRelatedStateUpdated: Flow<AdRelatedStateUpdatedParameter> = cdp
+        .events
+        .filter { it.method == "DOM.adRelatedStateUpdated" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired when a node's starting styles changes.
+     */
+    public val affectedByStartingStylesFlagUpdated:
+            Flow<AffectedByStartingStylesFlagUpdatedParameter> = cdp
+        .events
+        .filter { it.method == "DOM.affectedByStartingStylesFlagUpdated" }
         .map { it.params }
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
@@ -1487,6 +1505,9 @@ public class DOM(
         @SerialName("after")
         AFTER,
 
+        @SerialName("expand-icon")
+        EXPAND_ICON,
+
         @SerialName("picker-icon")
         PICKER_ICON,
 
@@ -1588,6 +1609,9 @@ public class DOM(
 
         @SerialName("permission-icon")
         PERMISSION_ICON,
+
+        @SerialName("overscroll-area-parent")
+        OVERSCROLL_AREA_PARENT,
     }
 
     /**
@@ -1792,6 +1816,9 @@ public class DOM(
         public val compatibilityMode: CompatibilityMode? = null,
         public val assignedSlot: BackendNode? = null,
         public val isScrollable: Boolean? = null,
+        public val affectedByStartingStyles: Boolean? = null,
+        public val adoptedStyleSheets: List<String>? = null,
+        public val adProvenance: Network.AdProvenance? = null,
     )
 
     /**
@@ -1935,6 +1962,21 @@ public class DOM(
     )
 
     /**
+     * Fired when `Element`'s adoptedStyleSheets are modified.
+     */
+    @Serializable
+    public data class AdoptedStyleSheetsModifiedParameter(
+        /**
+         * Id of the node that has changed.
+         */
+        public val nodeId: Int,
+        /**
+         * New adoptedStyleSheets array.
+         */
+        public val adoptedStyleSheets: List<String>,
+    )
+
+    /**
      * Fired when `Element`'s attribute is removed.
      */
     @Serializable
@@ -2067,6 +2109,36 @@ public class DOM(
          * If the node is scrollable.
          */
         public val isScrollable: Boolean,
+    )
+
+    /**
+     * Fired when a node's ad related state changes.
+     */
+    @Serializable
+    public data class AdRelatedStateUpdatedParameter(
+        /**
+         * The id of the node.
+         */
+        public val nodeId: Int,
+        /**
+         * The provenance of the ad related node, if it is ad related.
+         */
+        public val adProvenance: Network.AdProvenance? = null,
+    )
+
+    /**
+     * Fired when a node's starting styles changes.
+     */
+    @Serializable
+    public data class AffectedByStartingStylesFlagUpdatedParameter(
+        /**
+         * The id of the node.
+         */
+        public val nodeId: Int,
+        /**
+         * If the node has starting styles.
+         */
+        public val affectedByStartingStyles: Boolean,
     )
 
     /**

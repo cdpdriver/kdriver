@@ -2,20 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
+import dev.kdriver.cdp.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -78,7 +65,8 @@ public class PWA(
      *
      * To generate bundle id for proxy mode:
      * 1. Generate 32 random bytes.
-     * 2. Add a specific suffix 0x00 at the end.
+     * 2. Add a specific suffix at the end following the documentation
+     *    https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#suffix
      * 3. Encode the entire sequence using Base32 without padding.
      *
      * If Chrome is not in IWA dev
@@ -110,7 +98,8 @@ public class PWA(
      *
      * To generate bundle id for proxy mode:
      * 1. Generate 32 random bytes.
-     * 2. Add a specific suffix 0x00 at the end.
+     * 2. Add a specific suffix at the end following the documentation
+     *    https://github.com/WICG/isolated-web-apps/blob/main/Scheme.md#suffix
      * 3. Encode the entire sequence using Base32 without padding.
      *
      * If Chrome is not in IWA dev

@@ -2,17 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.collections.List
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -20,7 +10,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
 
 public val CDP.preload: Preload
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Preload(this))
@@ -139,6 +128,11 @@ public class Preload(
          * TODO(https://crbug.com/1425354): Replace this property with structured error.
          */
         public val errorMessage: String? = null,
+        /**
+         * For more details, see:
+         * https://github.com/WICG/nav-speculation/blob/main/speculation-rules-tags.md
+         */
+        public val tag: String? = null,
     )
 
     @Serializable
@@ -165,6 +159,9 @@ public class Preload(
 
         @SerialName("Prerender")
         PRERENDER,
+
+        @SerialName("PrerenderUntilScript")
+        PRERENDERUNTILSCRIPT,
     }
 
     /**
@@ -193,6 +190,7 @@ public class Preload(
         public val loaderId: String,
         public val action: SpeculationAction,
         public val url: String,
+        public val formSubmission: Boolean? = null,
         public val targetHint: SpeculationTargetHint? = null,
     )
 
@@ -436,6 +434,9 @@ public class Preload(
 
         @SerialName("PrerenderHostReused")
         PRERENDERHOSTREUSED,
+
+        @SerialName("FormSubmitWhenPrerendering")
+        FORMSUBMITWHENPRERENDERING,
     }
 
     /**

@@ -2,21 +2,7 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.Boolean
-import kotlin.Deprecated
-import kotlin.Double
-import kotlin.Int
-import kotlin.String
-import kotlin.Suppress
-import kotlin.Unit
-import kotlin.collections.List
-import kotlin.collections.Map
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -305,6 +291,22 @@ public class Network(
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
 
+    public val directUDPSocketJoinedMulticastGroup:
+            Flow<DirectUDPSocketJoinedMulticastGroupParameter> = cdp
+        .events
+        .filter { it.method == "Network.directUDPSocketJoinedMulticastGroup" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    public val directUDPSocketLeftMulticastGroup: Flow<DirectUDPSocketLeftMulticastGroupParameter> =
+        cdp
+            .events
+            .filter { it.method == "Network.directUDPSocketLeftMulticastGroup" }
+            .map { it.params }
+            .filterNotNull()
+            .map { Serialization.json.decodeFromJsonElement(it) }
+
     /**
      * Fired upon direct_socket.UDPSocket creation.
      */
@@ -426,52 +428,6 @@ public class Network(
         .map { Serialization.json.decodeFromJsonElement(it) }
 
     /**
-     * Fired once when parsing the .wbn file has succeeded.
-     * The event contains the information about the web bundle contents.
-     */
-    public val subresourceWebBundleMetadataReceived:
-            Flow<SubresourceWebBundleMetadataReceivedParameter> = cdp
-        .events
-        .filter { it.method == "Network.subresourceWebBundleMetadataReceived" }
-        .map { it.params }
-        .filterNotNull()
-        .map { Serialization.json.decodeFromJsonElement(it) }
-
-    /**
-     * Fired once when parsing the .wbn file has failed.
-     */
-    public val subresourceWebBundleMetadataError: Flow<SubresourceWebBundleMetadataErrorParameter> =
-        cdp
-            .events
-            .filter { it.method == "Network.subresourceWebBundleMetadataError" }
-            .map { it.params }
-            .filterNotNull()
-            .map { Serialization.json.decodeFromJsonElement(it) }
-
-    /**
-     * Fired when handling requests for resources within a .wbn file.
-     * Note: this will only be fired for resources that are requested by the webpage.
-     */
-    public val subresourceWebBundleInnerResponseParsed:
-            Flow<SubresourceWebBundleInnerResponseParsedParameter> = cdp
-        .events
-        .filter { it.method == "Network.subresourceWebBundleInnerResponseParsed" }
-        .map { it.params }
-        .filterNotNull()
-        .map { Serialization.json.decodeFromJsonElement(it) }
-
-    /**
-     * Fired when request for resources within a .wbn file failed.
-     */
-    public val subresourceWebBundleInnerResponseError:
-            Flow<SubresourceWebBundleInnerResponseErrorParameter> = cdp
-        .events
-        .filter { it.method == "Network.subresourceWebBundleInnerResponseError" }
-        .map { it.params }
-        .filterNotNull()
-        .map { Serialization.json.decodeFromJsonElement(it) }
-
-    /**
      * Is sent whenever a new report is added.
      * And after 'enableReportingApi' for all existing reports.
      */
@@ -493,6 +449,26 @@ public class Network(
             Flow<ReportingApiEndpointsChangedForOriginParameter> = cdp
         .events
         .filter { it.method == "Network.reportingApiEndpointsChangedForOrigin" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Triggered when the initial set of device bound sessions is added.
+     */
+    public val deviceBoundSessionsAdded: Flow<DeviceBoundSessionsAddedParameter> = cdp
+        .events
+        .filter { it.method == "Network.deviceBoundSessionsAdded" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Triggered when a device bound session event occurs.
+     */
+    public val deviceBoundSessionEventOccurred: Flow<DeviceBoundSessionEventOccurredParameter> = cdp
+        .events
+        .filter { it.method == "Network.deviceBoundSessionEventOccurred" }
         .map { it.params }
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
@@ -674,8 +650,10 @@ public class Network(
     }
 
     /**
-     * Activates emulation of network conditions.
+     * Activates emulation of network conditions. This command is deprecated in favor of the emulateNetworkConditionsByRule
+     * and overrideNetworkState commands, which can be used together to the same effect.
      */
+    @Deprecated(message = "")
     public suspend fun emulateNetworkConditions(
         args: EmulateNetworkConditionsParameter,
         mode: CommandMode = CommandMode.DEFAULT,
@@ -685,7 +663,8 @@ public class Network(
     }
 
     /**
-     * Activates emulation of network conditions.
+     * Activates emulation of network conditions. This command is deprecated in favor of the emulateNetworkConditionsByRule
+     * and overrideNetworkState commands, which can be used together to the same effect.
      *
      * @param offline True to emulate internet disconnection.
      * @param latency Minimum latency from request sent to response headers received (ms).
@@ -696,6 +675,7 @@ public class Network(
      * @param packetQueueLength WebRTC packet queue length (packet). 0 removes any queue length limitations.
      * @param packetReordering WebRTC packetReordering feature.
      */
+    @Deprecated(message = "")
     public suspend fun emulateNetworkConditions(
         offline: Boolean,
         latency: Double,
@@ -720,6 +700,82 @@ public class Network(
     }
 
     /**
+     * Activates emulation of network conditions for individual requests using URL match patterns. Unlike the deprecated
+     * Network.emulateNetworkConditions this method does not affect `navigator` state. Use Network.overrideNetworkState to
+     * explicitly modify `navigator` behavior.
+     */
+    public suspend fun emulateNetworkConditionsByRule(
+        args: EmulateNetworkConditionsByRuleParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): EmulateNetworkConditionsByRuleReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("Network.emulateNetworkConditionsByRule", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Activates emulation of network conditions for individual requests using URL match patterns. Unlike the deprecated
+     * Network.emulateNetworkConditions this method does not affect `navigator` state. Use Network.overrideNetworkState to
+     * explicitly modify `navigator` behavior.
+     *
+     * @param offline True to emulate internet disconnection. Deprecated, use the offline property in matchedNetworkConditions
+     * or emulateOfflineServiceWorker instead.
+     * @param emulateOfflineServiceWorker True to emulate offline service worker.
+     * @param matchedNetworkConditions Configure conditions for matching requests. If multiple entries match a request, the first entry wins.  Global
+     * conditions can be configured by leaving the urlPattern for the conditions empty. These global conditions are
+     * also applied for throttling of p2p connections.
+     */
+    public suspend fun emulateNetworkConditionsByRule(
+        offline: Boolean? = null,
+        emulateOfflineServiceWorker: Boolean? = null,
+        matchedNetworkConditions: List<NetworkConditions>,
+    ): EmulateNetworkConditionsByRuleReturn {
+        val parameter = EmulateNetworkConditionsByRuleParameter(
+            offline = offline,
+            emulateOfflineServiceWorker = emulateOfflineServiceWorker,
+            matchedNetworkConditions = matchedNetworkConditions
+        )
+        return emulateNetworkConditionsByRule(parameter)
+    }
+
+    /**
+     * Override the state of navigator.onLine and navigator.connection.
+     */
+    public suspend fun overrideNetworkState(
+        args: OverrideNetworkStateParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Network.overrideNetworkState", parameter, mode)
+    }
+
+    /**
+     * Override the state of navigator.onLine and navigator.connection.
+     *
+     * @param offline True to emulate internet disconnection.
+     * @param latency Minimum latency from request sent to response headers received (ms).
+     * @param downloadThroughput Maximal aggregated download throughput (bytes/sec). -1 disables download throttling.
+     * @param uploadThroughput Maximal aggregated upload throughput (bytes/sec).  -1 disables upload throttling.
+     * @param connectionType Connection type if known.
+     */
+    public suspend fun overrideNetworkState(
+        offline: Boolean,
+        latency: Double,
+        downloadThroughput: Double,
+        uploadThroughput: Double,
+        connectionType: ConnectionType? = null,
+    ) {
+        val parameter = OverrideNetworkStateParameter(
+            offline = offline,
+            latency = latency,
+            downloadThroughput = downloadThroughput,
+            uploadThroughput = uploadThroughput,
+            connectionType = connectionType
+        )
+        overrideNetworkState(parameter)
+    }
+
+    /**
      * Enables network tracking, network events will now be delivered to the client.
      */
     public suspend fun enable(args: EnableParameter, mode: CommandMode = CommandMode.DEFAULT) {
@@ -731,23 +787,61 @@ public class Network(
      * Enables network tracking, network events will now be delivered to the client.
      *
      * @param maxTotalBufferSize Buffer size in bytes to use when preserving network payloads (XHRs, etc).
+     * This is the maximum number of bytes that will be collected by this
+     * DevTools session.
      * @param maxResourceBufferSize Per-resource buffer size in bytes to use when preserving network payloads (XHRs, etc).
      * @param maxPostDataSize Longest post body size (in bytes) that would be included in requestWillBeSent notification
      * @param reportDirectSocketTraffic Whether DirectSocket chunk send/receive events should be reported.
+     * @param enableDurableMessages Enable storing response bodies outside of renderer, so that these survive
+     * a cross-process navigation. Requires maxTotalBufferSize to be set.
+     * Currently defaults to false. This field is being deprecated in favor of the dedicated
+     * configureDurableMessages command, due to the possibility of deadlocks when awaiting
+     * Network.enable before issuing Runtime.runIfWaitingForDebugger.
      */
     public suspend fun enable(
         maxTotalBufferSize: Int? = null,
         maxResourceBufferSize: Int? = null,
         maxPostDataSize: Int? = null,
         reportDirectSocketTraffic: Boolean? = null,
+        enableDurableMessages: Boolean? = null,
     ) {
         val parameter = EnableParameter(
             maxTotalBufferSize = maxTotalBufferSize,
             maxResourceBufferSize = maxResourceBufferSize,
             maxPostDataSize = maxPostDataSize,
-            reportDirectSocketTraffic = reportDirectSocketTraffic
+            reportDirectSocketTraffic = reportDirectSocketTraffic,
+            enableDurableMessages = enableDurableMessages
         )
         enable(parameter)
+    }
+
+    /**
+     * Configures storing response bodies outside of renderer, so that these survive
+     * a cross-process navigation.
+     * If maxTotalBufferSize is not set, durable messages are disabled.
+     */
+    public suspend fun configureDurableMessages(
+        args: ConfigureDurableMessagesParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Network.configureDurableMessages", parameter, mode)
+    }
+
+    /**
+     * Configures storing response bodies outside of renderer, so that these survive
+     * a cross-process navigation.
+     * If maxTotalBufferSize is not set, durable messages are disabled.
+     *
+     * @param maxTotalBufferSize Buffer size in bytes to use when preserving network payloads (XHRs, etc).
+     * @param maxResourceBufferSize Per-resource buffer size in bytes to use when preserving network payloads (XHRs, etc).
+     */
+    public suspend fun configureDurableMessages(maxTotalBufferSize: Int? = null, maxResourceBufferSize: Int? = null) {
+        val parameter = ConfigureDurableMessagesParameter(
+            maxTotalBufferSize = maxTotalBufferSize,
+            maxResourceBufferSize = maxResourceBufferSize
+        )
+        configureDurableMessages(parameter)
     }
 
     /**
@@ -972,10 +1066,12 @@ public class Network(
     /**
      * Blocks URLs from loading.
      *
+     * @param urlPatterns Patterns to match in the order in which they are given. These patterns
+     * also take precedence over any wildcard patterns defined in `urls`.
      * @param urls URL patterns to block. Wildcards ('*') are allowed.
      */
-    public suspend fun setBlockedURLs(urls: List<String>) {
-        val parameter = SetBlockedURLsParameter(urls = urls)
+    public suspend fun setBlockedURLs(urlPatterns: List<BlockPattern>? = null, urls: List<String>? = null) {
+        val parameter = SetBlockedURLsParameter(urlPatterns = urlPatterns, urls = urls)
         setBlockedURLs(parameter)
     }
 
@@ -1041,7 +1137,6 @@ public class Network(
      * @param sameSite Cookie SameSite type.
      * @param expires Cookie expiration date, session cookie if not set
      * @param priority Cookie Priority type.
-     * @param sameParty True if cookie is SameParty.
      * @param sourceScheme Cookie source scheme type.
      * @param sourcePort Cookie source port. Valid values are {-1, [1, 65535]}, -1 indicates an unspecified port.
      * An unspecified port value allows protocol clients to emulate legacy cookie scope for the port.
@@ -1059,7 +1154,6 @@ public class Network(
         sameSite: CookieSameSite? = null,
         expires: Double? = null,
         priority: CookiePriority? = null,
-        sameParty: Boolean? = null,
         sourceScheme: CookieSourceScheme? = null,
         sourcePort: Int? = null,
         partitionKey: CookiePartitionKey? = null,
@@ -1075,7 +1169,6 @@ public class Network(
             sameSite = sameSite,
             expires = expires,
             priority = priority,
-            sameParty = sameParty,
             sourceScheme = sourceScheme,
             sourcePort = sourcePort,
             partitionKey = partitionKey
@@ -1270,6 +1363,49 @@ public class Network(
     }
 
     /**
+     * Sets up tracking device bound sessions and fetching of initial set of sessions.
+     */
+    public suspend fun enableDeviceBoundSessions(
+        args: EnableDeviceBoundSessionsParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ) {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        cdp.callCommand("Network.enableDeviceBoundSessions", parameter, mode)
+    }
+
+    /**
+     * Sets up tracking device bound sessions and fetching of initial set of sessions.
+     *
+     * @param enable Whether to enable or disable events.
+     */
+    public suspend fun enableDeviceBoundSessions(enable: Boolean) {
+        val parameter = EnableDeviceBoundSessionsParameter(enable = enable)
+        enableDeviceBoundSessions(parameter)
+    }
+
+    /**
+     * Fetches the schemeful site for a specific origin.
+     */
+    public suspend fun fetchSchemefulSite(
+        args: FetchSchemefulSiteParameter,
+        mode: CommandMode = CommandMode.DEFAULT,
+    ): FetchSchemefulSiteReturn {
+        val parameter = Serialization.json.encodeToJsonElement(args)
+        val result = cdp.callCommand("Network.fetchSchemefulSite", parameter, mode)
+        return result!!.let { Serialization.json.decodeFromJsonElement(it) }
+    }
+
+    /**
+     * Fetches the schemeful site for a specific origin.
+     *
+     * @param origin The URL origin.
+     */
+    public suspend fun fetchSchemefulSite(origin: String): FetchSchemefulSiteReturn {
+        val parameter = FetchSchemefulSiteParameter(origin = origin)
+        return fetchSchemefulSite(parameter)
+    }
+
+    /**
      * Fetches the resource and returns the content.
      */
     public suspend fun loadNetworkResource(
@@ -1312,19 +1448,10 @@ public class Network(
      * Page reload is required before the new cookie behavior will be observed
      *
      * @param enableThirdPartyCookieRestriction Whether 3pc restriction is enabled.
-     * @param disableThirdPartyCookieMetadata Whether 3pc grace period exception should be enabled; false by default.
-     * @param disableThirdPartyCookieHeuristics Whether 3pc heuristics exceptions should be enabled; false by default.
      */
-    public suspend fun setCookieControls(
-        enableThirdPartyCookieRestriction: Boolean,
-        disableThirdPartyCookieMetadata: Boolean,
-        disableThirdPartyCookieHeuristics: Boolean,
-    ) {
-        val parameter = SetCookieControlsParameter(
-            enableThirdPartyCookieRestriction = enableThirdPartyCookieRestriction,
-            disableThirdPartyCookieMetadata = disableThirdPartyCookieMetadata,
-            disableThirdPartyCookieHeuristics = disableThirdPartyCookieHeuristics
-        )
+    public suspend fun setCookieControls(enableThirdPartyCookieRestriction: Boolean) {
+        val parameter =
+            SetCookieControlsParameter(enableThirdPartyCookieRestriction = enableThirdPartyCookieRestriction)
         setCookieControls(parameter)
     }
 
@@ -1635,6 +1762,27 @@ public class Network(
     }
 
     /**
+     * The render-blocking behavior of a resource request.
+     */
+    @Serializable
+    public enum class RenderBlockingBehavior {
+        @SerialName("Blocking")
+        BLOCKING,
+
+        @SerialName("InBodyParserBlocking")
+        INBODYPARSERBLOCKING,
+
+        @SerialName("NonBlocking")
+        NONBLOCKING,
+
+        @SerialName("NonBlockingDynamic")
+        NONBLOCKINGDYNAMIC,
+
+        @SerialName("PotentiallyBlocking")
+        POTENTIALLYBLOCKING,
+    }
+
+    /**
      * Post data entry for HTTP request
      */
     @Serializable
@@ -1702,6 +1850,10 @@ public class Network(
          * request corresponding to the main frame.
          */
         public val isSameSite: Boolean? = null,
+        /**
+         * True when the resource request is ad-related.
+         */
+        public val isAdRelated: Boolean? = null,
     )
 
     /**
@@ -1944,12 +2096,6 @@ public class Network(
         @SerialName("PreflightInvalidAllowExternal")
         PREFLIGHTINVALIDALLOWEXTERNAL,
 
-        @SerialName("PreflightMissingAllowPrivateNetwork")
-        PREFLIGHTMISSINGALLOWPRIVATENETWORK,
-
-        @SerialName("PreflightInvalidAllowPrivateNetwork")
-        PREFLIGHTINVALIDALLOWPRIVATENETWORK,
-
         @SerialName("InvalidAllowMethodsPreflightResponse")
         INVALIDALLOWMETHODSPREFLIGHTRESPONSE,
 
@@ -1965,29 +2111,14 @@ public class Network(
         @SerialName("RedirectContainsCredentials")
         REDIRECTCONTAINSCREDENTIALS,
 
-        @SerialName("InsecurePrivateNetwork")
-        INSECUREPRIVATENETWORK,
+        @SerialName("InsecureLocalNetwork")
+        INSECURELOCALNETWORK,
 
-        @SerialName("InvalidPrivateNetworkAccess")
-        INVALIDPRIVATENETWORKACCESS,
-
-        @SerialName("UnexpectedPrivateNetworkAccess")
-        UNEXPECTEDPRIVATENETWORKACCESS,
+        @SerialName("InvalidLocalNetworkAccess")
+        INVALIDLOCALNETWORKACCESS,
 
         @SerialName("NoCorsRedirectModeNotFollow")
         NOCORSREDIRECTMODENOTFOLLOW,
-
-        @SerialName("PreflightMissingPrivateNetworkAccessId")
-        PREFLIGHTMISSINGPRIVATENETWORKACCESSID,
-
-        @SerialName("PreflightMissingPrivateNetworkAccessName")
-        PREFLIGHTMISSINGPRIVATENETWORKACCESSNAME,
-
-        @SerialName("PrivateNetworkAccessPermissionUnavailable")
-        PRIVATENETWORKACCESSPERMISSIONUNAVAILABLE,
-
-        @SerialName("PrivateNetworkAccessPermissionDenied")
-        PRIVATENETWORKACCESSPERMISSIONDENIED,
 
         @SerialName("LocalNetworkAccessPermissionDenied")
         LOCALNETWORKACCESSPERMISSIONDENIED,
@@ -2234,11 +2365,6 @@ public class Network(
          * Security details for the request.
          */
         public val securityDetails: SecurityDetails? = null,
-        /**
-         * Indicates whether the request was sent through IP Protection proxies. If
-         * set to true, the request used the IP Protection privacy feature.
-         */
-        public val isIpProtectionUsed: Boolean? = null,
     )
 
     /**
@@ -2401,6 +2527,9 @@ public class Network(
         public val path: String,
         /**
          * Cookie expiration date as the number of seconds since the UNIX epoch.
+         * The value is set to -1 if the expiry date is not set.
+         * The value can be null for values that cannot be represented in
+         * JSON (±Inf).
          */
         public val expires: Double,
         /**
@@ -2427,10 +2556,6 @@ public class Network(
          * Cookie Priority
          */
         public val priority: CookiePriority,
-        /**
-         * True if cookie is SameParty.
-         */
-        public val sameParty: Boolean,
         /**
          * Cookie source scheme type.
          */
@@ -2507,12 +2632,6 @@ public class Network(
         @SerialName("SchemefulSameSiteUnspecifiedTreatedAsLax")
         SCHEMEFULSAMESITEUNSPECIFIEDTREATEDASLAX,
 
-        @SerialName("SamePartyFromCrossPartyContext")
-        SAMEPARTYFROMCROSSPARTYCONTEXT,
-
-        @SerialName("SamePartyConflictsWithOtherAttributes")
-        SAMEPARTYCONFLICTSWITHOTHERATTRIBUTES,
-
         @SerialName("NameValuePairExceedsMaxSize")
         NAMEVALUEPAIREXCEEDSMAXSIZE,
 
@@ -2569,9 +2688,6 @@ public class Network(
 
         @SerialName("SchemefulSameSiteUnspecifiedTreatedAsLax")
         SCHEMEFULSAMESITEUNSPECIFIEDTREATEDASLAX,
-
-        @SerialName("SamePartyFromCrossPartyContext")
-        SAMEPARTYFROMCROSSPARTYCONTEXT,
 
         @SerialName("NameValuePairExceedsMaxSize")
         NAMEVALUEPAIREXCEEDSMAXSIZE,
@@ -2734,10 +2850,6 @@ public class Network(
          * Cookie Priority.
          */
         public val priority: CookiePriority? = null,
-        /**
-         * True if cookie is SameParty.
-         */
-        public val sameParty: Boolean? = null,
         /**
          * Cookie source scheme type.
          */
@@ -2995,6 +3107,62 @@ public class Network(
     }
 
     @Serializable
+    public data class NetworkConditions(
+        /**
+         * Only matching requests will be affected by these conditions. Patterns use the URLPattern constructor string
+         * syntax (https://urlpattern.spec.whatwg.org/) and must be absolute. If the pattern is empty, all requests are
+         * matched (including p2p connections).
+         */
+        public val urlPattern: String,
+        /**
+         * Minimum latency from request sent to response headers received (ms).
+         */
+        public val latency: Double,
+        /**
+         * Maximal aggregated download throughput (bytes/sec). -1 disables download throttling.
+         */
+        public val downloadThroughput: Double,
+        /**
+         * Maximal aggregated upload throughput (bytes/sec).  -1 disables upload throttling.
+         */
+        public val uploadThroughput: Double,
+        /**
+         * Connection type if known.
+         */
+        public val connectionType: ConnectionType? = null,
+        /**
+         * WebRTC packet loss (percent, 0-100). 0 disables packet loss emulation, 100 drops all the packets.
+         */
+        public val packetLoss: Double? = null,
+        /**
+         * WebRTC packet queue length (packet). 0 removes any queue length limitations.
+         */
+        public val packetQueueLength: Int? = null,
+        /**
+         * WebRTC packetReordering feature.
+         */
+        public val packetReordering: Boolean? = null,
+        /**
+         * True to emulate internet disconnection.
+         */
+        public val offline: Boolean? = null,
+    )
+
+    @Serializable
+    public data class BlockPattern(
+        /**
+         * URL pattern to match. Patterns use the URLPattern constructor string syntax
+         * (https://urlpattern.spec.whatwg.org/) and must be absolute. Example: `*://*:*/*.css`.
+         */
+        public val urlPattern: String,
+        /**
+         * Whether or not to block the pattern. If false, a matching request will not be blocked even if it matches a later
+         * `BlockPattern`.
+         */
+        public val block: Boolean,
+    )
+
+    @Serializable
     public enum class DirectSocketDnsQueryType {
         @SerialName("ipv4")
         IPV4,
@@ -3045,6 +3213,12 @@ public class Network(
          * Expected to be unsigned integer.
          */
         public val receiveBufferSize: Double? = null,
+        public val multicastLoopback: Boolean? = null,
+        /**
+         * Unsigned int 8.
+         */
+        public val multicastTimeToLive: Int? = null,
+        public val multicastAllowAddressSharing: Boolean? = null,
     )
 
     @Serializable
@@ -3062,7 +3236,7 @@ public class Network(
     )
 
     @Serializable
-    public enum class PrivateNetworkRequestPolicy {
+    public enum class LocalNetworkAccessRequestPolicy {
         @SerialName("Allow")
         ALLOW,
 
@@ -3071,12 +3245,6 @@ public class Network(
 
         @SerialName("WarnFromInsecureToMorePrivate")
         WARNFROMINSECURETOMOREPRIVATE,
-
-        @SerialName("PreflightBlock")
-        PREFLIGHTBLOCK,
-
-        @SerialName("PreflightWarn")
-        PREFLIGHTWARN,
 
         @SerialName("PermissionBlock")
         PERMISSIONBLOCK,
@@ -3114,7 +3282,69 @@ public class Network(
     public data class ClientSecurityState(
         public val initiatorIsSecureContext: Boolean,
         public val initiatorIPAddressSpace: IPAddressSpace,
-        public val privateNetworkRequestPolicy: PrivateNetworkRequestPolicy,
+        public val localNetworkAccessRequestPolicy: LocalNetworkAccessRequestPolicy,
+    )
+
+    /**
+     * Identifies the script on the stack that caused a resource or element to be
+     * labeled as an ad. For resources, this indicates the context that triggered
+     * the fetch. For elements, this indicates the context that caused the element
+     * to be appended to the DOM.
+     */
+    @Serializable
+    public data class AdScriptIdentifier(
+        /**
+         * The script's V8 identifier.
+         */
+        public val scriptId: String,
+        /**
+         * V8's debugging ID for the v8::Context.
+         */
+        public val debuggerId: String,
+        /**
+         * The script's url (or generated name based on id if inline script).
+         */
+        public val name: String,
+    )
+
+    /**
+     * Encapsulates the script ancestry and the root script filter list rule that
+     * caused the resource or element to be labeled as an ad.
+     */
+    @Serializable
+    public data class AdAncestry(
+        /**
+         * A chain of `AdScriptIdentifier`s representing the ancestry of an ad
+         * script that led to the creation of a resource or element. The chain is
+         * ordered from the script itself (lowest level) up to its root ancestor
+         * that was flagged by a filter list.
+         */
+        public val ancestryChain: List<AdScriptIdentifier>,
+        /**
+         * The filter list rule that caused the root (last) script in
+         * `ancestryChain` to be tagged as an ad.
+         */
+        public val rootScriptFilterlistRule: String? = null,
+    )
+
+    /**
+     * Represents the provenance of an ad resource or element. Only one of
+     * `filterlistRule` or `adScriptAncestry` can be set. If `filterlistRule`
+     * is provided, the resource URL directly matches a filter list rule. If
+     * `adScriptAncestry` is provided, an ad script initiated the resource fetch or
+     * appended the element to the DOM. If neither is provided, the entity is
+     * known to be an ad, but provenance tracking information is unavailable.
+     */
+    @Serializable
+    public data class AdProvenance(
+        /**
+         * The filterlist rule that matched, if any.
+         */
+        public val filterlistRule: String? = null,
+        /**
+         * The script ancestry that created the ad, if any.
+         */
+        public val adScriptAncestry: AdAncestry? = null,
     )
 
     @Serializable
@@ -3254,6 +3484,453 @@ public class Network(
          * Name of the endpoint group.
          */
         public val groupName: String,
+    )
+
+    /**
+     * Unique identifier for a device bound session.
+     */
+    @Serializable
+    public data class DeviceBoundSessionKey(
+        /**
+         * The site the session is set up for.
+         */
+        public val site: String,
+        /**
+         * The id of the session.
+         */
+        public val id: String,
+    )
+
+    /**
+     * How a device bound session was used during a request.
+     */
+    @Serializable
+    public data class DeviceBoundSessionWithUsage(
+        /**
+         * The key for the session.
+         */
+        public val sessionKey: DeviceBoundSessionKey,
+        /**
+         * How the session was used (or not used).
+         */
+        public val usage: String,
+    )
+
+    /**
+     * A device bound session's cookie craving.
+     */
+    @Serializable
+    public data class DeviceBoundSessionCookieCraving(
+        /**
+         * The name of the craving.
+         */
+        public val name: String,
+        /**
+         * The domain of the craving.
+         */
+        public val domain: String,
+        /**
+         * The path of the craving.
+         */
+        public val path: String,
+        /**
+         * The `Secure` attribute of the craving attributes.
+         */
+        public val secure: Boolean,
+        /**
+         * The `HttpOnly` attribute of the craving attributes.
+         */
+        public val httpOnly: Boolean,
+        /**
+         * The `SameSite` attribute of the craving attributes.
+         */
+        public val sameSite: CookieSameSite? = null,
+    )
+
+    /**
+     * A device bound session's inclusion URL rule.
+     */
+    @Serializable
+    public data class DeviceBoundSessionUrlRule(
+        /**
+         * See comments on `net::device_bound_sessions::SessionInclusionRules::UrlRule::rule_type`.
+         */
+        public val ruleType: String,
+        /**
+         * See comments on `net::device_bound_sessions::SessionInclusionRules::UrlRule::host_pattern`.
+         */
+        public val hostPattern: String,
+        /**
+         * See comments on `net::device_bound_sessions::SessionInclusionRules::UrlRule::path_prefix`.
+         */
+        public val pathPrefix: String,
+    )
+
+    /**
+     * A device bound session's inclusion rules.
+     */
+    @Serializable
+    public data class DeviceBoundSessionInclusionRules(
+        /**
+         * See comments on `net::device_bound_sessions::SessionInclusionRules::origin_`.
+         */
+        public val origin: String,
+        /**
+         * Whether the whole site is included. See comments on
+         * `net::device_bound_sessions::SessionInclusionRules::include_site_` for more
+         * details; this boolean is true if that value is populated.
+         */
+        public val includeSite: Boolean,
+        /**
+         * See comments on `net::device_bound_sessions::SessionInclusionRules::url_rules_`.
+         */
+        public val urlRules: List<DeviceBoundSessionUrlRule>,
+    )
+
+    /**
+     * A device bound session.
+     */
+    @Serializable
+    public data class DeviceBoundSession(
+        /**
+         * The site and session ID of the session.
+         */
+        public val key: DeviceBoundSessionKey,
+        /**
+         * See comments on `net::device_bound_sessions::Session::refresh_url_`.
+         */
+        public val refreshUrl: String,
+        /**
+         * See comments on `net::device_bound_sessions::Session::inclusion_rules_`.
+         */
+        public val inclusionRules: DeviceBoundSessionInclusionRules,
+        /**
+         * See comments on `net::device_bound_sessions::Session::cookie_cravings_`.
+         */
+        public val cookieCravings: List<DeviceBoundSessionCookieCraving>,
+        /**
+         * See comments on `net::device_bound_sessions::Session::expiry_date_`.
+         */
+        public val expiryDate: Double,
+        /**
+         * See comments on `net::device_bound_sessions::Session::cached_challenge__`.
+         */
+        public val cachedChallenge: String? = null,
+        /**
+         * See comments on `net::device_bound_sessions::Session::allowed_refresh_initiators_`.
+         */
+        public val allowedRefreshInitiators: List<String>,
+    )
+
+    /**
+     * A fetch result for a device bound session creation or refresh.
+     */
+    @Serializable
+    public enum class DeviceBoundSessionFetchResult {
+        @SerialName("Success")
+        SUCCESS,
+
+        @SerialName("KeyError")
+        KEYERROR,
+
+        @SerialName("SigningError")
+        SIGNINGERROR,
+
+        @SerialName("ServerRequestedTermination")
+        SERVERREQUESTEDTERMINATION,
+
+        @SerialName("InvalidSessionId")
+        INVALIDSESSIONID,
+
+        @SerialName("InvalidChallenge")
+        INVALIDCHALLENGE,
+
+        @SerialName("TooManyChallenges")
+        TOOMANYCHALLENGES,
+
+        @SerialName("InvalidFetcherUrl")
+        INVALIDFETCHERURL,
+
+        @SerialName("InvalidRefreshUrl")
+        INVALIDREFRESHURL,
+
+        @SerialName("TransientHttpError")
+        TRANSIENTHTTPERROR,
+
+        @SerialName("ScopeOriginSameSiteMismatch")
+        SCOPEORIGINSAMESITEMISMATCH,
+
+        @SerialName("RefreshUrlSameSiteMismatch")
+        REFRESHURLSAMESITEMISMATCH,
+
+        @SerialName("MismatchedSessionId")
+        MISMATCHEDSESSIONID,
+
+        @SerialName("MissingScope")
+        MISSINGSCOPE,
+
+        @SerialName("NoCredentials")
+        NOCREDENTIALS,
+
+        @SerialName("SubdomainRegistrationWellKnownUnavailable")
+        SUBDOMAINREGISTRATIONWELLKNOWNUNAVAILABLE,
+
+        @SerialName("SubdomainRegistrationUnauthorized")
+        SUBDOMAINREGISTRATIONUNAUTHORIZED,
+
+        @SerialName("SubdomainRegistrationWellKnownMalformed")
+        SUBDOMAINREGISTRATIONWELLKNOWNMALFORMED,
+
+        @SerialName("SessionProviderWellKnownUnavailable")
+        SESSIONPROVIDERWELLKNOWNUNAVAILABLE,
+
+        @SerialName("RelyingPartyWellKnownUnavailable")
+        RELYINGPARTYWELLKNOWNUNAVAILABLE,
+
+        @SerialName("FederatedKeyThumbprintMismatch")
+        FEDERATEDKEYTHUMBPRINTMISMATCH,
+
+        @SerialName("InvalidFederatedSessionUrl")
+        INVALIDFEDERATEDSESSIONURL,
+
+        @SerialName("InvalidFederatedKey")
+        INVALIDFEDERATEDKEY,
+
+        @SerialName("TooManyRelyingOriginLabels")
+        TOOMANYRELYINGORIGINLABELS,
+
+        @SerialName("BoundCookieSetForbidden")
+        BOUNDCOOKIESETFORBIDDEN,
+
+        @SerialName("NetError")
+        NETERROR,
+
+        @SerialName("ProxyError")
+        PROXYERROR,
+
+        @SerialName("EmptySessionConfig")
+        EMPTYSESSIONCONFIG,
+
+        @SerialName("InvalidCredentialsConfig")
+        INVALIDCREDENTIALSCONFIG,
+
+        @SerialName("InvalidCredentialsType")
+        INVALIDCREDENTIALSTYPE,
+
+        @SerialName("InvalidCredentialsEmptyName")
+        INVALIDCREDENTIALSEMPTYNAME,
+
+        @SerialName("InvalidCredentialsCookie")
+        INVALIDCREDENTIALSCOOKIE,
+
+        @SerialName("PersistentHttpError")
+        PERSISTENTHTTPERROR,
+
+        @SerialName("RegistrationAttemptedChallenge")
+        REGISTRATIONATTEMPTEDCHALLENGE,
+
+        @SerialName("InvalidScopeOrigin")
+        INVALIDSCOPEORIGIN,
+
+        @SerialName("ScopeOriginContainsPath")
+        SCOPEORIGINCONTAINSPATH,
+
+        @SerialName("RefreshInitiatorNotString")
+        REFRESHINITIATORNOTSTRING,
+
+        @SerialName("RefreshInitiatorInvalidHostPattern")
+        REFRESHINITIATORINVALIDHOSTPATTERN,
+
+        @SerialName("InvalidScopeSpecification")
+        INVALIDSCOPESPECIFICATION,
+
+        @SerialName("MissingScopeSpecificationType")
+        MISSINGSCOPESPECIFICATIONTYPE,
+
+        @SerialName("EmptyScopeSpecificationDomain")
+        EMPTYSCOPESPECIFICATIONDOMAIN,
+
+        @SerialName("EmptyScopeSpecificationPath")
+        EMPTYSCOPESPECIFICATIONPATH,
+
+        @SerialName("InvalidScopeSpecificationType")
+        INVALIDSCOPESPECIFICATIONTYPE,
+
+        @SerialName("InvalidScopeIncludeSite")
+        INVALIDSCOPEINCLUDESITE,
+
+        @SerialName("MissingScopeIncludeSite")
+        MISSINGSCOPEINCLUDESITE,
+
+        @SerialName("FederatedNotAuthorizedByProvider")
+        FEDERATEDNOTAUTHORIZEDBYPROVIDER,
+
+        @SerialName("FederatedNotAuthorizedByRelyingParty")
+        FEDERATEDNOTAUTHORIZEDBYRELYINGPARTY,
+
+        @SerialName("SessionProviderWellKnownMalformed")
+        SESSIONPROVIDERWELLKNOWNMALFORMED,
+
+        @SerialName("SessionProviderWellKnownHasProviderOrigin")
+        SESSIONPROVIDERWELLKNOWNHASPROVIDERORIGIN,
+
+        @SerialName("RelyingPartyWellKnownMalformed")
+        RELYINGPARTYWELLKNOWNMALFORMED,
+
+        @SerialName("RelyingPartyWellKnownHasRelyingOrigins")
+        RELYINGPARTYWELLKNOWNHASRELYINGORIGINS,
+
+        @SerialName("InvalidFederatedSessionProviderSessionMissing")
+        INVALIDFEDERATEDSESSIONPROVIDERSESSIONMISSING,
+
+        @SerialName("InvalidFederatedSessionWrongProviderOrigin")
+        INVALIDFEDERATEDSESSIONWRONGPROVIDERORIGIN,
+
+        @SerialName("InvalidCredentialsCookieCreationTime")
+        INVALIDCREDENTIALSCOOKIECREATIONTIME,
+
+        @SerialName("InvalidCredentialsCookieName")
+        INVALIDCREDENTIALSCOOKIENAME,
+
+        @SerialName("InvalidCredentialsCookieParsing")
+        INVALIDCREDENTIALSCOOKIEPARSING,
+
+        @SerialName("InvalidCredentialsCookieUnpermittedAttribute")
+        INVALIDCREDENTIALSCOOKIEUNPERMITTEDATTRIBUTE,
+
+        @SerialName("InvalidCredentialsCookieInvalidDomain")
+        INVALIDCREDENTIALSCOOKIEINVALIDDOMAIN,
+
+        @SerialName("InvalidCredentialsCookiePrefix")
+        INVALIDCREDENTIALSCOOKIEPREFIX,
+
+        @SerialName("InvalidScopeRulePath")
+        INVALIDSCOPERULEPATH,
+
+        @SerialName("InvalidScopeRuleHostPattern")
+        INVALIDSCOPERULEHOSTPATTERN,
+
+        @SerialName("ScopeRuleOriginScopedHostPatternMismatch")
+        SCOPERULEORIGINSCOPEDHOSTPATTERNMISMATCH,
+
+        @SerialName("ScopeRuleSiteScopedHostPatternMismatch")
+        SCOPERULESITESCOPEDHOSTPATTERNMISMATCH,
+
+        @SerialName("SigningQuotaExceeded")
+        SIGNINGQUOTAEXCEEDED,
+
+        @SerialName("InvalidConfigJson")
+        INVALIDCONFIGJSON,
+
+        @SerialName("InvalidFederatedSessionProviderFailedToRestoreKey")
+        INVALIDFEDERATEDSESSIONPROVIDERFAILEDTORESTOREKEY,
+
+        @SerialName("FailedToUnwrapKey")
+        FAILEDTOUNWRAPKEY,
+
+        @SerialName("SessionDeletedDuringRefresh")
+        SESSIONDELETEDDURINGREFRESH,
+    }
+
+    /**
+     * Details about a failed device bound session network request.
+     */
+    @Serializable
+    public data class DeviceBoundSessionFailedRequest(
+        /**
+         * The failed request URL.
+         */
+        public val requestUrl: String,
+        /**
+         * The net error of the response if it was not OK.
+         */
+        public val netError: String? = null,
+        /**
+         * The response code if the net error was OK and the response code was not
+         * 200.
+         */
+        public val responseError: Int? = null,
+        /**
+         * The body of the response if the net error was OK, the response code was
+         * not 200, and the response body was not empty.
+         */
+        public val responseErrorBody: String? = null,
+    )
+
+    /**
+     * Session event details specific to creation.
+     */
+    @Serializable
+    public data class CreationEventDetails(
+        /**
+         * The result of the fetch attempt.
+         */
+        public val fetchResult: DeviceBoundSessionFetchResult,
+        /**
+         * The session if there was a newly created session. This is populated for
+         * all successful creation events.
+         */
+        public val newSession: DeviceBoundSession? = null,
+        /**
+         * Details about a failed device bound session network request if there was
+         * one.
+         */
+        public val failedRequest: DeviceBoundSessionFailedRequest? = null,
+    )
+
+    /**
+     * Session event details specific to refresh.
+     */
+    @Serializable
+    public data class RefreshEventDetails(
+        /**
+         * The result of a refresh.
+         */
+        public val refreshResult: String,
+        /**
+         * If there was a fetch attempt, the result of that.
+         */
+        public val fetchResult: DeviceBoundSessionFetchResult? = null,
+        /**
+         * The session display if there was a newly created session. This is populated
+         * for any refresh event that modifies the session config.
+         */
+        public val newSession: DeviceBoundSession? = null,
+        /**
+         * See comments on `net::device_bound_sessions::RefreshEventResult::was_fully_proactive_refresh`.
+         */
+        public val wasFullyProactiveRefresh: Boolean,
+        /**
+         * Details about a failed device bound session network request if there was
+         * one.
+         */
+        public val failedRequest: DeviceBoundSessionFailedRequest? = null,
+    )
+
+    /**
+     * Session event details specific to termination.
+     */
+    @Serializable
+    public data class TerminationEventDetails(
+        /**
+         * The reason for a session being deleted.
+         */
+        public val deletionReason: String,
+    )
+
+    /**
+     * Session event details specific to challenges.
+     */
+    @Serializable
+    public data class ChallengeEventDetails(
+        /**
+         * The result of a challenge.
+         */
+        public val challengeResult: String,
+        /**
+         * The challenge set.
+         */
+        public val challenge: String,
     )
 
     /**
@@ -3524,6 +4201,10 @@ public class Network(
          * Whether the request is initiated by a user gesture. Defaults to false.
          */
         public val hasUserGesture: Boolean? = null,
+        /**
+         * The render-blocking behavior of the request.
+         */
+        public val renderBlockingBehavior: RenderBlockingBehavior? = null,
     )
 
     /**
@@ -3856,6 +4537,18 @@ public class Network(
         public val timestamp: Double,
     )
 
+    @Serializable
+    public data class DirectUDPSocketJoinedMulticastGroupParameter(
+        public val identifier: String,
+        public val IPAddress: String,
+    )
+
+    @Serializable
+    public data class DirectUDPSocketLeftMulticastGroupParameter(
+        public val identifier: String,
+        public val IPAddress: String,
+    )
+
     /**
      * Fired upon direct_socket.UDPSocket creation.
      */
@@ -3951,6 +4644,10 @@ public class Network(
          */
         public val connectTiming: ConnectTiming,
         /**
+         * How the request site's device bound sessions were used during this request.
+         */
+        public val deviceBoundSessionUsages: List<DeviceBoundSessionWithUsage>? = null,
+        /**
          * The client security state set for the request.
          */
         public val clientSecurityState: ClientSecurityState? = null,
@@ -3958,6 +4655,11 @@ public class Network(
          * Whether the site has partitioned cookies stored in a partition different than the current one.
          */
         public val siteHasCookieInOtherPartition: Boolean? = null,
+        /**
+         * The network conditions id if this request was affected by network conditions configured via
+         * emulateNetworkConditionsByRule.
+         */
+        public val appliedNetworkConditionsId: String? = null,
     )
 
     /**
@@ -4068,84 +4770,6 @@ public class Network(
     )
 
     /**
-     * Fired once when parsing the .wbn file has succeeded.
-     * The event contains the information about the web bundle contents.
-     */
-    @Serializable
-    public data class SubresourceWebBundleMetadataReceivedParameter(
-        /**
-         * Request identifier. Used to match this information to another event.
-         */
-        public val requestId: String,
-        /**
-         * A list of URLs of resources in the subresource Web Bundle.
-         */
-        public val urls: List<String>,
-    )
-
-    /**
-     * Fired once when parsing the .wbn file has failed.
-     */
-    @Serializable
-    public data class SubresourceWebBundleMetadataErrorParameter(
-        /**
-         * Request identifier. Used to match this information to another event.
-         */
-        public val requestId: String,
-        /**
-         * Error message
-         */
-        public val errorMessage: String,
-    )
-
-    /**
-     * Fired when handling requests for resources within a .wbn file.
-     * Note: this will only be fired for resources that are requested by the webpage.
-     */
-    @Serializable
-    public data class SubresourceWebBundleInnerResponseParsedParameter(
-        /**
-         * Request identifier of the subresource request
-         */
-        public val innerRequestId: String,
-        /**
-         * URL of the subresource resource.
-         */
-        public val innerRequestURL: String,
-        /**
-         * Bundle request identifier. Used to match this information to another event.
-         * This made be absent in case when the instrumentation was enabled only
-         * after webbundle was parsed.
-         */
-        public val bundleRequestId: String? = null,
-    )
-
-    /**
-     * Fired when request for resources within a .wbn file failed.
-     */
-    @Serializable
-    public data class SubresourceWebBundleInnerResponseErrorParameter(
-        /**
-         * Request identifier of the subresource request
-         */
-        public val innerRequestId: String,
-        /**
-         * URL of the subresource resource.
-         */
-        public val innerRequestURL: String,
-        /**
-         * Error message
-         */
-        public val errorMessage: String,
-        /**
-         * Bundle request identifier. Used to match this information to another event.
-         * This made be absent in case when the instrumentation was enabled only
-         * after webbundle was parsed.
-         */
-        public val bundleRequestId: String? = null,
-    )
-
-    /**
      * Is sent whenever a new report is added.
      * And after 'enableReportingApi' for all existing reports.
      */
@@ -4166,6 +4790,48 @@ public class Network(
          */
         public val origin: String,
         public val endpoints: List<ReportingApiEndpoint>,
+    )
+
+    /**
+     * Triggered when the initial set of device bound sessions is added.
+     */
+    @Serializable
+    public data class DeviceBoundSessionsAddedParameter(
+        /**
+         * The device bound sessions.
+         */
+        public val sessions: List<DeviceBoundSession>,
+    )
+
+    /**
+     * Triggered when a device bound session event occurs.
+     */
+    @Serializable
+    public data class DeviceBoundSessionEventOccurredParameter(
+        /**
+         * A unique identifier for this session event.
+         */
+        public val eventId: String,
+        /**
+         * The site this session event is associated with.
+         */
+        public val site: String,
+        /**
+         * Whether this event was considered successful.
+         */
+        public val succeeded: Boolean,
+        /**
+         * The session ID this event is associated with. May not be populated for
+         * failed events.
+         */
+        public val sessionId: String? = null,
+        /**
+         * The below are the different session event type details. Exactly one is populated.
+         */
+        public val creationEventDetails: CreationEventDetails? = null,
+        public val refreshEventDetails: RefreshEventDetails? = null,
+        public val terminationEventDetails: TerminationEventDetails? = null,
+        public val challengeEventDetails: ChallengeEventDetails? = null,
     )
 
     @Serializable
@@ -4302,9 +4968,63 @@ public class Network(
     )
 
     @Serializable
+    public data class EmulateNetworkConditionsByRuleParameter(
+        /**
+         * True to emulate internet disconnection. Deprecated, use the offline property in matchedNetworkConditions
+         * or emulateOfflineServiceWorker instead.
+         */
+        public val offline: Boolean? = null,
+        /**
+         * True to emulate offline service worker.
+         */
+        public val emulateOfflineServiceWorker: Boolean? = null,
+        /**
+         * Configure conditions for matching requests. If multiple entries match a request, the first entry wins.  Global
+         * conditions can be configured by leaving the urlPattern for the conditions empty. These global conditions are
+         * also applied for throttling of p2p connections.
+         */
+        public val matchedNetworkConditions: List<NetworkConditions>,
+    )
+
+    @Serializable
+    public data class EmulateNetworkConditionsByRuleReturn(
+        /**
+         * An id for each entry in matchedNetworkConditions. The id will be included in the requestWillBeSentExtraInfo for
+         * requests affected by a rule.
+         */
+        public val ruleIds: List<String>,
+    )
+
+    @Serializable
+    public data class OverrideNetworkStateParameter(
+        /**
+         * True to emulate internet disconnection.
+         */
+        public val offline: Boolean,
+        /**
+         * Minimum latency from request sent to response headers received (ms).
+         */
+        public val latency: Double,
+        /**
+         * Maximal aggregated download throughput (bytes/sec). -1 disables download throttling.
+         */
+        public val downloadThroughput: Double,
+        /**
+         * Maximal aggregated upload throughput (bytes/sec).  -1 disables upload throttling.
+         */
+        public val uploadThroughput: Double,
+        /**
+         * Connection type if known.
+         */
+        public val connectionType: ConnectionType? = null,
+    )
+
+    @Serializable
     public data class EnableParameter(
         /**
          * Buffer size in bytes to use when preserving network payloads (XHRs, etc).
+         * This is the maximum number of bytes that will be collected by this
+         * DevTools session.
          */
         public val maxTotalBufferSize: Int? = null,
         /**
@@ -4319,6 +5039,26 @@ public class Network(
          * Whether DirectSocket chunk send/receive events should be reported.
          */
         public val reportDirectSocketTraffic: Boolean? = null,
+        /**
+         * Enable storing response bodies outside of renderer, so that these survive
+         * a cross-process navigation. Requires maxTotalBufferSize to be set.
+         * Currently defaults to false. This field is being deprecated in favor of the dedicated
+         * configureDurableMessages command, due to the possibility of deadlocks when awaiting
+         * Network.enable before issuing Runtime.runIfWaitingForDebugger.
+         */
+        public val enableDurableMessages: Boolean? = null,
+    )
+
+    @Serializable
+    public data class ConfigureDurableMessagesParameter(
+        /**
+         * Buffer size in bytes to use when preserving network payloads (XHRs, etc).
+         */
+        public val maxTotalBufferSize: Int? = null,
+        /**
+         * Per-resource buffer size in bytes to use when preserving network payloads (XHRs, etc).
+         */
+        public val maxResourceBufferSize: Int? = null,
     )
 
     @Serializable
@@ -4394,6 +5134,10 @@ public class Network(
          * Request body string, omitting files from multipart requests
          */
         public val postData: String,
+        /**
+         * True, if content was sent as base64.
+         */
+        public val base64Encoded: Boolean,
     )
 
     @Serializable
@@ -4465,9 +5209,14 @@ public class Network(
     @Serializable
     public data class SetBlockedURLsParameter(
         /**
+         * Patterns to match in the order in which they are given. These patterns
+         * also take precedence over any wildcard patterns defined in `urls`.
+         */
+        public val urlPatterns: List<BlockPattern>? = null,
+        /**
          * URL patterns to block. Wildcards ('*') are allowed.
          */
-        public val urls: List<String>,
+        public val urls: List<String>? = null,
     )
 
     @Serializable
@@ -4529,10 +5278,6 @@ public class Network(
          * Cookie Priority type.
          */
         public val priority: CookiePriority? = null,
-        /**
-         * True if cookie is SameParty.
-         */
-        public val sameParty: Boolean? = null,
         /**
          * Cookie source scheme type.
          */
@@ -4648,6 +5393,30 @@ public class Network(
     )
 
     @Serializable
+    public data class EnableDeviceBoundSessionsParameter(
+        /**
+         * Whether to enable or disable events.
+         */
+        public val enable: Boolean,
+    )
+
+    @Serializable
+    public data class FetchSchemefulSiteParameter(
+        /**
+         * The URL origin.
+         */
+        public val origin: String,
+    )
+
+    @Serializable
+    public data class FetchSchemefulSiteReturn(
+        /**
+         * The corresponding schemeful site.
+         */
+        public val schemefulSite: String,
+    )
+
+    @Serializable
     public data class LoadNetworkResourceParameter(
         /**
          * Frame id to get the resource for. Mandatory for frame targets, and
@@ -4675,13 +5444,5 @@ public class Network(
          * Whether 3pc restriction is enabled.
          */
         public val enableThirdPartyCookieRestriction: Boolean,
-        /**
-         * Whether 3pc grace period exception should be enabled; false by default.
-         */
-        public val disableThirdPartyCookieMetadata: Boolean,
-        /**
-         * Whether 3pc heuristics exceptions should be enabled; false by default.
-         */
-        public val disableThirdPartyCookieHeuristics: Boolean,
     )
 }

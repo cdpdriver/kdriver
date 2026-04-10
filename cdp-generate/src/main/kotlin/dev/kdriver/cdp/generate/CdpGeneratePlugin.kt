@@ -8,8 +8,15 @@ import java.net.URL
 
 class CdpGeneratePlugin : Plugin<Project> {
 
-    private val schemaUrl =
-        "https://raw.githubusercontent.com/ChromeDevTools/debugger-protocol-viewer/master/pages/_data/tot.json"
+    /*
+    As said on their repo's README:
+    > FYI: The protocol files here in debugger-protocol-viewer#master don't get updated. A deployment writes to the devtools-protocol#ghpages branch.
+    The protocol is now split into two files: browser_protocol.json and js_protocol.json.
+     */
+    private val schemaUrls = listOf(
+        "https://raw.githubusercontent.com/ChromeDevTools/devtools-protocol/refs/heads/master/json/browser_protocol.json",
+        "https://raw.githubusercontent.com/ChromeDevTools/devtools-protocol/refs/heads/master/json/js_protocol.json",
+    )
 
     override fun apply(project: Project) {
         project.tasks.register("generateCdp") {
@@ -19,8 +26,10 @@ class CdpGeneratePlugin : Plugin<Project> {
                 val destination = File(listOf(project.projectDir.path, "src", "commonMain", "kotlin").joinToString("/"))
                 File(destination, listOf("dev", "kdriver", "cdp", "domain").joinToString("/")).deleteRecursively()
 
-                val json = JsonSlurper().parse(URL(schemaUrl)) as Map<*, *>
-                val domains = json["domains"] as List<Map<String, *>>
+                val domains = schemaUrls.flatMap { schemaUrl ->
+                    val json = JsonSlurper().parse(URL(schemaUrl)) as Map<*, *>
+                    json["domains"] as List<Map<String, *>>
+                }
                 val parsed = domains.map { domain ->
                     Domain(
                         domain = domain["domain"] as String,

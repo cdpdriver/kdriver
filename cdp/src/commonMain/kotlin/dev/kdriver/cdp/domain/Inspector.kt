@@ -2,22 +2,13 @@
 
 package dev.kdriver.cdp.domain
 
-import dev.kdriver.cdp.CDP
-import dev.kdriver.cdp.CommandMode
-import dev.kdriver.cdp.Domain
-import dev.kdriver.cdp.Serialization
-import dev.kdriver.cdp.cacheGeneratedDomain
-import dev.kdriver.cdp.getGeneratedDomain
-import kotlin.String
-import kotlin.Suppress
-import kotlin.Unit
+import dev.kdriver.cdp.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
 
 public val CDP.inspector: Inspector
     get() = getGeneratedDomain() ?: cacheGeneratedDomain(Inspector(this))
@@ -51,6 +42,16 @@ public class Inspector(
     public val targetReloadedAfterCrash: Flow<Unit> = cdp
         .events
         .filter { it.method == "Inspector.targetReloadedAfterCrash" }
+        .map { it.params }
+        .filterNotNull()
+        .map { Serialization.json.decodeFromJsonElement(it) }
+
+    /**
+     * Fired on worker targets when main worker script and any imported scripts have been evaluated.
+     */
+    public val workerScriptLoaded: Flow<Unit> = cdp
+        .events
+        .filter { it.method == "Inspector.workerScriptLoaded" }
         .map { it.params }
         .filterNotNull()
         .map { Serialization.json.decodeFromJsonElement(it) }
