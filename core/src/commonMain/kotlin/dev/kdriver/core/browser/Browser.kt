@@ -63,6 +63,11 @@ interface Browser {
     //val cookies: CookieJar
 
     /**
+     * The process ID of the browser, if available.
+     */
+    val pid: Long?
+
+    /**
      * Checks if the browser process has stopped.
      */
     val stopped: Boolean
