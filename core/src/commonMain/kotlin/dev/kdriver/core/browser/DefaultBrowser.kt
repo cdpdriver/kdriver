@@ -57,6 +57,9 @@ open class DefaultBrowser(
         }
      */
 
+    override val pid: Long?
+        get() = process?.pid()
+
     override val stopped: Boolean
         get() = process?.isAlive()?.not() ?: true
 
