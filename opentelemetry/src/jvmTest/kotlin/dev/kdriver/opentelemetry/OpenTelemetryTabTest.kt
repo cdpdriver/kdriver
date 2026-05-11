@@ -13,7 +13,7 @@ import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.extension.kotlin.asContextElement
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.extension.RegisterExtension
 import kotlin.test.Test
@@ -30,7 +30,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `withTracing wraps existing tab`() = runBlocking {
+    fun `withTracing wraps existing tab`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val tab = mockk<Tab>(relaxed = true)
@@ -43,7 +43,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `get adds event to current span`() = runBlocking {
+    fun `get adds event to current span`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true) {
@@ -85,7 +85,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `back adds event to current span`() = runBlocking {
+    fun `back adds event to current span`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true) {
@@ -115,7 +115,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `forward adds event to current span`() = runBlocking {
+    fun `forward adds event to current span`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true) {
@@ -145,7 +145,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `reload adds event with attributes to current span`() = runBlocking {
+    fun `reload adds event with attributes to current span`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true) {
@@ -178,7 +178,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `expect creates span with correct attributes`() = runBlocking {
+    fun `expect creates span with correct attributes`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val urlPattern = Regex("https://example\\.com/.*")
@@ -208,7 +208,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `expectBatch creates span with correct attributes`() = runBlocking {
+    fun `expectBatch creates span with correct attributes`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val urlPatterns = listOf(Regex("https://example\\.com/.*"), Regex("https://test\\.com/.*"))
@@ -238,7 +238,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `intercept creates span with correct attributes`() = runBlocking {
+    fun `intercept creates span with correct attributes`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true) {
@@ -280,7 +280,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `expect handles errors correctly`() = runBlocking {
+    fun `expect handles errors correctly`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val urlPattern = Regex("https://example\\.com/.*")
@@ -311,7 +311,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `expectBatch handles errors correctly`() = runBlocking {
+    fun `expectBatch handles errors correctly`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val urlPatterns = listOf(Regex("https://example\\.com/.*"))
@@ -342,7 +342,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `intercept handles errors correctly`() = runBlocking {
+    fun `intercept handles errors correctly`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true) {
@@ -383,7 +383,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `context propagation works across coroutine suspensions`() = runBlocking {
+    fun `context propagation works across coroutine suspensions`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true) {
@@ -430,7 +430,7 @@ class OpenTelemetryTabTest {
     }
 
     @Test
-    fun `mouseClick adds event with correct attributes`() = runBlocking {
+    fun `mouseClick adds event with correct attributes`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true) {

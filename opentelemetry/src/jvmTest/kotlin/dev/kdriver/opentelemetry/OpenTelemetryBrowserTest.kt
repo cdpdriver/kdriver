@@ -5,7 +5,7 @@ import dev.kdriver.core.tab.Tab
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.opentelemetry.sdk.testing.junit5.OpenTelemetryExtension
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.extension.RegisterExtension
 import kotlin.test.Test
 import kotlin.test.assertNotNull
@@ -20,7 +20,7 @@ class OpenTelemetryBrowserTest {
     }
 
     @Test
-    fun `withTracing wraps existing browser`() = runBlocking {
+    fun `withTracing wraps existing browser`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val browser = mockk<Browser>()
@@ -33,7 +33,7 @@ class OpenTelemetryBrowserTest {
     }
 
     @Test
-    fun `get returns instrumented tab`() = runBlocking {
+    fun `get returns instrumented tab`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true)
@@ -52,7 +52,7 @@ class OpenTelemetryBrowserTest {
     }
 
     @Test
-    fun `get with newTab returns instrumented tab`() = runBlocking {
+    fun `get with newTab returns instrumented tab`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true)
@@ -71,7 +71,7 @@ class OpenTelemetryBrowserTest {
     }
 
     @Test
-    fun `get with newWindow returns instrumented tab`() = runBlocking {
+    fun `get with newWindow returns instrumented tab`() = runTest {
         // Setup
         val tracer = otelTesting.openTelemetry.getTracer("test")
         val mockTab = mockk<Tab>(relaxed = true)

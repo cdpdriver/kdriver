@@ -114,21 +114,25 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.tests.mockk)
+                implementation(libs.tests.coroutines)
             }
         }
         val macosTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.tests.coroutines)
             }
         }
         val linuxTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.tests.coroutines)
             }
         }
         val mingwTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.tests.coroutines)
             }
         }
     }
