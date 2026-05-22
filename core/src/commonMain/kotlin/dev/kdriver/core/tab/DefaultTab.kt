@@ -379,9 +379,16 @@ open class DefaultTab(
     override suspend fun querySelectorAll(
         selector: String,
         node: NodeOrElement?,
-    ): List<Element> {
-        val lastMap = mutableMapOf<Int, Boolean>()
+    ): List<Element> = querySelectorAllInternal(selector, node, retried = false)
 
+    // `retried` carries the "already retried once" state across the recursive call. It must be a
+    // parameter, not a local: a local would be reset on every recursion and the guard would never
+    // trip, recursing without bound on a persistent "could not find node" (ISSUE-7).
+    private suspend fun querySelectorAllInternal(
+        selector: String,
+        node: NodeOrElement?,
+        retried: Boolean,
+    ): List<Element> {
         val doc = if (node == null) {
             dom.getDocument(-1, true).root
         } else {
@@ -393,20 +400,9 @@ open class DefaultTab(
             dom.querySelectorAll(doc.nodeId, selector)
         } catch (e: Exception) {
             if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
-                val last = lastMap[node.node.nodeId]
-
-                if (last == true) {
-                    // Remove the marker to avoid infinite recursion
-                    lastMap.remove(node.node.nodeId)
-                    return emptyList()
-                }
-
+                if (retried) return emptyList()
                 if (node is NodeOrElement.WrappedElement) node.element.update()
-
-                // Mark as retried once
-                lastMap[node.node.nodeId] = true
-
-                return querySelectorAll(selector, node)
+                return querySelectorAllInternal(selector, node, retried = true)
             } else {
                 disableDomAgent()
                 throw e
@@ -429,11 +425,15 @@ open class DefaultTab(
     override suspend fun querySelector(
         selector: String,
         node: NodeOrElement?,
+    ): Element? = querySelectorInternal(selector.trim(), node, retried = false)
+
+    // See querySelectorAllInternal: `retried` must be a parameter so the retry-once guard survives
+    // the recursive call (ISSUE-7).
+    private suspend fun querySelectorInternal(
+        selector: String,
+        node: NodeOrElement?,
+        retried: Boolean,
     ): Element? {
-        val lastMap = mutableMapOf<Int, Boolean>()
-
-        val trimmedSelector = selector.trim()
-
         val doc = if (node == null) {
             dom.getDocument(-1, true).root
         } else {
@@ -442,23 +442,12 @@ open class DefaultTab(
         }
 
         val nodeId = try {
-            dom.querySelector(doc.nodeId, trimmedSelector)
+            dom.querySelector(doc.nodeId, selector)
         } catch (e: Exception) {
             if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
-                val last = lastMap[node.node.nodeId]
-
-                if (last == true) {
-                    // Remove the marker to avoid infinite recursion
-                    lastMap.remove(node.node.nodeId)
-                    return null
-                }
-
+                if (retried) return null
                 if (node is NodeOrElement.WrappedElement) node.element.update()
-
-                // Mark as retried once
-                lastMap[node.node.nodeId] = true
-
-                return querySelector(trimmedSelector, node)
+                return querySelectorInternal(selector, node, retried = true)
             } else if (e.message?.contains("could not find node", ignoreCase = true) == true) {
                 return null
             } else {
