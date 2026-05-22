@@ -280,6 +280,8 @@ open class DefaultBrowser(
         return try {
             info = http.get<ContraDict>("version")
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             logger.debug("Could not start: ${e.message}")
             false
