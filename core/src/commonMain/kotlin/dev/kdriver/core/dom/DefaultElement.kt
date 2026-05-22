@@ -5,6 +5,7 @@ import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.tab.Tab
 import io.ktor.util.logging.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -231,6 +232,8 @@ open class DefaultElement(
                 if (viewportJson != null) {
                     Serialization.json.decodeFromJsonElement<dev.kdriver.core.dom.ViewportData>(viewportJson)
                 } else null
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 null
             }

@@ -85,10 +85,14 @@ open class DefaultConnection(
                         logger.debug("WS < CDP: ${text.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
                         val received = Serialization.json.decodeFromString<Message>(text)
                         allMessages.emit(received)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         logger.debug("WebSocket exception while receiving message: {}", e)
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 e.printStackTrace()
                 // Handle disconnect, maybe trigger reconnect logic here
@@ -160,49 +164,59 @@ open class DefaultConnection(
         delay(t)
     }
 
-    private suspend fun prepareHeadless() = runCatching {
-        if (prepareHeadlessDone) return@runCatching
-        val response = runtime.evaluate(
-            Runtime.EvaluateParameter(
-                expression = "navigator.userAgent",
-                userGesture = true,
-                awaitPromise = true,
-                returnByValue = true,
-                allowUnsafeEvalBlockedByCSP = true
-            ),
-            CommandMode.ONE_SHOT
-        )
-        response.result.value?.jsonPrimitive?.content?.let { ua ->
-            network.setUserAgentOverride(
-                Network.SetUserAgentOverrideParameter(
-                    userAgent = ua.replace("Headless", "")
+    private suspend fun prepareHeadless() {
+        try {
+            if (prepareHeadlessDone) return
+            val response = runtime.evaluate(
+                Runtime.EvaluateParameter(
+                    expression = "navigator.userAgent",
+                    userGesture = true,
+                    awaitPromise = true,
+                    returnByValue = true,
+                    allowUnsafeEvalBlockedByCSP = true
                 ),
                 CommandMode.ONE_SHOT
             )
+            response.result.value?.jsonPrimitive?.content?.let { ua ->
+                network.setUserAgentOverride(
+                    Network.SetUserAgentOverrideParameter(
+                        userAgent = ua.replace("Headless", "")
+                    ),
+                    CommandMode.ONE_SHOT
+                )
+            }
+            prepareHeadlessDone = true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
         }
-        prepareHeadlessDone = true
     }
 
-    private suspend fun prepareExpert() = runCatching {
-        if (prepareExpertDone) return@runCatching
-        owner?.let {
-            page.addScriptToEvaluateOnNewDocument(
-                Page.AddScriptToEvaluateOnNewDocumentParameter(
-                    source = """
-                    Element.prototype._attachShadow = Element.prototype.attachShadow;
-                    Element.prototype.attachShadow = function () {
-                        return this._attachShadow( { mode: "open" } );
-                    };
-                    """.trimIndent()
-                ),
-                CommandMode.ONE_SHOT
-            )
-            page.enable(
-                Page.EnableParameter(),
-                CommandMode.ONE_SHOT
-            )
+    private suspend fun prepareExpert() {
+        try {
+            if (prepareExpertDone) return
+            owner?.let {
+                page.addScriptToEvaluateOnNewDocument(
+                    Page.AddScriptToEvaluateOnNewDocumentParameter(
+                        source = """
+                        Element.prototype._attachShadow = Element.prototype.attachShadow;
+                        Element.prototype.attachShadow = function () {
+                            return this._attachShadow( { mode: "open" } );
+                        };
+                        """.trimIndent()
+                    ),
+                    CommandMode.ONE_SHOT
+                )
+                page.enable(
+                    Page.EnableParameter(),
+                    CommandMode.ONE_SHOT
+                )
+            }
+            prepareExpertDone = true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
         }
-        prepareExpertDone = true
     }
 
     private fun parseWebSocketUrl(url: String): WebSocketInfo {

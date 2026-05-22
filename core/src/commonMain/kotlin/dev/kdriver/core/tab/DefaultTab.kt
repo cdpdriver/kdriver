@@ -17,6 +17,7 @@ import dev.kdriver.core.network.*
 import io.ktor.http.*
 import io.ktor.util.logging.*
 import io.ktor.utils.io.core.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.io.buffered
@@ -491,6 +492,8 @@ open class DefaultTab(
                 // Try to resolve the node if not found in the local tree
                 val resolvedNode = try {
                     dom.resolveNode(nodeId = nid)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (_: Exception) {
                     null
                 }
@@ -514,6 +517,8 @@ open class DefaultTab(
                     // just add the element itself
                     items.add(elem)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
                 continue
             }
