@@ -5,11 +5,7 @@ import dev.kdriver.cdp.domain.Fetch.HeaderEntry
 import dev.kdriver.cdp.domain.Network
 import dev.kdriver.cdp.domain.fetch
 import dev.kdriver.core.tab.Tab
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.*
 
 /**
  * Default implementation of [FetchInterception].
@@ -30,7 +26,12 @@ open class BaseFetchInterception(
     }
 
     private suspend fun setup() {
-        val coroutineScope = CoroutineScope(coroutineContext)
+        val coroutineScope = CoroutineScope(currentCoroutineContext())
+        // Subscribe before enabling fetch, so a requestPaused fired after enable() can't be missed.
+        // UNDISPATCHED guarantees the collector is subscribed before launch returns (ISSUE-2).
+        job = coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            tab.fetch.requestPaused.collect { handler(it) }
+        }
         tab.fetch.enable(
             listOf(
                 Fetch.RequestPattern(
@@ -40,9 +41,6 @@ open class BaseFetchInterception(
                 )
             )
         )
-        job = coroutineScope.launch {
-            tab.fetch.requestPaused.collect { handler(it) }
-        }
     }
 
     private suspend fun teardown() {
