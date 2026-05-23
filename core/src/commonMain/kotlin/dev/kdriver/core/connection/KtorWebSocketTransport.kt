@@ -53,6 +53,9 @@ class KtorWebSocketTransport(
     override suspend fun close() {
         session?.close()
         session = null
+        // Close the engine-backed client too, otherwise its threads/connection pool leak across
+        // browser create/stop cycles (ISSUE-9).
+        client.close()
     }
 
     private fun parseWebSocketUrl(url: String): WebSocketInfo {
