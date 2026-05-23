@@ -298,6 +298,9 @@ open class DefaultBrowser(
         logger.debug("Closing connection...")
         connection?.close()
         connection = null
+        logger.debug("Closing HTTP API client...")
+        http?.close()
+        http = null
         logger.debug("Canceling coroutine scope...")
         coroutineScope.cancel()
         logger.info("Browser process stopped")

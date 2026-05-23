@@ -4,6 +4,7 @@ import dev.kdriver.cdp.*
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.Config.Defaults
+import dev.kdriver.core.exceptions.ConnectionClosedException
 import io.ktor.util.logging.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -34,6 +35,9 @@ open class DefaultConnection(
 
     private var socketSubscription: Job? = null
 
+    private val connectMutex = Mutex()
+    private val prepareMutex = Mutex()
+
     private val currentIdMutex = Mutex()
     private var currentId = 0L
 
@@ -63,8 +67,13 @@ open class DefaultConnection(
 
     private suspend fun connect() {
         if (transport.isActive) return
-        transport.connect()
-        startListening()
+        // Guard so concurrent first commands don't each open a session (which would leak the
+        // duplicate sockets/listeners). Double-checked: skip the lock once connected (ISSUE-4).
+        connectMutex.withLock {
+            if (transport.isActive) return@withLock
+            transport.connect()
+            startListening()
+        }
     }
 
     private fun startListening() {
@@ -86,13 +95,29 @@ open class DefaultConnection(
                         logger.debug("WebSocket exception while receiving message: {}", e)
                     }
                 }
+                // incoming() completed without error => the socket was closed. Fail any in-flight
+                // commands so their callers observe the disconnect instead of hanging (ISSUE-3).
+                failPendingRequests(ConnectionClosedException())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                e.printStackTrace()
-                // Handle disconnect, maybe trigger reconnect logic here
+                logger.error("WebSocket receive loop terminated: {}", e)
+                failPendingRequests(ConnectionClosedException(cause = e))
             }
         }
+    }
+
+    /**
+     * Completes every in-flight request waiter exceptionally and clears the registry, so callers
+     * parked in [callCommand] observe a failure rather than hanging when the connection goes away.
+     */
+    private suspend fun failPendingRequests(cause: Throwable) {
+        val pending = pendingRequestsMutex.withLock {
+            val snapshot = pendingRequests.values.toList()
+            pendingRequests.clear()
+            snapshot
+        }
+        pending.forEach { it.completeExceptionally(cause) }
     }
 
     @InternalCdpApi
@@ -100,8 +125,12 @@ open class DefaultConnection(
         connect()
 
         if (mode == CommandMode.DEFAULT) owner?.let { browser ->
-            if (browser.config.expert) prepareExpert()
-            if (browser.config.headless) prepareHeadless()
+            // Serialize preparation so concurrent first commands run it once, not N times (ISSUE-4).
+            // prepare* issue ONE_SHOT commands, which skip this block, so prepareMutex isn't re-entered.
+            prepareMutex.withLock {
+                if (browser.config.expert) prepareExpert()
+                if (browser.config.headless) prepareHeadless()
+            }
         }
 
         val requestId = currentIdMutex.withLock { currentId++ }
@@ -128,6 +157,8 @@ open class DefaultConnection(
         transport.close()
         socketSubscription?.cancel()
         socketSubscription = null
+        // Fail any commands still awaiting a reply that will now never come (ISSUE-3).
+        failPendingRequests(ConnectionClosedException("Connection closed"))
     }
 
     override suspend fun updateTarget() {
