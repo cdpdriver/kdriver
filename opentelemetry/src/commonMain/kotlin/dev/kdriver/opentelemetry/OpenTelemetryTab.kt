@@ -413,7 +413,11 @@ class OpenTelemetryTab(
 
     override suspend fun sleep(t: Long) = tab.sleep(t)
 
-    override var targetInfo: Target.TargetInfo? = tab.targetInfo
+    override var targetInfo: Target.TargetInfo?
+        get() = tab.targetInfo
+        set(value) {
+            tab.targetInfo = value
+        }
 
     @InternalCdpApi
     override val events: Flow<Message.Event> = tab.events
