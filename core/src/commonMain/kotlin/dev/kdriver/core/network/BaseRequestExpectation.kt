@@ -3,11 +3,7 @@ package dev.kdriver.core.network
 import dev.kdriver.cdp.domain.Network
 import dev.kdriver.cdp.domain.network
 import dev.kdriver.core.tab.Tab
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.*
 
 /**
  * Default implementation of [RequestExpectation].
@@ -53,17 +49,20 @@ open class BaseRequestExpectation(
         }
 
     private suspend fun setup() {
-        val coroutineScope = CoroutineScope(coroutineContext)
-        tab.network.enable()
-        requestJob = coroutineScope.launch {
+        val coroutineScope = CoroutineScope(currentCoroutineContext())
+        // Subscribe to the event flows before enabling the domain, so no event fired after
+        // enable() can be missed. UNDISPATCHED guarantees each collector is actually subscribed
+        // before launch returns (ISSUE-2).
+        requestJob = coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
             tab.network.requestWillBeSent.collect { requestHandler(it) }
         }
-        responseJob = coroutineScope.launch {
+        responseJob = coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
             tab.network.responseReceived.collect { responseHandler(it) }
         }
-        loadingFinishedJob = coroutineScope.launch {
+        loadingFinishedJob = coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
             tab.network.loadingFinished.collect { loadingFinishedHandler(it) }
         }
+        tab.network.enable()
     }
 
     private fun teardown() {

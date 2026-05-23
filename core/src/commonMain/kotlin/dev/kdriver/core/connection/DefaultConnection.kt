@@ -4,12 +4,7 @@ import dev.kdriver.cdp.*
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.Config.Defaults
-import dev.kdriver.core.browser.WebSocketInfo
-import io.ktor.client.*
-import io.ktor.client.plugins.websocket.*
-import io.ktor.http.*
 import io.ktor.util.logging.*
-import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -35,16 +30,22 @@ open class DefaultConnection(
 
     private val logger = KtorSimpleLogger("Connection")
 
-    private val client = HttpClient(getWebSocketClientEngine()) {
-        install(WebSockets)
-    }
-
-    private var wsSession: ClientWebSocketSession? = null
+    private val transport: WebSocketTransport by lazy { createTransport() }
 
     private var socketSubscription: Job? = null
 
     private val currentIdMutex = Mutex()
     private var currentId = 0L
+
+    private val pendingRequestsMutex = Mutex()
+    private val pendingRequests = mutableMapOf<Long, CompletableDeferred<Message.Response>>()
+
+    /**
+     * Creates the [WebSocketTransport] used to talk to the browser.
+     *
+     * Overridable so tests can inject a fake transport without a real browser.
+     */
+    protected open fun createTransport(): WebSocketTransport = KtorWebSocketTransport(websocketUrl)
 
     private var prepareHeadlessDone = false
     private var prepareExpertDone = false
@@ -61,16 +62,8 @@ open class DefaultConnection(
     override val generatedDomains: MutableMap<KClass<out Domain>, Domain> = mutableMapOf()
 
     private suspend fun connect() {
-        if (wsSession != null && wsSession?.isActive == true) return
-        wsSession = client.webSocketSession {
-            url {
-                val parsed = parseWebSocketUrl(websocketUrl)
-                this.protocol = URLProtocol.WS
-                this.host = parsed.host
-                this.port = parsed.port
-                this.path(parsed.path)
-            }
-        }
+        if (transport.isActive) return
+        transport.connect()
         startListening()
     }
 
@@ -78,12 +71,14 @@ open class DefaultConnection(
         socketSubscription?.cancel()
         socketSubscription = messageListeningScope.launch {
             try {
-                for (frame in wsSession?.incoming ?: return@launch) {
+                transport.incoming().collect { text ->
                     try {
-                        frame as? Frame.Text ?: continue
-                        val text = frame.readText()
                         logger.debug("WS < CDP: ${text.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
                         val received = Serialization.json.decodeFromString<Message>(text)
+                        if (received is Message.Response) {
+                            pendingRequestsMutex.withLock { pendingRequests.remove(received.id) }
+                                ?.complete(received)
+                        }
                         allMessages.emit(received)
                     } catch (e: CancellationException) {
                         throw e
@@ -110,19 +105,27 @@ open class DefaultConnection(
         }
 
         val requestId = currentIdMutex.withLock { currentId++ }
-        val jsonString = Serialization.json.encodeToString(Request(requestId, method, parameter))
-        wsSession?.send(jsonString)
-        logger.debug("WS > CDP: ${jsonString.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
+        // Register the response waiter *before* sending, so a reply that arrives before we start
+        // awaiting is still captured (the receive loop completes this deferred). Awaiting the
+        // response via a replay-0 shared flow after sending could miss it and hang (ISSUE-1).
+        val deferred = CompletableDeferred<Message.Response>()
+        pendingRequestsMutex.withLock { pendingRequests[requestId] = deferred }
+        try {
+            val jsonString = Serialization.json.encodeToString(Request(requestId, method, parameter))
+            transport.send(jsonString)
+            logger.debug("WS > CDP: ${jsonString.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
 
-        val result = responses.first { it.id == requestId }
-        result.error?.throwAsException(method)
-        return result.result
+            val result = deferred.await()
+            result.error?.throwAsException(method)
+            return result.result
+        } finally {
+            pendingRequestsMutex.withLock { pendingRequests.remove(requestId) }
+        }
     }
 
     @InternalCdpApi
     override suspend fun close() {
-        wsSession?.close()
-        wsSession = null
+        transport.close()
         socketSubscription?.cancel()
         socketSubscription = null
     }
@@ -217,20 +220,6 @@ open class DefaultConnection(
             throw e
         } catch (_: Exception) {
         }
-    }
-
-    private fun parseWebSocketUrl(url: String): WebSocketInfo {
-        val uri = Url(url)
-
-        val host = uri.host
-        val port = if (uri.port != -1) uri.port else when (uri.protocol) {
-            URLProtocol.WS -> 80
-            URLProtocol.WSS -> 443
-            else -> throw IllegalArgumentException("Unsupported scheme: ${uri.protocol}")
-        }
-        val path = uri.encodedPath
-
-        return WebSocketInfo(host, port, path)
     }
 
     override fun toString(): String {
