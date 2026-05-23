@@ -40,7 +40,7 @@ interface Browser {
      *
      * If you want to tabs, consider using [tabs] property instead.
      */
-    val targets: MutableList<Connection>
+    val targets: List<Connection>
 
     /**
      * The WebSocket URL for the browser's debugger.

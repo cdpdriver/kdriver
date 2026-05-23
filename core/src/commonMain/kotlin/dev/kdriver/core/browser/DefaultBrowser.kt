@@ -15,6 +15,7 @@ import io.ktor.util.logging.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.concurrent.Volatile
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -36,16 +37,25 @@ open class DefaultBrowser(
 
     override var info: ContraDict? = null
 
-    override val targets: MutableList<Connection> = mutableListOf()
+    // The canonical registry: mutated only while holding [updateTargetInfoMutex]. After each
+    // mutation an immutable copy is published to [targetsSnapshot] so the non-suspend getters
+    // below can read a consistent view without the lock (ISSUE-5).
+    private val mutableTargets = mutableListOf<Connection>()
+
+    @Volatile
+    private var targetsSnapshot: List<Connection> = emptyList()
+
+    override val targets: List<Connection>
+        get() = targetsSnapshot
 
     override val websocketUrl: String
         get() = info?.webSocketDebuggerUrl ?: error("Browser not yet started. Call start() first")
 
     override val mainTab: Tab?
-        get() = targets.filterIsInstance<Tab>().maxByOrNull { it.type == "page" }
+        get() = targetsSnapshot.filterIsInstance<Tab>().maxByOrNull { it.type == "page" }
 
     override val tabs: List<Tab>
-        get() = targets.filterIsInstance<Tab>().filter { it.type == "page" }
+        get() = targetsSnapshot.filterIsInstance<Tab>().filter { it.type == "page" }
 
     /*
     override val cookies: CookieJar
@@ -64,6 +74,9 @@ open class DefaultBrowser(
         get() = process?.isAlive()?.not() ?: true
 
     companion object {
+
+        private const val TARGET_WAIT_TIMEOUT_MS = 10_000L
+        private const val TARGET_POLL_INTERVAL_MS = 50L
 
         /**
          * The entry point for creating a new Browser instance.
@@ -96,6 +109,51 @@ open class DefaultBrowser(
     protected open fun createTab(websocketUrl: String, targetInfo: Target.TargetInfo): Tab =
         DefaultTab(websocketUrl, coroutineScope, targetInfo, this)
 
+    /**
+     * Adds the target if unknown — page targets become [Tab]s, everything else a plain connection —
+     * or updates the [Target.TargetInfo] of the existing entry. Dedupes by `targetId` so a target
+     * discovered by both [updateTargets] and a `targetCreated` event can't appear twice, and so page
+     * targets are consistently [Tab]s (ISSUE-6).
+     *
+     * Must be called while holding [updateTargetInfoMutex].
+     */
+    private fun upsertTarget(targetInfo: Target.TargetInfo) {
+        val existing = mutableTargets.firstOrNull { it.targetId == targetInfo.targetId }
+        if (existing != null) {
+            existing.targetInfo = targetInfo
+        } else {
+            val wsUrl = "ws://${config.host}:${config.port}/devtools/${targetInfo.type}/${targetInfo.targetId}"
+            val created = if (targetInfo.type == "page") createTab(wsUrl, targetInfo)
+            else createConnection(wsUrl, targetInfo)
+            mutableTargets.add(created)
+            logger.debug("target added => $created")
+        }
+        publishTargetsSnapshot()
+    }
+
+    /** Publishes an immutable copy of [mutableTargets]. Must be called while holding the mutex. */
+    private fun publishTargetsSnapshot() {
+        targetsSnapshot = mutableTargets.toList()
+    }
+
+    private fun findPageTab(predicate: (Tab) -> Boolean): Tab? =
+        targetsSnapshot.filterIsInstance<Tab>().firstOrNull { it.type == "page" && predicate(it) }
+
+    /**
+     * Waits for a page [Tab] matching [predicate] to appear in the registry, instead of assuming it
+     * is already present. The matching `Tab` is only registered once the asynchronous `targetCreated`
+     * event is processed, which races `createTarget()` returning (ISSUE-8).
+     */
+    private suspend fun awaitPageTab(timeoutMillis: Long, predicate: (Tab) -> Boolean): Tab =
+        withTimeoutOrNull(timeoutMillis) {
+            var found = findPageTab(predicate)
+            while (found == null) {
+                delay(TARGET_POLL_INTERVAL_MS)
+                found = findPageTab(predicate)
+            }
+            found
+        } ?: throw IllegalStateException("Timed out waiting for a page target after ${timeoutMillis}ms")
+
     override suspend fun wait(timeout: Long): Browser {
         delay(timeout)
         return this
@@ -121,11 +179,11 @@ open class DefaultBrowser(
                 newWindow = newWindow,
                 enableBeginFrameControl = true
             )
-            targets.filterIsInstance<Tab>().first { it.type == "page" && it.targetId == targetId.targetId }.also {
+            awaitPageTab(TARGET_WAIT_TIMEOUT_MS) { it.targetId == targetId.targetId }.also {
                 if (it is OwnedConnection) it.owner = this
             }
         } else {
-            targets.filterIsInstance<Tab>().first { it.type == "page" }.also {
+            awaitPageTab(TARGET_WAIT_TIMEOUT_MS) { true }.also {
                 it.page.navigate(url)
                 if (it is OwnedConnection) it.owner = this
             }
@@ -229,44 +287,19 @@ open class DefaultBrowser(
 
     private suspend fun handleTargetUpdate(event: Any) = updateTargetInfoMutex.withLock {
         when (event) {
-            is Target.TargetInfoChangedParameter -> {
-                val targetInfo = event.targetInfo
-                val currentTab = targets.firstOrNull { it.targetId == targetInfo.targetId } ?: run {
-                    logger.warn("TargetInfoChangedParameter: Target with ID ${targetInfo.targetId} not found in current targets.")
-                    return
-                }
-                val currentTarget = currentTab.targetInfo
-
-                logger.debug("target #${targets.indexOf(currentTab)} has changed")
-                /*
-                if (logger.isLoggable(Level.FINE)) {
-                    val changes = compareTargetInfo(currentTarget, targetInfo)
-                    val changesString = changes.joinToString("\n") { (key, old, new) ->
-                        "$key: $old => $new"
-                    }
-                    logger.fine("target #${targets.indexOf(currentTab)} has changed: \n$changesString")
-                }
-                */
-
-                currentTab.targetInfo = targetInfo
-            }
-
-            is Target.TargetCreatedParameter -> {
-                val targetInfo = event.targetInfo
-                val wsUrl = "ws://${config.host}:${config.port}/devtools/${targetInfo.type}/${targetInfo.targetId}"
-
-                val newTarget = createTab(wsUrl, targetInfo)
-                targets.add(newTarget)
-                logger.debug("target ${targets.size - 1} created => $newTarget")
-            }
+            // Both create and info-changed go through the same dedupe-by-targetId upsert, so an
+            // info-changed for an as-yet-unregistered target registers it rather than being dropped.
+            is Target.TargetInfoChangedParameter -> upsertTarget(event.targetInfo)
+            is Target.TargetCreatedParameter -> upsertTarget(event.targetInfo)
 
             is Target.TargetDestroyedParameter -> {
-                val currentTab = targets.firstOrNull { it.targetId == event.targetId } ?: run {
+                val current = mutableTargets.firstOrNull { it.targetId == event.targetId } ?: run {
                     logger.warn("TargetDestroyedParameter: Target with ID ${event.targetId} not found in current targets.")
-                    return
+                    return@withLock
                 }
-                logger.debug("target removed. id ${targets.indexOf(currentTab)} => $currentTab")
-                targets.remove(currentTab)
+                logger.debug("target removed => $current")
+                mutableTargets.remove(current)
+                publishTargetsSnapshot()
             }
 
             is Target.TargetCrashedParameter -> {
@@ -318,16 +351,10 @@ open class DefaultBrowser(
     }
 
     override suspend fun updateTargets() {
-        getTargets().forEach { t ->
-            val existingTab = this.targets.firstOrNull { it.targetInfo?.targetId == t.targetId }
-
-            if (existingTab != null) {
-                existingTab.targetInfo = t.copy() // ou update manuellement les champs si nécessaire
-            } else {
-                val wsUrl = "ws://${config.host}:${config.port}/devtools/page/${t.targetId}"
-                val newConnection = createConnection(wsUrl, t)
-                this.targets.add(newConnection)
-            }
+        // Fetch outside the lock (it's a network round-trip), then apply atomically (ISSUE-5).
+        val targetInfos = getTargets()
+        updateTargetInfoMutex.withLock {
+            targetInfos.forEach { upsertTarget(it) }
         }
 
         yield() // equivalent to asyncio.sleep(0)
