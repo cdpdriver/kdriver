@@ -3,12 +3,7 @@ package dev.kdriver.core.network
 import dev.kdriver.cdp.domain.Network
 import dev.kdriver.cdp.domain.network
 import dev.kdriver.core.tab.Tab
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.*
 
 /**
  * Default implementation of [RequestExpectation].
@@ -54,7 +49,7 @@ open class BaseRequestExpectation(
         }
 
     private suspend fun setup() {
-        val coroutineScope = CoroutineScope(coroutineContext)
+        val coroutineScope = CoroutineScope(currentCoroutineContext())
         // Subscribe to the event flows before enabling the domain, so no event fired after
         // enable() can be missed. UNDISPATCHED guarantees each collector is actually subscribed
         // before launch returns (ISSUE-2).
