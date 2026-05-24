@@ -22,7 +22,7 @@ jobs:
           distribution: 'temurin'
           java-version: 21
       - name: Install dependencies and run JVM tests
-        run: ./gradlew jvmTest
+        run: ./gradlew jvmTest --info
       - name: Run macOS native tests
         if: runner.os == 'macOS'
         run: ./gradlew macosArm64Test
