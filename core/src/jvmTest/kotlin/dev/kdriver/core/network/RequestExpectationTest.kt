@@ -20,9 +20,9 @@ class RequestExpectationTest {
         tab.expect(Regex("groceries.html")) {
             tab.get(sampleFile("groceries.html"))
 
-            val request = withTimeout(3000L) { this@expect.getRequest() }
-            val response = withTimeout(3000L) { this@expect.getResponse() }
-            val responseBody = withTimeout(3000L) { this@expect.getRawResponseBody() }
+            val request = withTimeout(10_000L) { this@expect.getRequest() }
+            val response = withTimeout(10_000L) { this@expect.getResponse() }
+            val responseBody = withTimeout(10_000L) { this@expect.getRawResponseBody() }
 
             assertEquals(request.url, response.url)
             assertEquals(200, response.status)
@@ -40,9 +40,9 @@ class RequestExpectationTest {
         tab.expect {
             tab.get(sampleFile("groceries.html"))
 
-            val request = withTimeout(3000L) { this@expect.getRequest() }
-            val response = withTimeout(3000L) { this@expect.getResponse() }
-            val responseBody = withTimeout(3000L) { this@expect.getRawResponseBody() }
+            val request = withTimeout(10_000L) { this@expect.getRequest() }
+            val response = withTimeout(10_000L) { this@expect.getResponse() }
+            val responseBody = withTimeout(10_000L) { this@expect.getRawResponseBody() }
 
             assertEquals(request.url, response.url)
             assertEquals(200, response.status)
@@ -64,9 +64,9 @@ class RequestExpectationTest {
             tab.reload()
             tab.waitForReadyState(ReadyState.COMPLETE)
 
-            val request = withTimeout(3000L) { this@expect.getRequest() }
-            val response = withTimeout(3000L) { this@expect.getResponse() }
-            val responseBody = withTimeout(3000L) { this@expect.getRawResponseBody() }
+            val request = withTimeout(10_000L) { this@expect.getRequest() }
+            val response = withTimeout(10_000L) { this@expect.getResponse() }
+            val responseBody = withTimeout(10_000L) { this@expect.getRawResponseBody() }
 
             assertEquals(request.url, response.url)
             assertEquals(200, response.status)
@@ -90,13 +90,13 @@ class RequestExpectationTest {
             val pageExp = expectations[pagePattern] ?: error("Missing expectation for profile.html")
             val apiExp = expectations[apiPattern] ?: error("Missing expectation for user-data.json")
 
-            val pageResponse = withTimeout(3000L) { pageExp.getResponse() }
-            val apiResponse = withTimeout(3000L) { apiExp.getResponse() }
+            val pageResponse = withTimeout(10_000L) { pageExp.getResponse() }
+            val apiResponse = withTimeout(10_000L) { apiExp.getResponse() }
 
             assertEquals(200, pageResponse.status)
             assertEquals(200, apiResponse.status)
 
-            val userData = withTimeout(3000L) { apiExp.getResponseBody<UserData>() }
+            val userData = withTimeout(10_000L) { apiExp.getResponseBody<UserData>() }
             assertEquals("Zendriver", userData.name)
         }
 

@@ -8,6 +8,9 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      # Don't cancel the other OS legs when one flakes, so a single intermittent
+      # failure doesn't hide the real per-OS result.
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
     steps:
@@ -19,7 +22,7 @@ jobs:
           distribution: 'temurin'
           java-version: 21
       - name: Install dependencies and run JVM tests
-        run: ./gradlew jvmTest
+        run: ./gradlew jvmTest --info
       - name: Run macOS native tests
         if: runner.os == 'macOS'
         run: ./gradlew macosArm64Test

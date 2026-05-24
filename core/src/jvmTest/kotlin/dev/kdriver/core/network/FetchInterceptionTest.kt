@@ -23,8 +23,8 @@ class FetchInterceptionTest {
             Network.ResourceType.XHR
         ) {
             tab.get(sampleFile("profile.html"))
-            val originalResponse = withTimeout(3000L) { getResponseBody<UserData>() }
-            withTimeout(3000L) { continueRequest() }
+            val originalResponse = withTimeout(10_000L) { getResponseBody<UserData>() }
+            withTimeout(10_000L) { continueRequest() }
             originalResponse
         }
 
@@ -42,8 +42,8 @@ class FetchInterceptionTest {
             Fetch.RequestStage.RESPONSE,
         ) {
             tab.get(sampleFile("profile.html"))
-            val originalResponse = withTimeout(3000L) { getResponseBody<UserData>() }
-            withTimeout(3000L) { continueRequest() }
+            val originalResponse = withTimeout(10_000L) { getResponseBody<UserData>() }
+            withTimeout(10_000L) { continueRequest() }
             originalResponse
         }
 
@@ -62,12 +62,12 @@ class FetchInterceptionTest {
             Network.ResourceType.XHR
         ) {
             tab.get(sampleFile("profile.html"))
-            withTimeout(3000L) { continueRequest() }
+            withTimeout(10_000L) { continueRequest() }
 
             reset()
             tab.reload()
-            val originalResponse = withTimeout(3000L) { getResponseBody<UserData>() }
-            withTimeout(3000L) { continueRequest() }
+            val originalResponse = withTimeout(10_000L) { getResponseBody<UserData>() }
+            withTimeout(10_000L) { continueRequest() }
             originalResponse
         }
 

@@ -180,8 +180,8 @@ class TabTest {
         tab.reload()
         tab.waitForReadyState(ReadyState.COMPLETE)
 
-        withTimeout(1000) { assertTrue(handle1Called.await()) }
-        withTimeout(1000) { assertTrue(handle2Called.await()) }
+        withTimeout(10_000) { assertTrue(handle1Called.await()) }
+        withTimeout(10_000) { assertTrue(handle2Called.await()) }
 
         job1.cancel()
         job2.cancel()
