@@ -154,6 +154,22 @@ open class DefaultBrowser(
             found
         } ?: throw IllegalStateException("Timed out waiting for a page target after ${timeoutMillis}ms")
 
+    /**
+     * Best-effort wait, during [start], for the initial page [Tab] to be registered, so `mainTab`
+     * (and tests built on `browser.mainTab`) are ready when `start()` returns instead of racing the
+     * asynchronous target discovery (ISSUE-6 residual). Re-runs [updateTargets] each poll so it
+     * works whether or not auto-discovery events are enabled. Does NOT throw on timeout — a browser
+     * may legitimately have no page yet, in which case `mainTab` stays null as before.
+     */
+    internal suspend fun awaitInitialPageTab() {
+        withTimeoutOrNull(TARGET_WAIT_TIMEOUT_MS) {
+            while (findPageTab { true } == null) {
+                delay(TARGET_POLL_INTERVAL_MS)
+                updateTargets()
+            }
+        }
+    }
+
     override suspend fun wait(timeout: Long): Browser {
         delay(timeout)
         return this
@@ -282,6 +298,9 @@ open class DefaultBrowser(
         }
 
         updateTargets()
+        // Ensure the initial page target is registered before returning, so mainTab is ready
+        // (closes the residual ISSUE-6 startup race that flakes browser.mainTab ?: error(...)).
+        awaitInitialPageTab()
         return this
     }
 

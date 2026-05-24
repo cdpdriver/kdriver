@@ -17,6 +17,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -116,5 +118,29 @@ class TargetRegistryTest {
 
         val result = outcome.await()
         assertTrue(result.isSuccess, "get() should wait for the page target, not throw NoSuchElementException")
+    }
+
+    @Test
+    fun awaitInitialPageTab_makesMainTabReadyOncePageAppears() = runTest {
+        val browser = TestBrowser(this)
+        val connection = FakeConnection(this, emptyList()) // no page target yet
+        browser.connection = connection
+
+        // Without waiting, mainTab is null right after discovery — the startup race that flakes
+        // `browser.mainTab ?: error(...)`.
+        browser.updateTargets()
+        assertNull(browser.mainTab)
+
+        // start()'s tail waits for the page; run it concurrently.
+        val job = launch { browser.awaitInitialPageTab() }
+        runCurrent()
+        assertNull(browser.mainTab, "still no page registered while waiting")
+
+        // The initial page now appears.
+        connection.targetInfos = listOf(pageInfo("t1"))
+        advanceUntilIdle()
+
+        assertNotNull(browser.mainTab, "mainTab must be ready once awaitInitialPageTab returns")
+        job.join()
     }
 }
