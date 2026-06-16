@@ -17,6 +17,7 @@ class Config(
     val expert: Boolean = Defaults.EXPERT,
     val browserConnectionTimeout: Long = Defaults.BROWSER_CONNECTION_TIMEOUT,
     val browserConnectionMaxTries: Int = Defaults.BROWSER_CONNECTION_MAX_TRIES,
+    val commandTimeout: Long = Defaults.COMMAND_TIMEOUT,
     val autoDiscoverTargets: Boolean = Defaults.AUTO_DISCOVER_TARGETS,
     val debugStringLimit: Int = Defaults.DEBUG_STRING_LIMIT,
 ) {
@@ -118,6 +119,13 @@ class Config(
         const val EXPERT: Boolean = false
         const val BROWSER_CONNECTION_TIMEOUT: Long = 500
         const val BROWSER_CONNECTION_MAX_TRIES: Int = 60
+
+        /**
+         * Default maximum time, in milliseconds, to wait for a CDP command response before
+         * throwing a [dev.kdriver.core.exceptions.CommandTimeoutException]. A value <= 0 disables
+         * the timeout (wait indefinitely).
+         */
+        const val COMMAND_TIMEOUT: Long = 30_000
         const val AUTO_DISCOVER_TARGETS: Boolean = true
         const val DEBUG_STRING_LIMIT: Int = 128
     }
