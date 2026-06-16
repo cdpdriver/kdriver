@@ -29,6 +29,7 @@ class ConfigBuilder {
     var expert: Boolean = Defaults.EXPERT
     var browserConnectionTimeout: Long = Defaults.BROWSER_CONNECTION_TIMEOUT
     var browserConnectionMaxTries: Int = Defaults.BROWSER_CONNECTION_MAX_TRIES
+    var commandTimeout: Long = Defaults.COMMAND_TIMEOUT
     var autoDiscoverTargets: Boolean = Defaults.AUTO_DISCOVER_TARGETS
     var debugStringLimit: Int = Defaults.DEBUG_STRING_LIMIT
 
@@ -49,6 +50,7 @@ class ConfigBuilder {
             expert = expert,
             browserConnectionTimeout = browserConnectionTimeout,
             browserConnectionMaxTries = browserConnectionMaxTries,
+            commandTimeout = commandTimeout,
             autoDiscoverTargets = autoDiscoverTargets,
             debugStringLimit = debugStringLimit
         )

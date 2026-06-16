@@ -4,6 +4,7 @@ import dev.kdriver.cdp.*
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.Config.Defaults
+import dev.kdriver.core.exceptions.CommandTimeoutException
 import dev.kdriver.core.exceptions.ConnectionClosedException
 import io.ktor.util.logging.*
 import kotlinx.coroutines.*
@@ -18,6 +19,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.reflect.KClass
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Default implementation of the [Connection] interface.
@@ -144,7 +146,13 @@ open class DefaultConnection(
             transport.send(jsonString)
             logger.debug("WS > CDP: ${jsonString.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
 
-            val result = deferred.await()
+            val timeout = owner?.config?.commandTimeout ?: Defaults.COMMAND_TIMEOUT
+            // A non-null Message.Response means success; null can only come from the timeout, so
+            // there's no ambiguity with a legitimate value. A timeout <= 0 waits indefinitely.
+            val result =
+                if (timeout > 0) withTimeoutOrNull(timeout.milliseconds) { deferred.await() }
+                    ?: throw CommandTimeoutException(method, requestId, timeout)
+                else deferred.await()
             result.error?.throwAsException(method)
             return result.result
         } finally {
@@ -169,33 +177,33 @@ open class DefaultConnection(
     override suspend fun wait(t: Long?) {
         updateTarget()
         val idleEvent: suspend () -> Boolean = {
-            withTimeoutOrNull(100) { events.first() } == null
+            withTimeoutOrNull(100.milliseconds) { events.first() } == null
         }
 
         if (t != null) {
             val start = Clock.System.now().toEpochMilliseconds()
-            withTimeoutOrNull(t) {
+            withTimeoutOrNull(t.milliseconds) {
                 // Wait for idle event or timeout
                 while (true) {
                     if (idleEvent()) break
-                    delay(50)
+                    delay(50.milliseconds)
                 }
             }
             // Ensure total wait time is at least t milliseconds
             val elapsed = Clock.System.now().toEpochMilliseconds() - start
-            if (elapsed < t) delay(t - elapsed)
+            if (elapsed < t) delay((t - elapsed).milliseconds)
         } else {
             // Wait indefinitely for idle event
             while (true) {
                 if (idleEvent()) break
-                delay(50)
+                delay(50.milliseconds)
             }
         }
     }
 
     override suspend fun sleep(t: Long) {
         updateTarget()
-        delay(t)
+        delay(t.milliseconds)
     }
 
     private suspend fun prepareHeadless() {
