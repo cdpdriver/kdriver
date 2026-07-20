@@ -42,11 +42,19 @@ open class DefaultConnection(
 
     // Recreated on every (re)connect. A dropped socket can keep reporting a stale `isActive` for a
     // short window, so once the receive loop has observed a disconnect we throw the whole transport
-    // away and build a fresh one rather than trusting it (see [connect]).
+    // away and build a fresh one rather than trusting it (see [connect]). @Volatile because it is
+    // read off-lock on the fast path of [connect], from the receive-loop coroutine in [onTransportGone],
+    // and in [close].
+    @Volatile
     private var transport: WebSocketTransport? = null
 
     @Volatile
     private var disconnected = false
+
+    // Set once [close] has run; terminal. [connect] refuses to re-open a closed connection so a
+    // command issued after close fails instead of silently resurrecting the socket.
+    @Volatile
+    private var closed = false
 
     private var socketSubscription: Job? = null
 
@@ -81,10 +89,12 @@ open class DefaultConnection(
     override val generatedDomains: MutableMap<KClass<out Domain>, Domain> = mutableMapOf()
 
     private suspend fun connect(): WebSocketTransport {
+        if (closed) throw ConnectionClosedException("Connection closed")
         transport?.let { if (it.isActive && !disconnected) return it }
         // Guard so concurrent first commands don't each open a session (which would leak the
         // duplicate sockets/listeners). Double-checked: skip the lock once connected (ISSUE-4).
         return connectMutex.withLock {
+            if (closed) throw ConnectionClosedException("Connection closed")
             transport?.let { if (it.isActive && !disconnected) return@withLock it }
             // Once the receive loop has reported a disconnect we don't trust the old transport's
             // `isActive` (it can lag the real socket close), so dispose it and build a fresh one. This
@@ -94,6 +104,12 @@ open class DefaultConnection(
                 transport?.let { old -> runCatching { old.close() } }
                 transport = null
                 disconnected = false
+                // A reconnect opens a *new* CDP session, so the browser-side preparation applied on
+                // the old one is gone: re-run it on the next command. NOTE: domains the caller enabled
+                // themselves (Network.enable, Page.enable, event subscriptions, …) are NOT restored —
+                // restoring arbitrary caller state on reconnect is out of scope here.
+                prepareHeadlessDone = false
+                prepareExpertDone = false
             }
             val t = transport ?: createTransport().also { transport = it }
             if (!t.isActive) {
@@ -198,14 +214,18 @@ open class DefaultConnection(
                 // though *this* coroutine isn't cancelled; only the latter must propagate.
                 if (!currentCoroutineContext().isActive) throw e
                 sendError = e
-                disconnected = true
                 false
             } catch (e: Exception) {
                 sendError = e
-                disconnected = true
                 false
             }
             if (!sent) {
+                // Treat the failed send as this transport going away: mark it for reconnect and fail
+                // any *other* commands in flight on it (ISSUE-3), but only if it is still the current
+                // transport — a send that fails late on an already-replaced transport must not tear
+                // down the healthy one that superseded it. onTransportGone clears our own just-added
+                // waiter too; we resend on the next iteration.
+                onTransportGone(transport, ConnectionClosedException(cause = sendError))
                 pendingRequestsMutex.withLock { pendingRequests.remove(requestId) }
                 return@repeat // reconnect and resend on the next iteration
             }
@@ -224,15 +244,24 @@ open class DefaultConnection(
                 pendingRequestsMutex.withLock { pendingRequests.remove(requestId) }
             }
         }
-        throw sendError ?: ConnectionClosedException()
+        // Every send attempt failed: the connection is gone. Surface it as a ConnectionClosedException
+        // (never the raw send failure, which may be a CancellationException a caller would mistake for
+        // its own cancellation), keeping the original send error as the cause.
+        throw ConnectionClosedException(cause = sendError)
     }
 
     @InternalCdpApi
     override suspend fun close() {
-        transport?.close()
-        transport = null
-        socketSubscription?.cancel()
-        socketSubscription = null
+        // Take connectMutex so close is ordered against an in-progress (re)connect: without it, a
+        // concurrent connect() could reassign `transport`/`socketSubscription` right after we cleared
+        // them, resurrecting a live socket and receive loop that outlive close().
+        connectMutex.withLock {
+            closed = true
+            transport?.close()
+            transport = null
+            socketSubscription?.cancel()
+            socketSubscription = null
+        }
         // Fail any commands still awaiting a reply that will now never come (ISSUE-3).
         failPendingRequests(ConnectionClosedException("Connection closed"))
     }

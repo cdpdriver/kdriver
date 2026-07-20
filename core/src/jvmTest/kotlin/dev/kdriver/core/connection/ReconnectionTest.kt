@@ -2,7 +2,12 @@ package dev.kdriver.core.connection
 
 import dev.kdriver.cdp.CommandMode
 import dev.kdriver.cdp.Serialization
+import dev.kdriver.core.browser.Browser
+import dev.kdriver.core.browser.Config
 import dev.kdriver.core.exceptions.CommandTimeoutException
+import dev.kdriver.core.exceptions.ConnectionClosedException
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -29,9 +34,12 @@ class ReconnectionTest {
 
     /**
      * A transport the test fully drives:
-     *  - [respondTo] / [respond] inject a CDP reply for an in-flight request,
-     *  - [drop] simulates a clean socket close (FIN): `incoming()` completes, [isActive] flips false,
-     *  - going silent (never responding, never dropping) simulates a half-open socket.
+     *  - [respond] / [respondToLast] inject a CDP reply for an in-flight request,
+     *  - [drop] simulates a dropped socket that still *reports* active (the production race): only the
+     *    receive loop ending signals the disconnect,
+     *  - [failSend] fails the next send like a dead Ktor session (cleared on reconnect); [keepFailingSend]
+     *    keeps failing across reconnects,
+     *  - [autoRespond] echoes a canned reply for every sent frame (used to drive the prepare* path).
      *
      * [connectCount] lets a test assert whether a *new* connection was opened (i.e. a reconnect).
      */
@@ -47,9 +55,17 @@ class ReconnectionTest {
 
         val sent = mutableListOf<String>()
 
-        /** When true, [send] fails as a dead Ktor session would; cleared on the next [connect]. */
+        /** Fails the next send as a dropped Ktor session would; cleared on the next [connect]. */
         @Volatile
         var failSend: Boolean = false
+
+        /** Like [failSend] but persists across reconnects, to exercise exhausted retries. */
+        @Volatile
+        var keepFailingSend: Boolean = false
+
+        /** When true, every sent frame gets an immediate canned reply (drives the prepare* path). */
+        @Volatile
+        var autoRespond: Boolean = false
 
         override suspend fun connect() {
             connectCount++
@@ -61,8 +77,19 @@ class ReconnectionTest {
 
         override suspend fun send(message: String) {
             // A send on a dropped Ktor session throws a channel CancellationException.
-            if (failSend) throw CancellationException("Channel was cancelled")
+            if (failSend || keepFailingSend) throw CancellationException("Channel was cancelled")
             sent.add(message)
+            if (autoRespond) {
+                val request = Serialization.json.parseToJsonElement(message).jsonObject
+                val id = request["id"]!!.jsonPrimitive.long
+                val method = request["method"]!!.jsonPrimitive.content
+                // Runtime.evaluate must parse into an EvaluateReturn with a value so prepareHeadless
+                // completes (and sets its done flag); anything else just needs a well-formed reply.
+                val result = if (method == "Runtime.evaluate")
+                    """{"result":{"type":"string","value":"HeadlessChrome/1.0"}}"""
+                else "{}"
+                channel.trySend("""{"id":$id,"result":$result}""")
+            }
         }
 
         override fun incoming(): Flow<String> = channel.receiveAsFlow()
@@ -72,9 +99,8 @@ class ReconnectionTest {
             channel.close()
         }
 
-        /** Simulate the socket dropping cleanly: the receive loop sees [incoming] complete. */
+        /** Simulate a dropped socket that still reports active: only the receive loop ends. */
         fun drop() {
-            isActive = false
             channel.close()
         }
 
@@ -98,6 +124,19 @@ class ReconnectionTest {
         override fun createTransport(): WebSocketTransport = transport
     }
 
+    /** Runs [block] and captures its thrown exception without failing the test scope. */
+    private fun CoroutineScope.captureError(block: suspend () -> Unit): CompletableDeferred<Throwable> {
+        val error = CompletableDeferred<Throwable>()
+        launch {
+            try {
+                block()
+            } catch (e: Throwable) {
+                error.complete(e)
+            }
+        }
+        return error
+    }
+
     @Test
     fun reconnects_onNextCommand_afterCleanDrop() = runTest(UnconfinedTestDispatcher()) {
         val transport = ControllableTransport()
@@ -109,14 +148,14 @@ class ReconnectionTest {
         assertNotNull(withTimeout(2_000) { first.await() })
         assertEquals(1, transport.connectCount)
 
-        // The socket drops cleanly.
+        // The socket drops but keeps reporting active (the production race): only the receive loop
+        // ending flags the disconnect. The next command must reconnect via that signal.
         transport.drop()
 
-        // The next command must transparently re-open the transport and succeed.
         val second = async { connection.callCommand("B.second", null, CommandMode.ONE_SHOT) }
         transport.respondToLast()
         assertNotNull(withTimeout(2_000) { second.await() })
-        assertEquals(2, transport.connectCount, "a clean drop must lead to a reconnect on next command")
+        assertEquals(2, transport.connectCount, "a drop must lead to a reconnect on the next command")
 
         connection.close()
     }
@@ -142,6 +181,105 @@ class ReconnectionTest {
     }
 
     @Test
+    fun failsOtherInFlightCommand_whenASendTriggersReconnect() = runTest(UnconfinedTestDispatcher()) {
+        val transport = ControllableTransport()
+        val connection = TestConnection(this, transport)
+
+        // Command A is sent and parks awaiting its reply.
+        val aError = captureError { connection.callCommand("A.first", null, CommandMode.ONE_SHOT) }
+
+        // Command B's send fails on the (now dead) socket. The reconnect it triggers must also fail A,
+        // which is in flight on that same dead transport, instead of leaving it to hang to the timeout.
+        transport.failSend = true
+        val second = async { connection.callCommand("B.second", null, CommandMode.ONE_SHOT) }
+        transport.respondToLast()
+
+        assertNotNull(withTimeout(2_000) { second.await() })
+        assertIs<ConnectionClosedException>(withTimeout(2_000) { aError.await() })
+        assertEquals(2, transport.connectCount)
+
+        connection.close()
+    }
+
+    @Test
+    fun doesNotResend_afterAnAwaitedReplyDies() = runTest(UnconfinedTestDispatcher()) {
+        val transport = ControllableTransport()
+        val connection = TestConnection(this, transport)
+
+        // Command is sent (successfully) and parks awaiting its reply — the resend-unsafe window.
+        val error = captureError { connection.callCommand("A.first", null, CommandMode.ONE_SHOT) }
+
+        // The socket dies while awaiting. The command must surface the failure, NOT resend (it may
+        // already have executed).
+        transport.drop()
+
+        assertIs<ConnectionClosedException>(withTimeout(2_000) { error.await() })
+        assertEquals(1, transport.connectCount, "a command must not resend once it is awaiting a reply")
+
+        connection.close()
+    }
+
+    @Test
+    fun throwsConnectionClosed_whenAllSendAttemptsFail() = runTest(UnconfinedTestDispatcher()) {
+        val transport = ControllableTransport().apply { keepFailingSend = true }
+        val connection = TestConnection(this, transport)
+
+        val error = captureError { connection.callCommand("A.first", null, CommandMode.ONE_SHOT) }
+
+        // Bounded retries: initial connect + one reconnect attempt, then give up with a clear error
+        // (never the raw CancellationException from the failed send).
+        assertIs<ConnectionClosedException>(withTimeout(2_000) { error.await() })
+        assertEquals(2, transport.connectCount)
+
+        connection.close()
+    }
+
+    @Test
+    fun callCommandAfterClose_throwsAndDoesNotReconnect() = runTest(UnconfinedTestDispatcher()) {
+        val transport = ControllableTransport()
+        val connection = TestConnection(this, transport)
+
+        val first = async { connection.callCommand("A.first", null, CommandMode.ONE_SHOT) }
+        transport.respondToLast()
+        assertNotNull(withTimeout(2_000) { first.await() })
+
+        connection.close()
+
+        val error = captureError { connection.callCommand("B.second", null, CommandMode.ONE_SHOT) }
+        assertIs<ConnectionClosedException>(withTimeout(2_000) { error.await() })
+        assertEquals(1, transport.connectCount, "close is terminal: no silent reconnect afterwards")
+    }
+
+    @Test
+    fun replaysPreparation_afterReconnect() = runTest(UnconfinedTestDispatcher()) {
+        val transport = ControllableTransport().apply { autoRespond = true }
+        // A headless browser triggers prepareHeadless (a Runtime.evaluate + Network.setUserAgentOverride).
+        val config = mockk<Config>(relaxed = true)
+        every { config.headless } returns true
+        every { config.expert } returns false
+        val browser = mockk<Browser>(relaxed = true)
+        every { browser.config } returns config
+        val connection = TestConnection(this, transport).also { it.owner = browser }
+
+        fun evaluateCount() = transport.sent.count { it.contains("Runtime.evaluate") }
+
+        // First DEFAULT command runs the preparation once.
+        connection.callCommand("Some.method", null, CommandMode.DEFAULT)
+        assertEquals(1, evaluateCount())
+
+        // While still connected, preparation is not repeated.
+        connection.callCommand("Some.method", null, CommandMode.DEFAULT)
+        assertEquals(1, evaluateCount(), "preparation must not repeat while the session is alive")
+
+        // After a reconnect the new CDP session has lost the preparation, so it must be re-applied.
+        transport.drop()
+        connection.callCommand("Some.method", null, CommandMode.DEFAULT)
+        assertEquals(2, evaluateCount(), "preparation must be replayed on the new session after a reconnect")
+
+        connection.close()
+    }
+
+    @Test
     fun reusesConnection_afterHalfOpenTimeout() = runTest(UnconfinedTestDispatcher()) {
         val transport = ControllableTransport()
         val connection = TestConnection(this, transport)
@@ -149,31 +287,17 @@ class ReconnectionTest {
         // Half-open socket: the command is sent but no reply ever comes and the socket never drops.
         // With no owner attached, the connection falls back to Config.Defaults.COMMAND_TIMEOUT; the
         // virtual clock advances it instantly.
-        val first = CompletableDeferred<Throwable>()
-        launch {
-            try {
-                connection.callCommand("A.first", null, CommandMode.ONE_SHOT)
-            } catch (e: Throwable) {
-                first.complete(e)
-            }
-        }
+        val first = captureError { connection.callCommand("A.first", null, CommandMode.ONE_SHOT) }
         assertIs<CommandTimeoutException>(withTimeout(60_000) { first.await() })
 
-        // Characterise the seam: on a half-open socket the transport still *looks* active, so the
-        // next command reuses the same (dead) socket and times out again. DefaultConnection alone
-        // cannot recover here -- detection has to come from the transport reporting a disconnect.
-        // That is what the WebSocket keep-alive ping does in production (KtorWebSocketTransport): a
-        // missing pong closes the session, turning this case into reconnects_onNextCommand_afterCleanDrop.
-        val second = CompletableDeferred<Throwable>()
-        launch {
-            try {
-                connection.callCommand("B.second", null, CommandMode.ONE_SHOT)
-            } catch (e: Throwable) {
-                second.complete(e)
-            }
-        }
+        // Characterise the seam: on a half-open socket the transport still *looks* active and its
+        // receive loop never ends, so nothing flags a disconnect — the next command reuses the same
+        // socket and times out again. DefaultConnection alone cannot recover here; detection would
+        // require the transport itself to report the disconnect (e.g. a keep-alive ping), which the
+        // current build does not do, so this case is only bounded by the command timeout.
+        val second = captureError { connection.callCommand("B.second", null, CommandMode.ONE_SHOT) }
         assertIs<CommandTimeoutException>(withTimeout(60_000) { second.await() })
-        assertEquals(1, transport.connectCount, "current behaviour: no reconnect after a timeout")
+        assertEquals(1, transport.connectCount, "no reconnect after a half-open timeout")
 
         connection.close()
     }

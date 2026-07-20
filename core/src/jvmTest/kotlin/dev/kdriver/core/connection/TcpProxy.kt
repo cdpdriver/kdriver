@@ -15,8 +15,8 @@ import java.util.*
  * stream it can reproduce, on demand, the two failure modes we care about:
  *  - [severAll] closes the sockets (RST/FIN) -> a clean disconnect,
  *  - [freeze]/[unfreeze] keep the sockets open but stop forwarding application bytes -> a half-open
- *    socket (the peer looks alive at the TCP level but never answers), which only WebSocket keep-alive
- *    pings can detect.
+ *    socket (the peer looks alive at the TCP level but never answers), which requires an application-
+ *    level liveness check (e.g. keep-alive pings) to detect.
  *
  * @param upstreamHost Host of the real Chrome DevTools endpoint.
  * @param upstreamPort Port of the real Chrome DevTools endpoint.
@@ -77,6 +77,11 @@ class TcpProxy(
                 }
             } catch (_: Exception) {
                 // Socket closed (severed or torn down): just end this pump.
+            } finally {
+                // Propagate the stream end to the peer so a one-sided close (e.g. the client closing
+                // its connection) tears down the paired upstream socket instead of leaking it.
+                runCatching { from.close() }
+                runCatching { to.close() }
             }
         }
     }
