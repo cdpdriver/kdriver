@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.concurrent.Volatile
 import kotlin.reflect.KClass
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
@@ -31,9 +32,21 @@ open class DefaultConnection(
     override var owner: Browser? = null,
 ) : OwnedConnection {
 
+    companion object {
+        // One initial send plus one resend after a transparent reconnect. The resend is only ever reached
+        // when a send fails (bytes never left the client), so it cannot double-execute a command.
+        private const val SEND_ATTEMPTS = 2
+    }
+
     private val logger = KtorSimpleLogger("Connection")
 
-    private val transport: WebSocketTransport by lazy { createTransport() }
+    // Recreated on every (re)connect. A dropped socket can keep reporting a stale `isActive` for a
+    // short window, so once the receive loop has observed a disconnect we throw the whole transport
+    // away and build a fresh one rather than trusting it (see [connect]).
+    private var transport: WebSocketTransport? = null
+
+    @Volatile
+    private var disconnected = false
 
     private var socketSubscription: Job? = null
 
@@ -67,22 +80,35 @@ open class DefaultConnection(
     @InternalCdpApi
     override val generatedDomains: MutableMap<KClass<out Domain>, Domain> = mutableMapOf()
 
-    private suspend fun connect() {
-        if (transport.isActive) return
+    private suspend fun connect(): WebSocketTransport {
+        transport?.let { if (it.isActive && !disconnected) return it }
         // Guard so concurrent first commands don't each open a session (which would leak the
         // duplicate sockets/listeners). Double-checked: skip the lock once connected (ISSUE-4).
-        connectMutex.withLock {
-            if (transport.isActive) return@withLock
-            transport.connect()
-            startListening()
+        return connectMutex.withLock {
+            transport?.let { if (it.isActive && !disconnected) return@withLock it }
+            // Once the receive loop has reported a disconnect we don't trust the old transport's
+            // `isActive` (it can lag the real socket close), so dispose it and build a fresh one. This
+            // makes a command issued after a drop reconnect deterministically instead of reusing a
+            // dead socket and failing (or hanging until the command timeout).
+            if (disconnected) {
+                transport?.let { old -> runCatching { old.close() } }
+                transport = null
+                disconnected = false
+            }
+            val t = transport ?: createTransport().also { transport = it }
+            if (!t.isActive) {
+                t.connect()
+                startListening(t)
+            }
+            t
         }
     }
 
-    private fun startListening() {
+    private fun startListening(t: WebSocketTransport) {
         socketSubscription?.cancel()
         socketSubscription = messageListeningScope.launch {
             try {
-                transport.incoming().collect { text ->
+                t.incoming().collect { text ->
                     try {
                         logger.debug("WS < CDP: ${text.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
                         val received = Serialization.json.decodeFromString<Message>(text)
@@ -99,14 +125,25 @@ open class DefaultConnection(
                 }
                 // incoming() completed without error => the socket was closed. Fail any in-flight
                 // commands so their callers observe the disconnect instead of hanging (ISSUE-3).
-                failPendingRequests(ConnectionClosedException())
+                onTransportGone(t, ConnectionClosedException())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 logger.error("WebSocket receive loop terminated: {}", e)
-                failPendingRequests(ConnectionClosedException(cause = e))
+                onTransportGone(t, ConnectionClosedException(cause = e))
             }
         }
+    }
+
+    /**
+     * Reacts to a receive loop ending because its socket went away: marks the connection for a
+     * reconnect and fails any in-flight commands. Ignored if [t] is no longer the current transport
+     * (a stale loop from a transport we've already replaced must not disturb the new one).
+     */
+    private suspend fun onTransportGone(t: WebSocketTransport, cause: Throwable) {
+        if (transport !== t) return
+        disconnected = true
+        failPendingRequests(cause)
     }
 
     /**
@@ -136,33 +173,64 @@ open class DefaultConnection(
         }
 
         val requestId = currentIdMutex.withLock { currentId++ }
-        // Register the response waiter *before* sending, so a reply that arrives before we start
-        // awaiting is still captured (the receive loop completes this deferred). Awaiting the
-        // response via a replay-0 shared flow after sending could miss it and hang (ISSUE-1).
-        val deferred = CompletableDeferred<Message.Response>()
-        pendingRequestsMutex.withLock { pendingRequests[requestId] = deferred }
-        try {
-            val jsonString = Serialization.json.encodeToString(Request(requestId, method, parameter))
-            transport.send(jsonString)
-            logger.debug("WS > CDP: ${jsonString.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
+        val jsonString = Serialization.json.encodeToString(Request(requestId, method, parameter))
+        val timeout = owner?.config?.commandTimeout ?: Defaults.COMMAND_TIMEOUT
 
-            val timeout = owner?.config?.commandTimeout ?: Defaults.COMMAND_TIMEOUT
-            // A non-null Message.Response means success; null can only come from the timeout, so
-            // there's no ambiguity with a legitimate value. A timeout <= 0 waits indefinitely.
-            val result =
-                if (timeout > 0) withTimeoutOrNull(timeout.milliseconds) { deferred.await() }
-                    ?: throw CommandTimeoutException(method, requestId, timeout)
-                else deferred.await()
-            result.error?.throwAsException(method)
-            return result.result
-        } finally {
-            pendingRequestsMutex.withLock { pendingRequests.remove(requestId) }
+        // A dropped socket can still report itself active for a short window, so the send below can
+        // fail (or the next command can land on a dead transport). A failed send means the bytes
+        // never left the client, so reconnecting and resending is safe — no risk of executing the
+        // command twice. We only retry the *send*: once a reply is awaited we never resend, because
+        // the command may already have run (that case surfaces as a ConnectionClosedException).
+        var sendError: Throwable? = null
+        repeat(SEND_ATTEMPTS) {
+            val transport = connect()
+            // Register the response waiter *before* sending, so a reply that arrives before we start
+            // awaiting is still captured (the receive loop completes this deferred). Awaiting the
+            // response via a replay-0 shared flow after sending could miss it and hang (ISSUE-1).
+            val deferred = CompletableDeferred<Message.Response>()
+            pendingRequestsMutex.withLock { pendingRequests[requestId] = deferred }
+
+            val sent = try {
+                transport.send(jsonString)
+                true
+            } catch (e: CancellationException) {
+                // A send on a dead Ktor session surfaces as a channel CancellationException even
+                // though *this* coroutine isn't cancelled; only the latter must propagate.
+                if (!currentCoroutineContext().isActive) throw e
+                sendError = e
+                disconnected = true
+                false
+            } catch (e: Exception) {
+                sendError = e
+                disconnected = true
+                false
+            }
+            if (!sent) {
+                pendingRequestsMutex.withLock { pendingRequests.remove(requestId) }
+                return@repeat // reconnect and resend on the next iteration
+            }
+
+            logger.debug("WS > CDP: ${jsonString.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
+            try {
+                // A non-null Message.Response means success; null can only come from the timeout, so
+                // there's no ambiguity with a legitimate value. A timeout <= 0 waits indefinitely.
+                val result =
+                    if (timeout > 0) withTimeoutOrNull(timeout.milliseconds) { deferred.await() }
+                        ?: throw CommandTimeoutException(method, requestId, timeout)
+                    else deferred.await()
+                result.error?.throwAsException(method)
+                return result.result
+            } finally {
+                pendingRequestsMutex.withLock { pendingRequests.remove(requestId) }
+            }
         }
+        throw sendError ?: ConnectionClosedException()
     }
 
     @InternalCdpApi
     override suspend fun close() {
-        transport.close()
+        transport?.close()
+        transport = null
         socketSubscription?.cancel()
         socketSubscription = null
         // Fail any commands still awaiting a reply that will now never come (ISSUE-3).

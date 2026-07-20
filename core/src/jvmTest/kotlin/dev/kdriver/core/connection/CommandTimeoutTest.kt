@@ -43,7 +43,7 @@ class CommandTimeoutTest {
     @Test
     fun callCommand_failsWithCommandTimeout_whenNoResponse() = runTest(UnconfinedTestDispatcher()) {
         val transport = SilentTransport()
-        val connection = object : DefaultConnection("ws://stub/devtools/page/stub", this) {
+        val connection = object : DefaultConnection("ws://stub/devtools/page/stub", this@runTest) {
             override fun createTransport(): WebSocketTransport = transport
         }
 
