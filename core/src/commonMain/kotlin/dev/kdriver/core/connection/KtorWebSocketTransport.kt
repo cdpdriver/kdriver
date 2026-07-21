@@ -5,9 +5,9 @@ import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.http.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
 
 /**
  * Default [WebSocketTransport] backed by a Ktor WebSocket session.
@@ -39,7 +39,10 @@ class KtorWebSocketTransport(
     }
 
     override suspend fun send(message: String) {
-        session?.send(message)
+        // Fail loudly instead of silently succeeding when there is no session: a false success would
+        // make the caller wait for a reply to a frame that was never sent.
+        val session = session ?: throw IllegalStateException("WebSocket session is not connected")
+        session.send(message)
     }
 
     override fun incoming(): Flow<String> = flow {
