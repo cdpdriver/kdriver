@@ -17,10 +17,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 /**
  * Behaviour of [DefaultConnection] when the underlying transport disconnects and a later command
@@ -275,6 +272,124 @@ class ReconnectionTest {
         transport.drop()
         connection.callCommand("Some.method", null, CommandMode.DEFAULT)
         assertEquals(2, evaluateCount(), "preparation must be replayed on the new session after a reconnect")
+
+        connection.close()
+    }
+
+    @Test
+    fun runsRegisteredRestore_oncePerReconnect() = runTest(UnconfinedTestDispatcher()) {
+        val transport = ControllableTransport()
+        val connection = TestConnection(this, transport)
+        var restoreCount = 0
+        connection.registerReconnectRestore("k") { restoreCount++ }
+
+        // A command that just connects (no reconnect) must not run the restore.
+        val c1 = async { connection.callCommand("A", null, CommandMode.ONE_SHOT) }
+        transport.respondToLast()
+        c1.await()
+        assertEquals(0, restoreCount, "restore must not run without a reconnect")
+
+        // A command after a drop reconnects and runs the restore exactly once.
+        transport.drop()
+        val c2 = async { connection.callCommand("B", null, CommandMode.ONE_SHOT) }
+        transport.respondToLast()
+        c2.await()
+        assertEquals(1, restoreCount)
+
+        // A further command while still connected does not run it again.
+        val c3 = async { connection.callCommand("C", null, CommandMode.ONE_SHOT) }
+        transport.respondToLast()
+        c3.await()
+        assertEquals(1, restoreCount, "restore runs once per reconnect, not once per command")
+
+        // A second drop reconnects again and re-runs the restore.
+        transport.drop()
+        val c4 = async { connection.callCommand("D", null, CommandMode.ONE_SHOT) }
+        transport.respondToLast()
+        c4.await()
+        assertEquals(2, restoreCount)
+
+        connection.close()
+    }
+
+    @Test
+    fun restoreThatIssuesCommands_runsAfterReconnect() = runTest(UnconfinedTestDispatcher()) {
+        val transport = ControllableTransport().apply { autoRespond = true }
+        val connection = TestConnection(this, transport)
+        connection.registerReconnectRestore("k") {
+            connection.callCommand("Restore.enable", null, CommandMode.ONE_SHOT)
+        }
+
+        connection.callCommand("A", null, CommandMode.ONE_SHOT)
+        assertEquals(0, transport.sent.count { it.contains("Restore.enable") })
+
+        transport.drop()
+        connection.callCommand("B", null, CommandMode.ONE_SHOT)
+        assertEquals(
+            1,
+            transport.sent.count { it.contains("Restore.enable") },
+            "a restorer that re-issues a CDP command must run it once on the reconnected session",
+        )
+
+        connection.close()
+    }
+
+    @Test
+    fun doesNotRun_unregisteredRestore_afterReconnect() = runTest(UnconfinedTestDispatcher()) {
+        val transport = ControllableTransport()
+        val connection = TestConnection(this, transport)
+        var restoreCount = 0
+        connection.registerReconnectRestore("k") { restoreCount++ }
+
+        val c1 = async { connection.callCommand("A", null, CommandMode.ONE_SHOT) }
+        transport.respondToLast()
+        c1.await()
+
+        connection.unregisterReconnectRestore("k")
+
+        transport.drop()
+        val c2 = async { connection.callCommand("B", null, CommandMode.ONE_SHOT) }
+        transport.respondToLast()
+        c2.await()
+        assertEquals(0, restoreCount, "an unregistered restore must not run")
+
+        connection.close()
+    }
+
+    @Test
+    fun replaysPreparationAndRestore_afterReconnect_withoutDeadlock() = runTest(UnconfinedTestDispatcher()) {
+        val transport = ControllableTransport().apply { autoRespond = true }
+        // Headless browser => prepareHeadless runs (a Runtime.evaluate under prepareMutex).
+        val config = mockk<Config>(relaxed = true)
+        every { config.headless } returns true
+        every { config.expert } returns false
+        val browser = mockk<Browser>(relaxed = true)
+        every { browser.config } returns config
+        val connection = TestConnection(this, transport).also { it.owner = browser }
+
+        var restoreCount = 0
+        // A restorer that issues a DEFAULT command: this is the combination that used to deadlock, as
+        // prepare's own (ONE_SHOT) command would trigger the restore while prepareMutex was held, and
+        // the restorer's DEFAULT command then re-entered the non-reentrant prepareMutex.
+        connection.registerReconnectRestore("k") {
+            connection.callCommand("Restore.enable", null, CommandMode.DEFAULT)
+            restoreCount++
+        }
+
+        connection.callCommand("Some.method", null, CommandMode.DEFAULT)
+        assertEquals(1, transport.sent.count { it.contains("Runtime.evaluate") })
+        assertEquals(0, restoreCount)
+
+        transport.drop()
+        // Must complete (no deadlock): re-prepares the new session AND runs the restorer.
+        withTimeout(5_000) { connection.callCommand("Some.method", null, CommandMode.DEFAULT) }
+        assertEquals(
+            2,
+            transport.sent.count { it.contains("Runtime.evaluate") },
+            "preparation replayed after reconnect"
+        )
+        assertEquals(1, restoreCount, "restorer ran after reconnect")
+        assertTrue(transport.sent.any { it.contains("Restore.enable") }, "the restorer's DEFAULT command was sent")
 
         connection.close()
     }
