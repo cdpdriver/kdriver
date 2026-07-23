@@ -63,9 +63,13 @@ open class BaseRequestExpectation(
             tab.network.loadingFinished.collect { loadingFinishedHandler(it) }
         }
         tab.network.enable()
+        // The event collectors survive a reconnect; re-enable Network on the new session so the
+        // browser keeps emitting the request/response events this expectation waits for.
+        tab.registerReconnectRestore(this) { tab.network.enable() }
     }
 
-    private fun teardown() {
+    private suspend fun teardown() {
+        tab.unregisterReconnectRestore(this)
         requestJob?.cancel()
         responseJob?.cancel()
         loadingFinishedJob?.cancel()

@@ -295,6 +295,11 @@ open class DefaultBrowser(
             }
 
             connection.target.setDiscoverTargets(discover = true)
+            // The event collectors above survive a reconnect (they read the connection's shared flow),
+            // but the new CDP session won't emit target events until discovery is re-enabled on it.
+            connection.registerReconnectRestore("targetDiscovery") {
+                connection.target.setDiscoverTargets(discover = true)
+            }
         }
 
         updateTargets()

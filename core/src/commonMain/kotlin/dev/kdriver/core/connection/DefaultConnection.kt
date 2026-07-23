@@ -77,6 +77,14 @@ open class DefaultConnection(
     private var prepareHeadlessDone = false
     private var prepareExpertDone = false
 
+    // Session state to re-apply after a reconnect (a new CDP session loses enabled domains, overrides,
+    // injected scripts, …). Guarded by [reconnectRestoreMutex]; [needsRestore] flips true on reconnect.
+    private val reconnectRestoreMutex = Mutex()
+    private val reconnectRestores = LinkedHashMap<Any, suspend () -> Unit>()
+
+    @Volatile
+    private var needsRestore = false
+
     private val allMessages = MutableSharedFlow<Message>(extraBufferCapacity = Channel.UNLIMITED)
 
     @InternalCdpApi
@@ -101,15 +109,21 @@ open class DefaultConnection(
             // makes a command issued after a drop reconnect deterministically instead of reusing a
             // dead socket and failing (or hanging until the command timeout).
             if (disconnected) {
-                transport?.let { old -> runCatching { old.close() } }
+                // Clear `transport` and cancel the old receive loop *before* closing the old transport,
+                // so the loop ending on that close sees `transport !== old` and no-ops instead of
+                // spuriously re-flagging `disconnected` (which would cascade into extra reconnects).
+                val old = transport
                 transport = null
+                socketSubscription?.cancel()
+                socketSubscription = null
+                old?.let { runCatching { it.close() } }
                 disconnected = false
-                // A reconnect opens a *new* CDP session, so the browser-side preparation applied on
-                // the old one is gone: re-run it on the next command. NOTE: domains the caller enabled
-                // themselves (Network.enable, Page.enable, event subscriptions, …) are NOT restored —
-                // restoring arbitrary caller state on reconnect is out of scope here.
+                // A reconnect opens a *new* CDP session, so all session state applied on the old one
+                // is gone. Re-run the built-in preparation, and flag the registered restorers (enabled
+                // domains, overrides, …) to be replayed before the next command proceeds.
                 prepareHeadlessDone = false
                 prepareExpertDone = false
+                needsRestore = true
             }
             val t = transport ?: createTransport().also { transport = it }
             if (!t.isActive) {
@@ -175,19 +189,54 @@ open class DefaultConnection(
         pending.forEach { it.completeExceptionally(cause) }
     }
 
-    @InternalCdpApi
-    override suspend fun callCommand(method: String, parameter: JsonElement?, mode: CommandMode): JsonElement? {
-        connect()
+    override suspend fun registerReconnectRestore(key: Any, restore: suspend () -> Unit) {
+        reconnectRestoreMutex.withLock { reconnectRestores[key] = restore }
+    }
 
-        if (mode == CommandMode.DEFAULT) owner?.let { browser ->
-            // Serialize preparation so concurrent first commands run it once, not N times (ISSUE-4).
-            // prepare* issue ONE_SHOT commands, which skip this block, so prepareMutex isn't re-entered.
+    override suspend fun unregisterReconnectRestore(key: Any) {
+        reconnectRestoreMutex.withLock { reconnectRestores.remove(key) }
+    }
+
+    /**
+     * Re-applies the registered session state once after a reconnect. Snapshots the restorers and
+     * clears [needsRestore] under the lock, then runs them *outside* it: a restorer only re-issues
+     * CDP commands (whose [callCommand] sees [needsRestore] already false and so won't recurse here),
+     * and running off-lock avoids a deadlock if one of those commands itself triggers a reconnect.
+     */
+    private suspend fun runReconnectRestores() {
+        val restores = reconnectRestoreMutex.withLock {
+            if (!needsRestore) return
+            needsRestore = false
+            reconnectRestores.values.toList()
+        }
+        for (restore in restores) {
+            try {
+                restore()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logger.error("Reconnect restore failed: {}", e)
+            }
+        }
+    }
+
+    /**
+     * Runs the built-in browser-side preparation for a DEFAULT command, on the current session.
+     * prepare* issue ONE_SHOT commands, which skip this step, so [prepareMutex] isn't re-entered.
+     * Serialized so concurrent first commands run it once, not N times (ISSUE-4).
+     */
+    private suspend fun ensurePrepared(mode: CommandMode) {
+        if (mode != CommandMode.DEFAULT) return
+        owner?.let { browser ->
             prepareMutex.withLock {
                 if (browser.config.expert) prepareExpert()
                 if (browser.config.headless) prepareHeadless()
             }
         }
+    }
 
+    @InternalCdpApi
+    override suspend fun callCommand(method: String, parameter: JsonElement?, mode: CommandMode): JsonElement? {
         val requestId = currentIdMutex.withLock { currentId++ }
         val jsonString = Serialization.json.encodeToString(Request(requestId, method, parameter))
         val timeout = owner?.config?.commandTimeout ?: Defaults.COMMAND_TIMEOUT
@@ -199,6 +248,20 @@ open class DefaultConnection(
         // the command may already have run (that case surfaces as a ConnectionClosedException).
         var sendError: Throwable? = null
         repeat(SEND_ATTEMPTS) {
+            connect()
+            // Restore + prepare the (possibly freshly reconnected) session *before* sending on it, so
+            // the command always runs against a fully re-established session — this covers a reconnect
+            // that happens here in the retry loop, not just one detected before it.
+            //
+            // Restore MUST run before (and outside of) ensurePrepared: prepare* issue their own inner
+            // commands, which would otherwise trigger the restore while prepareMutex is held, and a
+            // restorer's DEFAULT command re-entering the non-reentrant prepareMutex would deadlock.
+            // Running restore first is also correct precedence-wise — a restorer's own DEFAULT command
+            // re-runs prepare internally, so e.g. a user user-agent override still lands last.
+            if (needsRestore) runReconnectRestores()
+            ensurePrepared(mode)
+            // Fetch the transport only now: prepare/restore issue their own commands, which may have
+            // reconnected, so a transport captured before them could be the stale, disposed one.
             val transport = connect()
             // Register the response waiter *before* sending, so a reply that arrives before we start
             // awaiting is still captured (the receive loop completes this deferred). Awaiting the

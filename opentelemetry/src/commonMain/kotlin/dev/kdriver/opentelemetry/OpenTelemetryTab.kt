@@ -407,6 +407,11 @@ class OpenTelemetryTab(
         Span.current().addEvent("kdriver.tab.close")
     }
 
+    override suspend fun registerReconnectRestore(key: Any, restore: suspend () -> Unit) =
+        tab.registerReconnectRestore(key, restore)
+
+    override suspend fun unregisterReconnectRestore(key: Any) = tab.unregisterReconnectRestore(key)
+
     override suspend fun updateTarget() = tab.updateTarget()
 
     override suspend fun wait(t: Long?) = tab.wait(t)

@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.*
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.*
 
 /**
@@ -36,6 +37,21 @@ class ReconnectionIntegrationTest {
         return result!!.jsonObject["result"]!!.jsonObject["value"]!!.jsonPrimitive.int
     }
 
+    /**
+     * Evaluates, retrying through a transient reconnect. The single command *in flight* when the
+     * socket is cut may itself be the casualty (its send lands on the dying socket, then the reply
+     * never comes) — by design we never resend an awaited command. The connection self-heals, so the
+     * next attempt reconnects and succeeds, exactly as kdriver's high-level retry loops rely on.
+     */
+    private suspend fun DefaultConnection.evaluateRecovering(expression: String, timeoutMs: Long = 15_000): Int =
+        withTimeout(timeoutMs) {
+            while (true) {
+                val result = runCatching { evaluate(expression) }
+                if (result.isSuccess) return@withTimeout result.getOrThrow()
+            }
+            error("unreachable")
+        }
+
     @Test
     fun reconnects_afterHardCut_throughProxy() = runBlocking {
         val host = createBrowser(this, headless = true, sandbox = false)
@@ -51,9 +67,38 @@ class ReconnectionIntegrationTest {
             // Hard cut: the socket is closed under the connection.
             proxy.severAll()
 
-            // The next command must transparently reconnect through the proxy and succeed, without
-            // the caller having to do anything.
-            assertEquals(4, withTimeout(15_000) { conn.evaluate("2 + 2") })
+            // The connection reconnects through the proxy on its own and commands succeed again.
+            assertEquals(4, conn.evaluateRecovering("2 + 2"))
+        } finally {
+            conn.close()
+            proxy.stop()
+            host.stop()
+        }
+    }
+
+    @Test
+    fun runsRegisteredRestore_afterHardCut_throughProxy() = runBlocking {
+        val host = createBrowser(this, headless = true, sandbox = false)
+        val proxy = TcpProxy("127.0.0.1", host.config.port!!, this).also { it.start() }
+        val targetId = assertNotNull(host.mainTab?.targetId, "host browser should have a page target")
+        val wsUrl = "ws://127.0.0.1:${proxy.port}/devtools/page/$targetId"
+        val conn = ProxiedConnection(wsUrl, this)
+        val restoreCount = AtomicInteger(0)
+
+        try {
+            assertEquals(2, conn.evaluate("1 + 1"))
+
+            // A feature (e.g. FetchInterception) registers a restorer to re-establish its session
+            // state after a reconnect. Here it just counts its runs.
+            conn.registerReconnectRestore("probe") { restoreCount.incrementAndGet() }
+
+            proxy.severAll()
+
+            // The connection reconnects once; the restorer must run exactly once as part of that
+            // single reconnect, no matter how many commands drive the recovery.
+            assertEquals(4, conn.evaluateRecovering("2 + 2"))
+            assertEquals(9, conn.evaluateRecovering("3 + 3 + 3"))
+            assertEquals(1, restoreCount.get(), "the registered restorer must run once per reconnect")
         } finally {
             conn.close()
             proxy.stop()

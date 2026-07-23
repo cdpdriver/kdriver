@@ -19,6 +19,12 @@ open class BaseFetchInterception(
     private var responseDeferred = CompletableDeferred<Fetch.RequestPausedParameter>()
     private var job: Job? = null
 
+    private val requestPattern = Fetch.RequestPattern(
+        urlPattern = urlPattern,
+        resourceType = resourceType,
+        requestStage = requestStage,
+    )
+
     private val handler: suspend (Fetch.RequestPausedParameter) -> Unit = handler@{ event ->
         responseDeferred.complete(event)
         job?.cancel()
@@ -32,18 +38,14 @@ open class BaseFetchInterception(
         job = coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
             tab.fetch.requestPaused.collect { handler(it) }
         }
-        tab.fetch.enable(
-            listOf(
-                Fetch.RequestPattern(
-                    urlPattern = urlPattern,
-                    resourceType = resourceType,
-                    requestStage = requestStage
-                )
-            )
-        )
+        tab.fetch.enable(listOf(requestPattern))
+        // The requestPaused collector survives a reconnect (it reads the connection's shared flow),
+        // but Fetch must be re-enabled on the new CDP session for the browser to keep pausing requests.
+        tab.registerReconnectRestore(this) { tab.fetch.enable(listOf(requestPattern)) }
     }
 
     private suspend fun teardown() {
+        tab.unregisterReconnectRestore(this)
         job?.cancel()
         tab.fetch.disable()
     }

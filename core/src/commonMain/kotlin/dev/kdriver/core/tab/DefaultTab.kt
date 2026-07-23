@@ -118,6 +118,15 @@ open class DefaultTab(
             acceptLanguage = acceptLanguage,
             platform = platform
         )
+        // A reconnect opens a new CDP session that would drop this override, so re-apply it then.
+        // Keyed so a later setUserAgent replaces (rather than stacks) the restorer.
+        registerReconnectRestore("userAgent") {
+            network.setUserAgentOverride(
+                userAgent = ua,
+                acceptLanguage = acceptLanguage,
+                platform = platform
+            )
+        }
     }
 
     override suspend fun getWindow(): dev.kdriver.cdp.domain.Browser.GetWindowForTargetReturn {
