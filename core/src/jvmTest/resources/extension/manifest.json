@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "KDriver Test Extension",
+  "version": "1.0",
+  "description": "Test extension for verifying extension loading",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_end",
+      "match_about_blank": true,
+      "all_frames": true
+    }
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ]
+}

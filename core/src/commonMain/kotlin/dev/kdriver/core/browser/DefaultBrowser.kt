@@ -1,9 +1,6 @@
 package dev.kdriver.core.browser
 
-import dev.kdriver.cdp.domain.Target
-import dev.kdriver.cdp.domain.browser
-import dev.kdriver.cdp.domain.page
-import dev.kdriver.cdp.domain.target
+import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.connection.DefaultConnection
 import dev.kdriver.core.connection.OwnedConnection
@@ -228,11 +225,6 @@ open class DefaultBrowser(
             config.port = freePort()
         }
 
-        // handle extensions if any
-        config.extensions.takeIf { it.isNotEmpty() }?.let {
-            config.addArgument("--load-extension=${it.joinToString(",")}")
-        }
-
         config.lang?.let {
             config.addArgument("--lang=$it")
         }
@@ -299,6 +291,20 @@ open class DefaultBrowser(
             // but the new CDP session won't emit target events until discovery is re-enabled on it.
             connection.registerReconnectRestore("targetDiscovery") {
                 connection.target.setDiscoverTargets(discover = true)
+            }
+        }
+
+        if (config.extensions.isNotEmpty()) {
+            logger.info("Loading ${config.extensions.size} extension(s) using CDP")
+            config.extensions.forEach { extensionPath ->
+                try {
+                    val result = connection.extensions.loadUnpacked(extensionPath.toString())
+                    logger.info("Successfully loaded extension from $extensionPath with ID: ${result.id}")
+                } catch (e: Exception) {
+                    logger.error("Failed to load extension from $extensionPath: ${e.message}")
+                    e.printStackTrace()
+                    throw e
+                }
             }
         }
 
