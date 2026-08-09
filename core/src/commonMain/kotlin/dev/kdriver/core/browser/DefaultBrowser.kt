@@ -31,7 +31,7 @@ open class DefaultBrowser(
 
     private var process: Process? = null
     private var http: HTTPApi? = null
-    //private var _cookies: CookieJar? = null
+    private var _cookies: CookieJar? = null
 
     override var connection: Connection? = null
 
@@ -57,15 +57,8 @@ open class DefaultBrowser(
     override val tabs: List<Tab>
         get() = targetsSnapshot.filterIsInstance<Tab>().filter { it.type == "page" }
 
-    /*
     override val cookies: CookieJar
-        get() {
-            if (_cookies == null) {
-                _cookies = CookieJar(this)
-            }
-            return _cookies!!
-        }
-     */
+        get() = _cookies ?: DefaultCookieJar(this).also { _cookies = it }
 
     override val pid: Long?
         get() = process?.pid()

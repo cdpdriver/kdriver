@@ -1,14 +1,138 @@
 package dev.kdriver.core.browser
 
+import dev.kdriver.cdp.domain.Network
 import dev.kdriver.core.sampleFile
 import dev.kdriver.core.tab.ReadyState
 import kotlinx.coroutines.runBlocking
+import kotlinx.io.files.Path
+import kotlin.io.path.deleteIfExists
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class BrowserTest {
+
+    // Cookie Tests
+
+    @Test
+    fun testSetAllAndGetAllCookies() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        browser.get("https://example.com")
+
+        browser.cookies.setAll(
+            listOf(
+                Network.CookieParam(
+                    name = "session",
+                    value = "abc123",
+                    domain = "example.com",
+                    path = "/",
+                )
+            )
+        )
+
+        val cookie = browser.cookies.getAll().find { it.name == "session" }
+        assertNotNull(cookie)
+        assertEquals("abc123", cookie.value)
+        assertEquals("example.com", cookie.domain)
+
+        browser.stop()
+    }
+
+    @Test
+    fun testClearCookies() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        browser.get("https://example.com")
+
+        browser.cookies.setAll(
+            listOf(
+                Network.CookieParam(
+                    name = "toDrop",
+                    value = "1",
+                    domain = "example.com",
+                    path = "/",
+                )
+            )
+        )
+        assertTrue(browser.cookies.getAll().isNotEmpty())
+
+        browser.cookies.clear()
+
+        assertTrue(browser.cookies.getAll().isEmpty())
+        browser.stop()
+    }
+
+    @Test
+    fun testSaveAndLoadCookies() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        browser.get("https://example.com")
+
+        browser.cookies.setAll(
+            listOf(
+                Network.CookieParam(
+                    name = "kept",
+                    value = "yes",
+                    domain = "example.com",
+                    path = "/",
+                )
+            )
+        )
+
+        val tempFile = kotlin.io.path.createTempFile(prefix = "test_cookies_", suffix = ".dat")
+        try {
+            val path = Path(tempFile.toString())
+            val saved = browser.cookies.save(path)
+            assertTrue(saved.any { it.name == "kept" })
+
+            browser.cookies.clear()
+            assertTrue(browser.cookies.getAll().isEmpty())
+
+            browser.cookies.load(path)
+
+            val restored = browser.cookies.getAll().find { it.name == "kept" }
+            assertNotNull(restored)
+            assertEquals("yes", restored.value)
+        } finally {
+            tempFile.deleteIfExists()
+        }
+
+        browser.stop()
+    }
+
+    @Test
+    fun testSavePatternOnlyKeepsMatchingCookies() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        browser.get("https://example.com")
+
+        browser.cookies.setAll(
+            listOf(
+                Network.CookieParam(
+                    name = "wanted",
+                    value = "nowsecure",
+                    domain = "example.com",
+                    path = "/",
+                ),
+                Network.CookieParam(
+                    name = "ignored",
+                    value = "somethingelse",
+                    domain = "example.com",
+                    path = "/",
+                ),
+            )
+        )
+
+        val tempFile = kotlin.io.path.createTempFile(prefix = "test_cookies_", suffix = ".dat")
+        try {
+            val saved = browser.cookies.save(Path(tempFile.toString()), Regex("nowsecure"))
+
+            // The filter has to actually apply, which it did not in the implementation this is ported from.
+            assertEquals(listOf("wanted"), saved.map { it.name })
+        } finally {
+            tempFile.deleteIfExists()
+        }
+
+        browser.stop()
+    }
 
     @Test
     fun testBrowserScanBotDetection() = runBlocking {
