@@ -60,7 +60,10 @@ interface Browser {
      */
     val tabs: List<Tab>
 
-    //val cookies: CookieJar
+    /**
+     * The cookies of this browser, shared by every tab and window it owns.
+     */
+    val cookies: CookieJar
 
     /**
      * The process ID of the browser, if available.
