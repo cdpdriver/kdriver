@@ -127,6 +127,37 @@ interface Tab : Connection {
     suspend fun getContent(): String
 
     /**
+     * Gets the local storage of the page currently loaded in this tab.
+     *
+     * Values are returned exactly as the browser stores them, that is as strings. Anything that was
+     * serialized before being stored has to be deserialized by the caller.
+     *
+     * @return The local storage entries, keyed by their storage key. Empty if the origin has none.
+     *
+     * @throws IllegalStateException if the tab has no target, so no origin to read from.
+     */
+    suspend fun getLocalStorage(): Map<String, String>
+
+    /**
+     * Sets entries in the local storage of the page currently loaded in this tab.
+     *
+     * Existing keys are overwritten, keys that are absent from [items] are left untouched. Use
+     * [clearLocalStorage] to empty the storage instead.
+     *
+     * @param items The entries to write. Both keys and values are stored as strings.
+     *
+     * @throws IllegalStateException if the tab has no target, so no origin to write to.
+     */
+    suspend fun setLocalStorage(items: Map<String, String>)
+
+    /**
+     * Removes every entry from the local storage of the page currently loaded in this tab.
+     *
+     * @throws IllegalStateException if the tab has no target, so no origin to clear.
+     */
+    suspend fun clearLocalStorage()
+
+    /**
      * Activates the tab, bringing it to the foreground.
      *
      * This method uses the target's ID to activate the target in the browser.

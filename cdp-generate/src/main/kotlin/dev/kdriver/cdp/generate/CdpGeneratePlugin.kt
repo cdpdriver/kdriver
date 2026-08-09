@@ -41,6 +41,7 @@ class CdpGeneratePlugin : Plugin<Project> {
                                 type = type["type"] as String,
                                 description = type["description"] as String?,
                                 enum = (type["enum"] as List<String>?) ?: emptyList(),
+                                items = (type["items"] as Map<String, String>?) ?: emptyMap(),
                                 properties = (type["properties"] as List<Map<String, *>>?)?.map { property ->
                                     Domain.Type.Property(
                                         name = property["name"] as String,

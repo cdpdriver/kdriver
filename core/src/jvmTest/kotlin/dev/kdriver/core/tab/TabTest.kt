@@ -458,6 +458,67 @@ class TabTest {
         browser.stop()
     }
 
+    // Local Storage Tests
+
+    @Test
+    fun testSetAndGetLocalStorage() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+        tab.waitForReadyState(ReadyState.COMPLETE)
+
+        tab.setLocalStorage(mapOf("token" to "abc123", "theme" to "dark"))
+
+        assertEquals(mapOf("token" to "abc123", "theme" to "dark"), tab.getLocalStorage())
+
+        // Cross-check against the page itself, so the test also proves we targeted the right origin
+        // rather than merely reading back what we wrote into some other storage area.
+        assertEquals("abc123", tab.evaluate<String>("window.localStorage.getItem('token')"))
+
+        browser.stop()
+    }
+
+    @Test
+    fun testSetLocalStorageOverwritesAndKeepsOtherKeys() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+        tab.waitForReadyState(ReadyState.COMPLETE)
+
+        tab.setLocalStorage(mapOf("kept" to "1", "replaced" to "before"))
+        tab.setLocalStorage(mapOf("replaced" to "after"))
+
+        assertEquals(mapOf("kept" to "1", "replaced" to "after"), tab.getLocalStorage())
+
+        browser.stop()
+    }
+
+    @Test
+    fun testGetLocalStorageIsEmptyOnFreshOrigin() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+        tab.waitForReadyState(ReadyState.COMPLETE)
+
+        assertTrue(tab.getLocalStorage().isEmpty())
+
+        browser.stop()
+    }
+
+    @Test
+    fun testClearLocalStorage() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val tab = browser.get(sampleFile("groceries.html"))
+        tab.waitForReadyState(ReadyState.COMPLETE)
+
+        tab.setLocalStorage(mapOf("a" to "1", "b" to "2"))
+        assertEquals(2, tab.getLocalStorage().size)
+
+        tab.clearLocalStorage()
+
+        assertTrue(tab.getLocalStorage().isEmpty())
+        assertEquals(0, tab.evaluate<Int>("window.localStorage.length"))
+
+        browser.stop()
+    }
+
     // Advanced Selection Tests
 
     @Test

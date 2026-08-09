@@ -19,6 +19,9 @@ import io.ktor.util.logging.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
@@ -136,6 +139,42 @@ open class DefaultTab(
     override suspend fun getContent(): String {
         val doc = dom.getDocument(depth = -1, pierce = true)
         return dom.getOuterHTML(backendNodeId = doc.root.backendNodeId).outerHTML
+    }
+
+    /**
+     * Local storage is partitioned per origin, so every call has to name the origin of the page
+     * currently loaded rather than its full URL.
+     */
+    private fun localStorageId(): DOMStorage.StorageId {
+        val url = targetInfo?.url ?: error("target is null")
+        return DOMStorage.StorageId(
+            securityOrigin = Url(url).protocolWithAuthority,
+            isLocalStorage = true,
+        )
+    }
+
+    override suspend fun getLocalStorage(): Map<String, String> {
+        // Each entry comes back as a two-element [key, value] array.
+        return dOMStorage.getDOMStorageItems(localStorageId()).entries
+            .mapNotNull { entry ->
+                val key = entry.getOrNull(0) ?: return@mapNotNull null
+                key to entry.getOrElse(1) { "" }
+            }
+            .toMap()
+    }
+
+    override suspend fun setLocalStorage(items: Map<String, String>) {
+        if (items.isEmpty()) return
+        val storageId = localStorageId()
+        coroutineScope {
+            items.map { (key, value) ->
+                async { dOMStorage.setDOMStorageItem(storageId, key, value) }
+            }.awaitAll()
+        }
+    }
+
+    override suspend fun clearLocalStorage() {
+        dOMStorage.clear(localStorageId())
     }
 
     override suspend fun activate() {

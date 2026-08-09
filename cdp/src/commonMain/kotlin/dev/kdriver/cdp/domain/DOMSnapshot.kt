@@ -452,7 +452,7 @@ public class DOMSnapshot(
         /**
          * Attributes of an `Element` node. Flatten name, value pairs.
          */
-        public val attributes: List<List<Double>>? = null,
+        public val attributes: List<List<Int>>? = null,
         /**
          * Only set for textarea elements, contains the text value.
          */
@@ -510,7 +510,7 @@ public class DOMSnapshot(
         /**
          * Array of indexes specifying computed style strings, filtered according to the `computedStyles` parameter passed to `captureSnapshot`.
          */
-        public val styles: List<List<Double>>,
+        public val styles: List<List<Int>>,
         /**
          * The absolute position bounding box.
          */
