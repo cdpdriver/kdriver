@@ -20,7 +20,10 @@ open class DefaultCookieJar(
     private val browser: Browser,
 ) : CookieJar {
 
-    private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
+    private val json = Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+    }
 
     private fun connection(): Connection = browser.connection
         ?: error("Browser not yet started. Call start() first")

@@ -11,6 +11,9 @@ import kotlinx.io.files.Path
  */
 interface CookieJar {
 
+    /**
+     * Defaults shared by every [CookieJar].
+     */
     companion object {
         /**
          * Where [save] and [load] read and write when no path is given.
