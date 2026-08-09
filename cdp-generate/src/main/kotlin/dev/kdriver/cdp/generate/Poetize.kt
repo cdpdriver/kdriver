@@ -151,7 +151,34 @@ fun List<Domain>.resolveRef(refName: String, parentDomain: Domain): Pair<Domain,
     }
 }
 
-fun Domain.CanBeTypeAlias.jsTypeToKType(): TypeName {
+/**
+ * Resolves the element type of an `array`, from its `items` descriptor.
+ *
+ * Shared by both [jsTypeToKType] overloads so a top-level type alias and a property describing the
+ * same array cannot end up with different element types.
+ */
+fun Domain.CanBeTypeAlias.itemsToKType(parentDomain: Domain, domains: List<Domain>): TypeName {
+    if (items.containsKey("\$ref")) {
+        val referenceName = items["\$ref"]
+        return object : Domain.TypeOrReference {
+            override val ref: String? = referenceName
+            override val items: Map<String, String> = emptyMap()
+            override val optional: Boolean = false
+            override val type: String? = null
+        }.resolveType(parentDomain, domains)
+    }
+    return when (items["type"]) {
+        "string" -> STRING
+        "integer" -> INT
+        "number" -> DOUBLE
+        "boolean" -> BOOLEAN
+        "any" -> JSONELEMENT
+        "object" -> MAP.parameterizedBy(STRING, JSONELEMENT)
+        else -> error("Unknown type in ${parentDomain.domain} $items")
+    }
+}
+
+fun Domain.CanBeTypeAlias.jsTypeToKType(parentDomain: Domain, domains: List<Domain>): TypeName {
     return when (type!!) {
         "number" -> DOUBLE
         "string" -> STRING
@@ -159,7 +186,7 @@ fun Domain.CanBeTypeAlias.jsTypeToKType(): TypeName {
         "boolean" -> BOOLEAN
         "any" -> JSONELEMENT
         "object" -> MAP.parameterizedBy(STRING, JSONELEMENT)
-        "array" -> LIST.parameterizedBy(DOUBLE)
+        "array" -> LIST.parameterizedBy(itemsToKType(parentDomain, domains))
         else -> error("Could not interprete type for $this $type")
     }
 }
@@ -170,28 +197,7 @@ fun Domain.TypeOrReference.jsTypeToKType(parentDomain: Domain, domains: List<Dom
         "string" -> STRING
         "integer" -> INT
         "boolean" -> BOOLEAN
-        "array" -> if (items.containsKey("\$ref")) {
-            val referenceName = items["\$ref"]
-            val className = object : Domain.TypeOrReference {
-                override val ref: String? = referenceName
-                override val items: Map<String, String> = emptyMap()
-                override val optional: Boolean = false
-                override val type: String? = null
-            }.resolveType(parentDomain, domains)
-            LIST.parameterizedBy(className)
-        } else {
-            LIST.parameterizedBy(
-                when (items["type"]) {
-                    "string" -> STRING
-                    "integer" -> INT
-                    "number" -> DOUBLE
-                    "any" -> JSONELEMENT
-                    "object" -> MAP.parameterizedBy(STRING, JSONELEMENT)
-                    else -> error("Unknown type in ${parentDomain.domain} $items")
-                }
-            )
-        }
-
+        "array" -> LIST.parameterizedBy(itemsToKType(parentDomain, domains))
         "any" -> JSONELEMENT
         "object" -> MAP.parameterizedBy(STRING, JSONELEMENT)
         else -> error("Could not interprete type for ${parentDomain.domain} $type")
@@ -208,7 +214,9 @@ fun Domain.TypeOrReference.resolveType(parentDomain: Domain, domains: List<Domai
                 ClassName(PACKAGE_NAME, domain.domain).nestedClass(type.id)
             }
         } else {
-            type.jsTypeToKType()
+            // Resolve against the domain the type was found in, not the referring one, so that a
+            // `$ref` inside its `items` points at the right domain.
+            type.jsTypeToKType(domain, domains)
         }
     } else {
         jsTypeToKType(parentDomain, domains)

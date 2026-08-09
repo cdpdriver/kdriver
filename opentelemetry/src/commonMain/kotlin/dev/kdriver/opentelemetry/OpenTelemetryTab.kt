@@ -105,6 +105,16 @@ class OpenTelemetryTab(
 
     override suspend fun getContent(): String = tab.getContent()
 
+    override suspend fun getLocalStorage(): Map<String, String> = tab.getLocalStorage()
+
+    override suspend fun setLocalStorage(items: Map<String, String>) = tab.setLocalStorage(items).also {
+        Span.current().addEvent("kdriver.tab.setLocalStorage")
+    }
+
+    override suspend fun clearLocalStorage() = tab.clearLocalStorage().also {
+        Span.current().addEvent("kdriver.tab.clearLocalStorage")
+    }
+
     override suspend fun activate() = tab.activate().also {
         Span.current().addEvent("kdriver.tab.activate")
     }

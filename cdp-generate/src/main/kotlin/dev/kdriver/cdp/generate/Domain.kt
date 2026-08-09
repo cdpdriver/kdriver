@@ -15,6 +15,7 @@ class Domain(
         val enum: List<String>,
         val description: String?,
         val properties: List<Property>,
+        override val items: Map<String, String>,
     ) : CanBeTypeAlias {
         class Property(
             val name: String,
@@ -73,10 +74,15 @@ class Domain(
 
     interface CanBeTypeAlias {
         val type: String?
+
+        /**
+         * Element descriptor when [type] is `array`, either `{"type": "..."}` or `{"$ref": "..."}`.
+         * Empty for every other type.
+         */
+        val items: Map<String, String>
     }
 
     interface TypeOrReference : CanBeTypeAlias {
-        val items: Map<String, String>
         val ref: String?
         val optional: Boolean
     }

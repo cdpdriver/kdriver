@@ -198,7 +198,7 @@ public class DOMStorage(
 
     @Serializable
     public data class GetDOMStorageItemsReturn(
-        public val entries: List<List<Double>>,
+        public val entries: List<List<String>>,
     )
 
     @Serializable
