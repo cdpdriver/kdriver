@@ -18,8 +18,6 @@ class BrowserTest {
     @Test
     fun testSetAllAndGetAllCookies() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        browser.get("https://example.com")
-
         browser.cookies.setAll(
             listOf(
                 Network.CookieParam(
@@ -42,8 +40,6 @@ class BrowserTest {
     @Test
     fun testClearCookies() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        browser.get("https://example.com")
-
         browser.cookies.setAll(
             listOf(
                 Network.CookieParam(
@@ -65,8 +61,6 @@ class BrowserTest {
     @Test
     fun testSaveAndLoadCookies() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        browser.get("https://example.com")
-
         browser.cookies.setAll(
             listOf(
                 Network.CookieParam(
@@ -102,8 +96,6 @@ class BrowserTest {
     @Test
     fun testSavePatternOnlyKeepsMatchingCookies() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
-        browser.get("https://example.com")
-
         browser.cookies.setAll(
             listOf(
                 Network.CookieParam(
@@ -160,6 +152,9 @@ class BrowserTest {
     fun testUpdateTargetSetsTargetTitle() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get("https://example.com")
+        // Without this the title is read while the page may still be about:blank, which is what
+        // makes this test fail intermittently on slower runners.
+        tab.waitForReadyState(ReadyState.COMPLETE)
         tab.updateTarget()
         assertNotNull(tab.targetInfo)
         assertEquals("Example Domain", tab.targetInfo?.title)
