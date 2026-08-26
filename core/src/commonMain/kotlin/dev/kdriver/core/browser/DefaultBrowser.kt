@@ -362,7 +362,11 @@ open class DefaultBrowser(
         logger.debug("Closing browser gracefully...")
         withTimeoutOrNull(5.seconds) { connection?.browser?.close() }
         logger.debug("Killing browser process...")
-        process?.destroy()
+        // Wait for it to actually be gone, don't just ask. destroy() returns immediately and does not
+        // reach the browser's child processes, which keep open handles on the profile directory —
+        // a browser started on the same --user-data-dir right after would hang before opening its
+        // debug port, and the start would time out for no visible reason.
+        process?.let { if (!it.destroyAndAwaitExit()) logger.warn("Browser process ${it.pid()} still alive after kill") }
         process = null
         logger.debug("Closing connection...")
         connection?.close()

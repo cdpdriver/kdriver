@@ -22,6 +22,17 @@ actual abstract class Process {
 
 actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long): String? = null
 
+/**
+ * Kills this process with SIGKILL.
+ *
+ * POSIX has no cheap, portable way to enumerate descendants, so only the process itself is signalled.
+ * That is enough here: on Linux and macOS the browser's children terminate with their parent, unlike
+ * on Windows.
+ */
+actual fun Process.killTree() {
+    if (isAlive()) kill(processIdentifier, SIGKILL)
+}
+
 actual fun addShutdownHook(hook: suspend () -> Unit) {
     // POSIX doesn't have a direct equivalent to Java shutdown hooks
     // Could use atexit() but it doesn't support suspend functions
