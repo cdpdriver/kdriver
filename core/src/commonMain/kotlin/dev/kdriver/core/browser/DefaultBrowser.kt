@@ -48,6 +48,9 @@ open class DefaultBrowser(
 
     override var info: ContraDict? = null
 
+    /** Last error from [testConnection], surfaced if the browser never opens its debug port. */
+    private var lastConnectionError: Exception? = null
+
     // The canonical registry: mutated only while holding [updateTargetInfoMutex]. After each
     // mutation an immutable copy is published to [targetsSnapshot] so the non-suspend getters
     // below can read a consistent view without the lock (ISSUE-5).
@@ -266,7 +269,17 @@ open class DefaultBrowser(
         logger.info("Connection to browser established")
 
         val info = info ?: run {
-            logger.info("Browser info not initialized, reading error")
+            // Say what actually failed. Without this the only visible symptom is a 30s wait and a
+            // generic exception, which cannot distinguish "nothing is listening on that port" (the
+            // browser never opened it) from "something answers but not what we expect" (a stale or
+            // foreign process holds it) — two very different causes.
+            val waitedMs = config.browserConnectionTimeout * (config.browserConnectionMaxTries + 1)
+            logger.error(
+                "Browser never opened its debug port on ${config.host}:${config.port} after ${waitedMs}ms " +
+                    "(pid=${process?.pid()}, alive=${process?.isAlive()}). " +
+                    "Last connection error: " +
+                    (lastConnectionError?.let { "${it::class.simpleName}: ${it.message}" } ?: "none")
+            )
             /*
             // This seems to block indefinitely on CI, so inspection is required
             withTimeoutOrNull(1000) {
@@ -344,6 +357,7 @@ open class DefaultBrowser(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            lastConnectionError = e
             logger.debug("Could not start: ${e.message}")
             false
         }
