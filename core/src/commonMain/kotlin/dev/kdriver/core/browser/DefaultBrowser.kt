@@ -274,20 +274,14 @@ open class DefaultBrowser(
             // browser never opened it) from "something answers but not what we expect" (a stale or
             // foreign process holds it) — two very different causes.
             val waitedMs = config.browserConnectionTimeout * (config.browserConnectionMaxTries + 1)
+            val stderr = process?.readStderrSnapshot()
             logger.error(
                 "Browser never opened its debug port on ${config.host}:${config.port} after ${waitedMs}ms " +
                     "(pid=${process?.pid()}, alive=${process?.isAlive()}). " +
                     "Last connection error: " +
-                    (lastConnectionError?.let { "${it::class.simpleName}: ${it.message}" } ?: "none")
+                    (lastConnectionError?.let { "${it::class.simpleName}: ${it.message}" } ?: "none") +
+                    ". Browser stderr: " + (stderr?.trim()?.takeIf { it.isNotEmpty() } ?: "<none>")
             )
-            /*
-            // This seems to block indefinitely on CI, so inspection is required
-            withTimeoutOrNull(1000) {
-                _process?.errorStream?.bufferedReader()?.use {
-                    logger.info("Browser stderr: ${it.readText()}")
-                }
-            }
-             */
             stop()
             throw FailedToConnectToBrowserException()
         }
