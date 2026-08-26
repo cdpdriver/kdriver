@@ -3,6 +3,7 @@ package dev.kdriver.core.browser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.files.Path
 import java.io.File
 import java.net.InetAddress
@@ -24,12 +25,8 @@ actual suspend fun startProcess(
 
         val builder = ProcessBuilder(command)
         builder.redirectInput(ProcessBuilder.Redirect.PIPE)
-        // Discarded, not piped. Nobody reads these streams, and a pipe nobody drains fills up: once
-        // the OS buffer is full (a few KB on Windows) the browser blocks on its next write. If that
-        // happens before it has opened its debug port, the port never opens and the start times out
-        // for no visible reason.
-        builder.redirectOutput(ProcessBuilder.Redirect.DISCARD)
-        builder.redirectError(ProcessBuilder.Redirect.DISCARD)
+        builder.redirectOutput(ProcessBuilder.Redirect.PIPE)
+        builder.redirectError(ProcessBuilder.Redirect.PIPE)
         if (isPosix) builder.redirectErrorStream(false)
 
         val process = builder.start()
@@ -76,6 +73,24 @@ actual fun exists(path: Path): Boolean {
 actual fun getEnv(name: String): String? {
     return System.getenv(name)
 }
+
+/**
+ * Reads whatever is currently buffered on the process's stderr, bounded in both size and time.
+ *
+ * Both bounds matter: the stream stays open for as long as the process lives, so an unbounded read
+ * would block until it exits. That is why the equivalent block used to be commented out with
+ * "seems to block indefinitely on CI".
+ */
+actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long): String? =
+    withTimeoutOrNull(timeoutMillis) {
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val buffer = ByteArray(maxBytes)
+                val read = errorStream.read(buffer)
+                if (read > 0) String(buffer, 0, read) else null
+            }.getOrNull()
+        }
+    }
 
 actual fun freePort(): Int? {
     ServerSocket(0, 5, InetAddress.getByName("127.0.0.1")).use { socket ->

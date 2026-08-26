@@ -20,6 +20,8 @@ actual abstract class Process {
     actual abstract fun destroy()
 }
 
+actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long): String? = null
+
 actual fun addShutdownHook(hook: suspend () -> Unit) {
     // POSIX doesn't have a direct equivalent to Java shutdown hooks
     // Could use atexit() but it doesn't support suspend functions
