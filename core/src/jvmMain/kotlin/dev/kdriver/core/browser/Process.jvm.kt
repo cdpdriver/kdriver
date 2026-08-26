@@ -92,6 +92,19 @@ actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long
         }
     }
 
+/**
+ * Kills this process and every descendant.
+ *
+ * `Process.destroyForcibly()` on its own only reaches the top-level process; on Windows the browser's
+ * renderer and GPU children outlive it and keep holding the profile's files. Descendants are snapshot
+ * first, because killing the parent detaches them and they can no longer be enumerated.
+ */
+actual fun Process.killTree() {
+    val descendants = runCatching { toHandle().descendants().toList() }.getOrDefault(emptyList())
+    destroyForcibly()
+    descendants.forEach { runCatching { it.destroyForcibly() } }
+}
+
 actual fun freePort(): Int? {
     ServerSocket(0, 5, InetAddress.getByName("127.0.0.1")).use { socket ->
         return socket.localPort
