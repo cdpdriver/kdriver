@@ -5,6 +5,8 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ConfigDslTest {
@@ -21,7 +23,13 @@ class ConfigDslTest {
         val tab = browser.get("https://example.com")
 
         assertTrue(cfg.headless)
-        assertEquals(cfg, browser.config)
+        // The browser works on its own copy, so starting it leaves the caller's config untouched
+        // and the same instance can be reused for another browser.
+        assertNotSame(cfg, browser.config)
+        assertEquals(cfg.headless, browser.config.headless)
+        assertEquals(cfg.sandbox, browser.config.sandbox)
+        assertNull(cfg.port)
+        assertNotNull(browser.config.port)
         assertNotNull(tab.getContent())
 
         browser.stop()

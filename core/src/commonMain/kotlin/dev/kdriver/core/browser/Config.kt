@@ -105,6 +105,45 @@ class Config(
         return args
     }
 
+    /**
+     * Returns an independent copy of this configuration.
+     *
+     * [DefaultBrowser.start] resolves and stores runtime state on the config it is given — it writes
+     * [host] and [port], and appends `--load-extension` / `--lang` arguments. Handing the same
+     * instance to a second browser would therefore make that browser take the `connectExisting`
+     * branch: it would never launch a browser process at all, and would instead try to talk to the
+     * previous one's now-dead port. [DefaultBrowser] copies its config on construction so that
+     * callers can safely reuse (and retry with) the same [Config] instance.
+     *
+     * The copy is deep where it matters: the argument and extension lists are duplicated, so
+     * mutating one config never affects the other.
+     */
+    fun copy(): Config = Config(
+        // Pass the already-resolved executable so the copy does not re-run the disk search.
+        browserExecutablePath = browserExecutablePath,
+        headless = headless,
+        userAgent = userAgent,
+        // _browserArgs, not the browserArgs getter: the getter prepends defaultBrowserArgs, which
+        // would end up duplicated into the copy's own arg list.
+        browserArgs = _browserArgs.toList(),
+        sandbox = sandbox,
+        lang = lang,
+        host = host,
+        port = port,
+        expert = expert,
+        browserConnectionTimeout = browserConnectionTimeout,
+        browserConnectionMaxTries = browserConnectionMaxTries,
+        commandTimeout = commandTimeout,
+        autoDiscoverTargets = autoDiscoverTargets,
+        debugStringLimit = debugStringLimit,
+    ).also { copy ->
+        // Copy the backing field, never the userDataDir getter: reading it would materialise a
+        // temporary profile directory on a config that may never be started.
+        copy._userDataDir = _userDataDir
+        copy._customDataDir = _customDataDir
+        copy._extensions.addAll(_extensions)
+    }
+
     fun addArgument(arg: String) {
         val forbiddenArgs = listOf("headless", "data-dir", "data_dir", "no-sandbox", "no_sandbox", "lang")
         if (forbiddenArgs.any { arg.contains(it, ignoreCase = true) }) {

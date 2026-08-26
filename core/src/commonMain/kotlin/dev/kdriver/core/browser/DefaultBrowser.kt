@@ -23,8 +23,19 @@ import kotlin.time.Duration.Companion.seconds
  */
 open class DefaultBrowser(
     val coroutineScope: CoroutineScope,
-    override val config: Config,
+    config: Config,
 ) : Browser {
+
+    /**
+     * This browser's own copy of the configuration it was created with.
+     *
+     * [start] resolves runtime state onto it — it assigns [Config.host] / [Config.port] and appends
+     * launch arguments — so it must not be the caller's instance. Mutating a shared config would
+     * make any later browser built from it take the `connectExisting` branch of [start]: it would
+     * skip launching a browser process entirely and try to reach the previous port, which is dead.
+     * Copying here makes reusing (and retrying with) the same [Config] safe by construction.
+     */
+    override val config: Config = config.copy()
 
     private val logger = KtorSimpleLogger("Browser")
     private val updateTargetInfoMutex = Mutex()

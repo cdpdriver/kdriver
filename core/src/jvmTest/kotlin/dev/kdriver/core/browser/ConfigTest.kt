@@ -4,9 +4,48 @@ import kotlinx.io.files.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ConfigTest {
+
+    @Test
+    fun testCopyIsIndependent() {
+        val original = Config(browserExecutablePath = Path("/usr/bin/chromium"))
+        original.addArgument("--original-only")
+
+        val copy = original.copy()
+        copy.addArgument("--copy-only")
+        copy.host = "127.0.0.1"
+        copy.port = 1234
+
+        assertTrue(copy.browserArgs.contains("--original-only"))
+        assertTrue(copy.browserArgs.contains("--copy-only"))
+        assertFalse(original.browserArgs.contains("--copy-only"))
+        assertNull(original.host)
+        assertNull(original.port)
+    }
+
+    @Test
+    fun testCopyDoesNotDuplicateDefaultArguments() {
+        val original = Config(browserExecutablePath = Path("/usr/bin/chromium"))
+
+        val args = original.copy().copy().browserArgs
+
+        assertEquals(args.distinct().size, args.size)
+    }
+
+    @Test
+    fun testCopyKeepsCustomUserDataDirWithoutMaterialisingATemporaryOne() {
+        val custom = Config(browserExecutablePath = Path("/usr/bin/chromium"))
+        custom.userDataDir = Path("/tmp/kdriver-test-profile")
+        assertEquals(custom.userDataDir, custom.copy().userDataDir)
+
+        // A config that was never given one must not have a temp dir created for it by the copy.
+        val default = Config(browserExecutablePath = Path("/usr/bin/chromium"))
+        assertFalse(default.copy().usesCustomDataDir)
+    }
 
     @Test
     fun testAddArgument() {
