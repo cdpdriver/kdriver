@@ -53,6 +53,19 @@ private class WindowsProcess(
  */
 actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long): String? = null
 
+/**
+ * Kills this process.
+ *
+ * `TerminateProcess` already ends it outright, so there is nothing gentler to escalate from here.
+ * Note that it does **not** reach the process's children: enumerating them on Windows means walking
+ * a `CreateToolhelp32Snapshot` by parent id, which this target does not do — the JVM target, which is
+ * the one running browsers in production, uses `ProcessHandle.descendants()` for that.
+ */
+@OptIn(ExperimentalForeignApi::class)
+actual fun Process.killTree() {
+    processHandle?.let { if (isAlive()) TerminateProcess(it, 1u) }
+}
+
 @OptIn(ExperimentalForeignApi::class)
 actual suspend fun startProcess(
     exe: Path,
