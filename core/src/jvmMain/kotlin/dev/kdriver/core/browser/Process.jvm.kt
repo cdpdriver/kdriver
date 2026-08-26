@@ -24,8 +24,12 @@ actual suspend fun startProcess(
 
         val builder = ProcessBuilder(command)
         builder.redirectInput(ProcessBuilder.Redirect.PIPE)
-        builder.redirectOutput(ProcessBuilder.Redirect.PIPE)
-        builder.redirectError(ProcessBuilder.Redirect.PIPE)
+        // Discarded, not piped. Nobody reads these streams, and a pipe nobody drains fills up: once
+        // the OS buffer is full (a few KB on Windows) the browser blocks on its next write. If that
+        // happens before it has opened its debug port, the port never opens and the start times out
+        // for no visible reason.
+        builder.redirectOutput(ProcessBuilder.Redirect.DISCARD)
+        builder.redirectError(ProcessBuilder.Redirect.DISCARD)
         if (isPosix) builder.redirectErrorStream(false)
 
         val process = builder.start()
