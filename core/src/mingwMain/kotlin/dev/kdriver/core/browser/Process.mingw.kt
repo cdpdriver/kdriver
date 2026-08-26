@@ -47,6 +47,12 @@ private class WindowsProcess(
     }
 }
 
+/**
+ * Not available on this target: [startProcess] here calls `CreateProcessW` without redirecting the
+ * child's standard streams, so there is no pipe to read from.
+ */
+actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long): String? = null
+
 @OptIn(ExperimentalForeignApi::class)
 actual suspend fun startProcess(
     exe: Path,
