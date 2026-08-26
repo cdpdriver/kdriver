@@ -14,6 +14,10 @@ actual abstract class Process {
     actual abstract fun destroy()
 }
 
+actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long): String? {
+    throw UnsupportedOperationException()
+}
+
 actual suspend fun startProcess(
     exe: Path,
     params: List<String>,
