@@ -262,11 +262,10 @@ open class DefaultBrowser(
         http = HTTPApi(config.host ?: "127.0.0.1", config.port ?: error("Port not set"))
 
         delay(config.browserConnectionTimeout)
-        repeat(config.browserConnectionMaxTries) {
-            if (testConnection()) return@repeat
-            delay(config.browserConnectionTimeout)
+        val connected = awaitConnection(config.browserConnectionMaxTries, config.browserConnectionTimeout) {
+            testConnection()
         }
-        logger.info("Connection to browser established")
+        if (connected) logger.info("Connection to browser established")
 
         val info = info ?: run {
             // Say what actually failed. Without this the only visible symptom is a 30s wait and a
