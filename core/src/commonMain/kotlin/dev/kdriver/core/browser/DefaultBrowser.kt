@@ -275,11 +275,13 @@ open class DefaultBrowser(
             val waitedMs = config.browserConnectionTimeout * (config.browserConnectionMaxTries + 1)
             val stderr = process?.readStderrSnapshot()
             logger.error(
-                "Browser never opened its debug port on ${config.host}:${config.port} after ${waitedMs}ms " +
-                    "(pid=${process?.pid()}, alive=${process?.isAlive()}). " +
-                    "Last connection error: " +
-                    (lastConnectionError?.let { "${it::class.simpleName}: ${it.message}" } ?: "none") +
-                    ". Browser stderr: " + (stderr?.trim()?.takeIf { it.isNotEmpty() } ?: "<none>")
+                browserStartFailureMessage(
+                    endpoint = "${config.host}:${config.port}",
+                    waitedMs = waitedMs,
+                    fate = processFate(process?.pid(), process?.isAlive() ?: false, process?.exitCodeOrNull()),
+                    lastConnectionError = lastConnectionError,
+                    stderr = stderr,
+                )
             )
             stop()
             throw FailedToConnectToBrowserException()

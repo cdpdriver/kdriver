@@ -61,6 +61,21 @@ actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long
  * a `CreateToolhelp32Snapshot` by parent id, which this target does not do — the JVM target, which is
  * the one running browsers in production, uses `ProcessHandle.descendants()` for that.
  */
+/**
+ * Reads the exit status via `GetExitCodeProcess`, the same call [Process.isAlive] uses — null while
+ * it still reports `STILL_ACTIVE`.
+ */
+@OptIn(ExperimentalForeignApi::class)
+actual fun Process.exitCodeOrNull(): Int? {
+    val handle = processHandle ?: return null
+    val code = memScoped {
+        val c = alloc<DWORDVar>()
+        GetExitCodeProcess(handle, c.ptr)
+        c.value
+    }
+    return if (code == STILL_ACTIVE) null else code.toInt()
+}
+
 @OptIn(ExperimentalForeignApi::class)
 actual fun Process.killTree() {
     processHandle?.let { if (isAlive()) TerminateProcess(it, 1u) }

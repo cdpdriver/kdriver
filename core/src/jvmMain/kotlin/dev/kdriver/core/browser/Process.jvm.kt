@@ -120,3 +120,11 @@ actual fun defaultBrowserSearchConfig(): BrowserSearchConfig {
         else -> BrowserSearchConfig(File.pathSeparator, searchWindowsProgramFiles = true)
     }
 }
+
+/**
+ * Reads the exit status, or null while the process is still running.
+ *
+ * `exitValue()` throws `IllegalThreadStateException` rather than returning a sentinel when the
+ * process is alive, which is exactly the "still running" case we report as null.
+ */
+actual fun Process.exitCodeOrNull(): Int? = runCatching { exitValue() }.getOrNull()
