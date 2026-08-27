@@ -101,3 +101,9 @@ actual fun tempProfileDir(): Path {
 
     return Path(profilePath)
 }
+
+/**
+ * Not available on this target: liveness here is `kill(pid, 0)`, which says whether the process
+ * exists but never carries its exit status, and nothing reaps the child to collect one.
+ */
+actual fun Process.exitCodeOrNull(): Int? = null

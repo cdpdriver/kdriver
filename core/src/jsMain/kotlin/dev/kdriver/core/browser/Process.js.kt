@@ -18,6 +18,10 @@ actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long
     throw UnsupportedOperationException()
 }
 
+actual fun Process.exitCodeOrNull(): Int? {
+    throw UnsupportedOperationException()
+}
+
 actual fun Process.killTree() {
     throw UnsupportedOperationException()
 }
