@@ -101,9 +101,9 @@ open class DefaultConnection(
     // Epoch millis of the last frame the receive loop saw, so idleness can be *read* instead of
     // guessed. The previous check re-subscribed to `events` on every poll and only observed the
     // 100 ms window it had just opened, so a connection that had genuinely been quiet for a while
-    // still looked busy, and a busy one could look quiet. 0 means "nothing ever arrived", which is
-    // idle by definition. Null means nothing has ever arrived, which is idle too — a sentinel
-    // rather than an epoch value, so it stays correct whatever the clock starts at.
+    // still looked busy, and a busy one could look quiet. Null means nothing has ever arrived,
+    // which is idle too — a sentinel rather than an epoch value, so it stays correct whatever the
+    // clock starts at.
     @Volatile
     private var lastMessageAt: Long? = null
 
@@ -118,19 +118,31 @@ open class DefaultConnection(
     @InternalCdpApi
     override val generatedDomains: MutableMap<KClass<out Domain>, Domain> = mutableMapOf()
 
+    /**
+     * Whether [t] can still carry a command.
+     *
+     * An open socket is not enough: the receive loop has to be alive too, because it is what
+     * completes the waiters. The loop runs in a scope owned by the caller, so it can be cancelled
+     * while the socket stays open — leaving a transport that reports `isActive`, no disconnect ever
+     * observed, and every later command waiting out its timeout for a reply nobody will deliver.
+     */
+    private fun isUsable(t: WebSocketTransport): Boolean =
+        t.isActive && !disconnected && socketSubscription?.isActive == true
+
     private suspend fun connect(): WebSocketTransport {
         if (closed) throw ConnectionClosedException("Connection closed")
-        transport?.let { if (it.isActive && !disconnected) return it }
+        transport?.let { if (isUsable(it)) return it }
         // Guard so concurrent first commands don't each open a session (which would leak the
         // duplicate sockets/listeners). Double-checked: skip the lock once connected (ISSUE-4).
         return connectMutex.withLock {
             if (closed) throw ConnectionClosedException("Connection closed")
-            transport?.let { if (it.isActive && !disconnected) return@withLock it }
-            // Once the receive loop has reported a disconnect we don't trust the old transport's
-            // `isActive` (it can lag the real socket close), so dispose it and build a fresh one. This
-            // makes a command issued after a drop reconnect deterministically instead of reusing a
-            // dead socket and failing (or hanging until the command timeout).
-            if (disconnected) {
+            transport?.let { if (isUsable(it)) return@withLock it }
+            // Reached only when the current transport is unusable, so it is never a healthy socket
+            // being thrown away. Two ways to get here: the receive loop reported a disconnect — whose
+            // `isActive` can lag the real socket close, so it is not to be trusted — or the loop died
+            // without reporting anything. Either way the fix is the same: dispose and rebuild, so a
+            // command lands on a working socket instead of failing or waiting out its timeout.
+            if (transport != null) {
                 // Clear `transport` and cancel the old receive loop *before* closing the old transport,
                 // so the loop ending on that close sees `transport !== old` and no-ops instead of
                 // spuriously re-flagging `disconnected` (which would cascade into extra reconnects).
