@@ -4,6 +4,7 @@ import dev.kdriver.cdp.CDP
 import dev.kdriver.cdp.CommandMode
 import dev.kdriver.cdp.InternalCdpApi
 import dev.kdriver.core.browser.BrowserTarget
+import dev.kdriver.core.browser.Config
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -56,12 +57,18 @@ interface Connection : BrowserTarget, CDP {
     suspend fun updateTarget()
 
     /**
-     * Waits until the event listener reports idle (no new events received in a certain timespan).
-     * When \`t\` is provided, ensures waiting for \`t\` milliseconds, no matter what.
+     * Waits for the connection to go idle (nothing received for a short while).
      *
-     * @param t Time in milliseconds to wait, or null to wait until idle.
+     * Waiting is best-effort: a page can stream events indefinitely — polling, server-sent events,
+     * ads, a refreshing interstitial — in which case idleness never arrives. That is not an error,
+     * so after [idleTimeout] this simply stops watching and returns rather than waiting forever.
+     *
+     * @param t Minimum time in milliseconds to wait, even if the connection settles sooner. This is
+     *   a floor, not a deadline: it never cuts the wait short. Null means no minimum.
+     * @param idleTimeout Upper bound in milliseconds on watching for idleness. It caps the watching
+     *   only — a larger [t] is still honoured.
      */
-    suspend fun wait(t: Long? = null)
+    suspend fun wait(t: Long? = null, idleTimeout: Long = Config.Defaults.IDLE_WAIT_TIMEOUT)
 
     /**
      * Suspends the coroutine for a specified time in milliseconds.

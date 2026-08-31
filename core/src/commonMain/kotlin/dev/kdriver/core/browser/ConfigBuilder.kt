@@ -30,6 +30,10 @@ class ConfigBuilder {
     var browserConnectionTimeout: Long = Defaults.BROWSER_CONNECTION_TIMEOUT
     var browserConnectionMaxTries: Int = Defaults.BROWSER_CONNECTION_MAX_TRIES
     var commandTimeout: Long = Defaults.COMMAND_TIMEOUT
+    /**
+     * How long, in milliseconds, the connection must receive nothing before it counts as idle.
+     */
+    var timeBeforeConsideredIdle: Long = Defaults.TIME_BEFORE_CONSIDERED_IDLE
     var autoDiscoverTargets: Boolean = Defaults.AUTO_DISCOVER_TARGETS
     var debugStringLimit: Int = Defaults.DEBUG_STRING_LIMIT
 
@@ -51,6 +55,7 @@ class ConfigBuilder {
             browserConnectionTimeout = browserConnectionTimeout,
             browserConnectionMaxTries = browserConnectionMaxTries,
             commandTimeout = commandTimeout,
+            timeBeforeConsideredIdle = timeBeforeConsideredIdle,
             autoDiscoverTargets = autoDiscoverTargets,
             debugStringLimit = debugStringLimit
         )

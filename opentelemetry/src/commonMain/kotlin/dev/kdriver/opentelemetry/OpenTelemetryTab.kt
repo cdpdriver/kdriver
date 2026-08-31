@@ -424,7 +424,7 @@ class OpenTelemetryTab(
 
     override suspend fun updateTarget() = tab.updateTarget()
 
-    override suspend fun wait(t: Long?) = tab.wait(t)
+    override suspend fun wait(t: Long?, idleTimeout: Long) = tab.wait(t, idleTimeout)
 
     override suspend fun sleep(t: Long) = tab.sleep(t)
 

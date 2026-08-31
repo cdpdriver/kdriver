@@ -18,6 +18,10 @@ class Config(
     val browserConnectionTimeout: Long = Defaults.BROWSER_CONNECTION_TIMEOUT,
     val browserConnectionMaxTries: Int = Defaults.BROWSER_CONNECTION_MAX_TRIES,
     val commandTimeout: Long = Defaults.COMMAND_TIMEOUT,
+    /**
+     * How long, in milliseconds, the connection must receive nothing before it counts as idle.
+     */
+    val timeBeforeConsideredIdle: Long = Defaults.TIME_BEFORE_CONSIDERED_IDLE,
     val autoDiscoverTargets: Boolean = Defaults.AUTO_DISCOVER_TARGETS,
     val debugStringLimit: Int = Defaults.DEBUG_STRING_LIMIT,
 ) {
@@ -134,6 +138,7 @@ class Config(
         browserConnectionTimeout = browserConnectionTimeout,
         browserConnectionMaxTries = browserConnectionMaxTries,
         commandTimeout = commandTimeout,
+        timeBeforeConsideredIdle = timeBeforeConsideredIdle,
         autoDiscoverTargets = autoDiscoverTargets,
         debugStringLimit = debugStringLimit,
     ).also { copy ->
@@ -165,6 +170,21 @@ class Config(
          * the timeout (wait indefinitely).
          */
         const val COMMAND_TIMEOUT: Long = 30_000
+
+        /**
+         * How long, in milliseconds, the connection must receive nothing before it counts as idle.
+         */
+        const val TIME_BEFORE_CONSIDERED_IDLE: Long = 100
+
+        /**
+         * Default upper bound, in milliseconds, on how long
+         * [dev.kdriver.core.connection.Connection.wait] will watch for the connection to go idle.
+         *
+         * A page can stream events indefinitely (polling, server-sent events, ads, a refreshing
+         * interstitial), in which case idleness never arrives. That is not an error — waiting is
+         * best-effort — so past this bound `wait` simply stops watching and returns.
+         */
+        const val IDLE_WAIT_TIMEOUT: Long = 10_000
         const val AUTO_DISCOVER_TARGETS: Boolean = true
         const val DEBUG_STRING_LIMIT: Int = 128
     }
