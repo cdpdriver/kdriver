@@ -36,6 +36,10 @@ open class DefaultConnection(
         // One initial send plus one resend after a transparent reconnect. The resend is only ever reached
         // when a send fails (bytes never left the client), so it cannot double-execute a command.
         private const val SEND_ATTEMPTS = 2
+
+        // How often idleness is re-read while waiting. Only bounds how quickly `wait` notices the
+        // connection went quiet; it is not itself a wait.
+        private const val IDLE_POLL_INTERVAL_MS = 50L
     }
 
     private val logger = KtorSimpleLogger("Connection")
@@ -74,6 +78,15 @@ open class DefaultConnection(
      */
     protected open fun createTransport(): WebSocketTransport = KtorWebSocketTransport(websocketUrl)
 
+    /**
+     * Current time in epoch millis, used to measure how long the connection has been quiet.
+     *
+     * Overridable for the same reason as [createTransport]: it lets a test drive idleness off the
+     * scheduler's virtual clock, so "traffic kept arriving" and "nothing arrived" are decided
+     * deterministically instead of by how fast the machine happens to run.
+     */
+    protected open fun currentTimeMillis(): Long = Clock.System.now().toEpochMilliseconds()
+
     private var prepareHeadlessDone = false
     private var prepareExpertDone = false
 
@@ -84,6 +97,15 @@ open class DefaultConnection(
 
     @Volatile
     private var needsRestore = false
+
+    // Epoch millis of the last frame the receive loop saw, so idleness can be *read* instead of
+    // guessed. The previous check re-subscribed to `events` on every poll and only observed the
+    // 100 ms window it had just opened, so a connection that had genuinely been quiet for a while
+    // still looked busy, and a busy one could look quiet. 0 means "nothing ever arrived", which is
+    // idle by definition. Null means nothing has ever arrived, which is idle too — a sentinel
+    // rather than an epoch value, so it stays correct whatever the clock starts at.
+    @Volatile
+    private var lastMessageAt: Long? = null
 
     private val allMessages = MutableSharedFlow<Message>(extraBufferCapacity = Channel.UNLIMITED)
 
@@ -139,6 +161,7 @@ open class DefaultConnection(
         socketSubscription = messageListeningScope.launch {
             try {
                 t.incoming().collect { text ->
+                    lastMessageAt = currentTimeMillis()
                     try {
                         logger.debug("WS < CDP: ${text.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
                         val received = Serialization.json.decodeFromString<Message>(text)
@@ -334,31 +357,29 @@ open class DefaultConnection(
         this.targetInfo = targetInfo.targetInfo
     }
 
-    override suspend fun wait(t: Long?) {
+    override suspend fun wait(t: Long?, idleTimeout: Long) {
         updateTarget()
-        val idleEvent: suspend () -> Boolean = {
-            withTimeoutOrNull(100.milliseconds) { events.first() } == null
+
+        val start = currentTimeMillis()
+
+        // Watch for the connection to settle, but never longer than `idleTimeout`: a page can keep
+        // streaming forever, and that is not a failure to report — it just means we stop waiting.
+        withTimeoutOrNull(idleTimeout.milliseconds) {
+            while (!isIdle()) delay(IDLE_POLL_INTERVAL_MS.milliseconds)
         }
 
+        // `t` is a floor, not a deadline: callers that pass it want the page left alone for at
+        // least that long, whether or not it settled sooner.
         if (t != null) {
-            val start = Clock.System.now().toEpochMilliseconds()
-            withTimeoutOrNull(t.milliseconds) {
-                // Wait for idle event or timeout
-                while (true) {
-                    if (idleEvent()) break
-                    delay(50.milliseconds)
-                }
-            }
-            // Ensure total wait time is at least t milliseconds
-            val elapsed = Clock.System.now().toEpochMilliseconds() - start
+            val elapsed = currentTimeMillis() - start
             if (elapsed < t) delay((t - elapsed).milliseconds)
-        } else {
-            // Wait indefinitely for idle event
-            while (true) {
-                if (idleEvent()) break
-                delay(50.milliseconds)
-            }
         }
+    }
+
+    private fun isIdle(): Boolean {
+        val last = lastMessageAt ?: return true
+        val quietFor = currentTimeMillis() - last
+        return quietFor >= (owner?.config?.timeBeforeConsideredIdle ?: Defaults.TIME_BEFORE_CONSIDERED_IDLE)
     }
 
     override suspend fun sleep(t: Long) {
