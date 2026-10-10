@@ -23,6 +23,10 @@ allprojects {
 }
 
 dependencies {
+    dokka(projects.cdp)
+    dokka(projects.core)
+    dokka(projects.opentelemetry)
+
     kover(projects.cdp)
     kover(projects.core)
     kover(projects.opentelemetry)

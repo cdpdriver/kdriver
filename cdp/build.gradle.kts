@@ -1,3 +1,7 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinMultiplatform
+import com.vanniktech.maven.publish.SourcesJar
+
 plugins {
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.serialization)
@@ -10,7 +14,10 @@ plugins {
 }
 
 mavenPublishing {
-    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+    // Empty javadoc jars: the full Dokka site is published on kdriver.dev, and embedding it
+    // in every platform publication would blow the Maven Central size limits.
+    configure(KotlinMultiplatform(javadocJar = JavadocJar.Empty(), sourcesJar = SourcesJar.Sources()))
+    publishToMavenCentral()
     signAllPublications()
     pom {
         name.set("cdp")
@@ -39,20 +46,16 @@ mavenPublishing {
 kotlin {
     // Tiers are in accordance with <https://kotlinlang.org/docs/native-target-support.html>
     // Tier 1
-    macosX64()
     macosArm64()
     iosSimulatorArm64()
-    iosX64()
 
     // Tier 2
     linuxX64()
     linuxArm64()
     watchosSimulatorArm64()
-    watchosX64()
     watchosArm32()
     watchosArm64()
     tvosSimulatorArm64()
-    tvosX64()
     tvosArm64()
     iosArm64()
 
