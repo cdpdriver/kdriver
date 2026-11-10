@@ -28,14 +28,37 @@ internal class DevToolsEndpoint private constructor(
      *
      * The browser builds that URL from its own listening address, which a client behind a reverse
      * proxy cannot reach: only its path (and query, if any) is kept. Without [Config.browserUrl] the
-     * advertised URL is returned unchanged.
+     * advertised URL is returned unchanged, and so is one already on this endpoint.
      */
     fun rewriteWebSocketDebuggerUrl(advertised: String): String {
         if (!rewritesAdvertisedUrls) return advertised
+        // Already on this endpoint, e.g. rewritten by the proxy itself: prefixing again would break it.
+        if (advertised.startsWith("$webSocketBaseUrl/")) return advertised
         return webSocketUrl(Url(advertised).encodedPathAndQuery)
     }
 
     companion object {
+
+        /**
+         * Checks that [browserUrl] can serve as a base address: `http` or `https`, and nothing the
+         * appended `json/…` and `devtools/…` paths would end up inside of (query, fragment), nor
+         * credentials, which belong in [Config.connectionHeaders].
+         *
+         * @throws IllegalArgumentException if it cannot.
+         */
+        fun validateBrowserUrl(browserUrl: String) {
+            val scheme = browserUrl.substringBefore("://", missingDelimiterValue = "").lowercase()
+            require(scheme == "http" || scheme == "https") {
+                "browserUrl must be an http:// or https:// URL, got \"$browserUrl\""
+            }
+            val url = Url(browserUrl)
+            require(url.encodedQuery.isEmpty() && url.fragment.isEmpty()) {
+                "browserUrl must not have a query or a fragment, got \"$browserUrl\""
+            }
+            require(url.user == null && url.password == null) {
+                "browserUrl must not embed credentials, pass them in connectionHeaders instead"
+            }
+        }
 
         fun from(config: Config): DevToolsEndpoint {
             val browserUrl = config.browserUrl

@@ -34,7 +34,8 @@ class Config(
      * `wss` for `https`). The `webSocketDebuggerUrl` the browser advertises (which names its own,
      * internal, host and port) is rewritten onto this address, keeping only its path.
      *
-     * Must be an `http://` or `https://` URL. Takes precedence over [host] and [port]. When null (the
+     * Must be an `http://` or `https://` URL, without query, fragment or credentials (put those in
+     * [connectionHeaders]). Takes precedence over [host] and [port]. When null (the
      * default), [host] and [port] are used as before.
      */
     val browserUrl: String? = null,
@@ -62,12 +63,7 @@ class Config(
         private set
 
     init {
-        browserUrl?.let {
-            val scheme = it.substringBefore("://", missingDelimiterValue = "").lowercase()
-            require(scheme == "http" || scheme == "https") {
-                "browserUrl must be an http:// or https:// URL, got \"$it\""
-            }
-        }
+        browserUrl?.let(DevToolsEndpoint::validateBrowserUrl)
         if (isPosix() && isRoot() && sandbox) {
             logger.info("Detected root usage, auto disabling sandbox mode")
             this.sandbox = false
