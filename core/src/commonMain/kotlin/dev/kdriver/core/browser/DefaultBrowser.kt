@@ -59,6 +59,10 @@ open class DefaultBrowser(
     @Volatile
     private var targetsSnapshot: List<Connection> = emptyList()
 
+    // Set by [detach], under [updateTargetInfoMutex]: from then on no target is registered anymore,
+    // so a target event or poll racing the detach cannot open a connection that would never be closed.
+    private var detached = false
+
     override val targets: List<Connection>
         get() = targetsSnapshot
 
@@ -129,6 +133,7 @@ open class DefaultBrowser(
      * Must be called while holding [updateTargetInfoMutex].
      */
     private fun upsertTarget(targetInfo: Target.TargetInfo) {
+        if (detached) return
         val existing = mutableTargets.firstOrNull { it.targetId == targetInfo.targetId }
         if (existing != null) {
             existing.targetInfo = targetInfo
@@ -354,7 +359,9 @@ open class DefaultBrowser(
         return try {
             val version = http.get<ContraDict>("version")
             // The browser advertises its own listening address, unreachable behind a reverse proxy.
-            info = version.copy(webSocketDebuggerUrl = endpoint.rewriteWebSocketDebuggerUrl(version.webSocketDebuggerUrl))
+            info = version.copy(
+                webSocketDebuggerUrl = endpoint.rewriteWebSocketDebuggerUrl(version.webSocketDebuggerUrl)
+            )
             true
         } catch (e: CancellationException) {
             throw e
@@ -395,6 +402,7 @@ open class DefaultBrowser(
         // keeps the shutdown hook from stopping a browser we chose to leave running.
         process = null
         val targets = updateTargetInfoMutex.withLock {
+            detached = true
             mutableTargets.toList().also {
                 mutableTargets.clear()
                 publishTargetsSnapshot()
