@@ -1,6 +1,5 @@
 package dev.kdriver.core.connection
 
-import dev.kdriver.core.browser.WebSocketInfo
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.http.*
@@ -28,13 +27,9 @@ class KtorWebSocketTransport(
     override suspend fun connect() {
         if (isActive) return
         session = client.webSocketSession {
-            url {
-                val parsed = parseWebSocketUrl(websocketUrl)
-                this.protocol = URLProtocol.WS
-                this.host = parsed.host
-                this.port = parsed.port
-                this.path(parsed.path)
-            }
+            // Take the whole URL as given — scheme included — so a wss:// endpoint (for instance a
+            // browser reached through a TLS-terminating reverse proxy) is opened over TLS.
+            url.takeFrom(websocketUrl)
         }
     }
 
@@ -59,20 +54,6 @@ class KtorWebSocketTransport(
         // Close the engine-backed client too, otherwise its threads/connection pool leak across
         // browser create/stop cycles (ISSUE-9).
         client.close()
-    }
-
-    private fun parseWebSocketUrl(url: String): WebSocketInfo {
-        val uri = Url(url)
-
-        val host = uri.host
-        val port = if (uri.port != -1) uri.port else when (uri.protocol) {
-            URLProtocol.WS -> 80
-            URLProtocol.WSS -> 443
-            else -> throw IllegalArgumentException("Unsupported scheme: ${uri.protocol}")
-        }
-        val path = uri.encodedPath
-
-        return WebSocketInfo(host, port, path)
     }
 
 }
