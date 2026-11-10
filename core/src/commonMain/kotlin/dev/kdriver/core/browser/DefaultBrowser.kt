@@ -386,6 +386,26 @@ open class DefaultBrowser(
         logger.info("Browser process stopped")
     }
 
+    override suspend fun detach() {
+        logger.info("Detaching from browser at ${info?.webSocketDebuggerUrl}")
+        // Only client-side teardown: no Browser.close, no process kill. Forgetting the process also
+        // keeps the shutdown hook from stopping a browser we chose to leave running.
+        process = null
+        val targets = updateTargetInfoMutex.withLock {
+            mutableTargets.toList().also {
+                mutableTargets.clear()
+                publishTargetsSnapshot()
+            }
+        }
+        targets.forEach { it.close() }
+        connection?.close()
+        connection = null
+        http?.close()
+        http = null
+        coroutineScope.cancel()
+        logger.info("Detached from browser")
+    }
+
     override suspend fun cleanupTemporaryProfile() {
         // TODO: Implement cleanup of temporary profile files (nothing on JVM but maybe for other platforms)
     }
