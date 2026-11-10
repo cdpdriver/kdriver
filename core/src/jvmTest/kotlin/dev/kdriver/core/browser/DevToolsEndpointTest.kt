@@ -74,6 +74,34 @@ class DevToolsEndpointTest {
     }
 
     @Test
+    fun browserUrl_withQueryFragmentOrCredentials_isRejected() {
+        // The json/… and devtools/… paths are appended below browserUrl, which a query or fragment
+        // would swallow; credentials belong in connectionHeaders.
+        listOf(
+            "https://example.com/b?token=abc",
+            "https://example.com/b#section",
+            "https://user:password@example.com/b",
+        ).forEach { url ->
+            assertFailsWith<IllegalArgumentException>(url) {
+                Config(browserExecutablePath = chrome, browserUrl = url)
+            }
+        }
+    }
+
+    @Test
+    fun advertisedUrl_alreadyOnTheBrowserUrl_isKeptAsIs() {
+        // A proxy may already rewrite webSocketDebuggerUrl onto its own address: don't prefix twice.
+        val endpoint = DevToolsEndpoint.from(
+            Config(browserExecutablePath = chrome, browserUrl = "https://browsers.example.com/team/one")
+        )
+
+        assertEquals(
+            "wss://browsers.example.com/team/one/devtools/browser/abc",
+            endpoint.rewriteWebSocketDebuggerUrl("wss://browsers.example.com/team/one/devtools/browser/abc"),
+        )
+    }
+
+    @Test
     fun copy_keepsBrowserUrlAndConnectionHeaders() {
         val original = Config(
             browserExecutablePath = chrome,
