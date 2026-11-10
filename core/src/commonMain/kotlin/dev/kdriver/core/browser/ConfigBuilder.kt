@@ -38,6 +38,16 @@ class ConfigBuilder {
     var debugStringLimit: Int = Defaults.DEBUG_STRING_LIMIT
 
     /**
+     * Address of an already running browser to connect to. See [Config.browserUrl].
+     */
+    var browserUrl: String? = null
+
+    /**
+     * Extra HTTP headers sent to the browser's DevTools endpoints. See [Config.connectionHeaders].
+     */
+    var connectionHeaders: Map<String, String> = emptyMap()
+
+    /**
      * Builds the Config instance with the configured parameters.
      */
     fun build(): Config {
@@ -57,7 +67,9 @@ class ConfigBuilder {
             commandTimeout = commandTimeout,
             timeBeforeConsideredIdle = timeBeforeConsideredIdle,
             autoDiscoverTargets = autoDiscoverTargets,
-            debugStringLimit = debugStringLimit
+            debugStringLimit = debugStringLimit,
+            browserUrl = browserUrl,
+            connectionHeaders = connectionHeaders,
         )
     }
 }
