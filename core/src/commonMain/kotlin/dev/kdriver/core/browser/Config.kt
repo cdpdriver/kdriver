@@ -37,6 +37,9 @@ class Config(
      * Must be an `http://` or `https://` URL, without query, fragment or credentials (put those in
      * [connectionHeaders]). Takes precedence over [host] and [port]. When null (the
      * default), [host] and [port] are used as before.
+     *
+     * A browser executable is still looked up when the configuration is created; on a machine
+     * without one, pass any [browserExecutablePath]: it is only used to launch a browser.
      */
     val browserUrl: String? = null,
     /**
