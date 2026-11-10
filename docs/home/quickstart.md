@@ -159,3 +159,32 @@ fun main() = runBlocking {
     browser.stop()
 }
 ```
+
+## Connecting to a running browser
+
+Instead of launching a browser, kdriver can attach to one that is already running — for instance a
+browser exposed behind a reverse proxy, over TLS, under a path prefix and with authentication:
+
+```kotlin
+fun main() = runBlocking {
+    val browser = createBrowser(this) {
+        // http:// or https://, with an optional path prefix. The DevTools endpoints are requested
+        // below it (https://browsers.example.com/team/one/json/version) and the WebSocket
+        // connections use the same address with ws:// or wss://.
+        browserUrl = "https://browsers.example.com/team/one"
+        // Sent with every HTTP request and every WebSocket handshake to the browser.
+        connectionHeaders = mapOf("Authorization" to "Bearer <token>")
+    }
+    val tab = browser.get("https://example.com")
+
+    // ...
+
+    // Let go of the browser without closing it: the WebSocket connections are closed, but the
+    // browser and its tabs keep running. Use browser.stop() instead to shut it down.
+    browser.detach()
+}
+```
+
+The browser advertises its own, internal, address in `webSocketDebuggerUrl`; when `browserUrl` is
+set, kdriver keeps only the path of that URL and connects to it on `browserUrl`. Without
+`browserUrl`, `host` and `port` keep working as before.

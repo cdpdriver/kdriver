@@ -124,6 +124,20 @@ interface Browser {
      */
     suspend fun stop()
 
+    /**
+     * Detaches from the browser without closing it.
+     *
+     * Closes every WebSocket connection this instance opened (the browser's and its targets') and
+     * releases its client-side resources, but sends no `Browser.close` command and stops no process:
+     * the browser, its tabs and their state are left as they are, so it can be attached to again
+     * later. Use it when connected to a browser that something else owns, for instance one reached
+     * through [Config.browserUrl]; use [stop] to shut the browser down.
+     *
+     * A browser process launched by this instance is left running too; [stop] will no longer reach
+     * it. This instance cannot be used anymore afterwards.
+     */
+    suspend fun detach()
+
     suspend fun cleanupTemporaryProfile()
 
     /**

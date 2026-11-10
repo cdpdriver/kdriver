@@ -59,6 +59,10 @@ open class DefaultBrowser(
     @Volatile
     private var targetsSnapshot: List<Connection> = emptyList()
 
+    // Set by [detach], under [updateTargetInfoMutex]: from then on no target is registered anymore,
+    // so a target event or poll racing the detach cannot open a connection that would never be closed.
+    private var detached = false
+
     override val targets: List<Connection>
         get() = targetsSnapshot
 
@@ -79,6 +83,10 @@ open class DefaultBrowser(
 
     override val stopped: Boolean
         get() = process?.isAlive()?.not() ?: true
+
+    /** Where the DevTools endpoints are reached: [Config.browserUrl], or else host and port. */
+    private val endpoint: DevToolsEndpoint
+        get() = DevToolsEndpoint.from(config)
 
     companion object {
 
@@ -125,11 +133,12 @@ open class DefaultBrowser(
      * Must be called while holding [updateTargetInfoMutex].
      */
     private fun upsertTarget(targetInfo: Target.TargetInfo) {
+        if (detached) return
         val existing = mutableTargets.firstOrNull { it.targetId == targetInfo.targetId }
         if (existing != null) {
             existing.targetInfo = targetInfo
         } else {
-            val wsUrl = "ws://${config.host}:${config.port}/devtools/${targetInfo.type}/${targetInfo.targetId}"
+            val wsUrl = endpoint.webSocketUrl("/devtools/${targetInfo.type}/${targetInfo.targetId}")
             val created = if (targetInfo.type == "page") createTab(wsUrl, targetInfo)
             else createConnection(wsUrl, targetInfo)
             mutableTargets.add(created)
@@ -228,7 +237,7 @@ open class DefaultBrowser(
             return this
         }
 
-        val connectExisting = config.host != null && config.port != null
+        val connectExisting = config.browserUrl != null || (config.host != null && config.port != null)
 
         if (!connectExisting) {
             config.host = "127.0.0.1"
@@ -259,7 +268,8 @@ open class DefaultBrowser(
         }
 
         logger.info("Browser process started with PID: ${process?.pid()}")
-        http = HTTPApi(config.host ?: "127.0.0.1", config.port ?: error("Port not set"))
+        if (config.browserUrl == null && config.port == null) error("Port not set")
+        http = HTTPApi(endpoint.httpBaseUrl, config.connectionHeaders)
 
         delay(config.browserConnectionTimeout)
         val connected = awaitConnection(config.browserConnectionMaxTries, config.browserConnectionTimeout) {
@@ -276,7 +286,7 @@ open class DefaultBrowser(
             val stderr = process?.readStderrSnapshot()
             logger.error(
                 browserStartFailureMessage(
-                    endpoint = "${config.host}:${config.port}",
+                    endpoint = config.browserUrl ?: "${config.host}:${config.port}",
                     waitedMs = waitedMs,
                     fate = processFate(process?.pid(), process?.isAlive() ?: false, process?.exitCodeOrNull()),
                     lastConnectionError = lastConnectionError,
@@ -347,7 +357,11 @@ open class DefaultBrowser(
     override suspend fun testConnection(): Boolean {
         val http = http ?: error("HTTPApi not initialized")
         return try {
-            info = http.get<ContraDict>("version")
+            val version = http.get<ContraDict>("version")
+            // The browser advertises its own listening address, unreachable behind a reverse proxy.
+            info = version.copy(
+                webSocketDebuggerUrl = endpoint.rewriteWebSocketDebuggerUrl(version.webSocketDebuggerUrl)
+            )
             true
         } catch (e: CancellationException) {
             throw e
@@ -380,6 +394,27 @@ open class DefaultBrowser(
         logger.debug("Canceling coroutine scope...")
         coroutineScope.cancel()
         logger.info("Browser process stopped")
+    }
+
+    override suspend fun detach() {
+        logger.info("Detaching from browser at ${info?.webSocketDebuggerUrl}")
+        // Only client-side teardown: no Browser.close, no process kill. Forgetting the process also
+        // keeps the shutdown hook from stopping a browser we chose to leave running.
+        process = null
+        val targets = updateTargetInfoMutex.withLock {
+            detached = true
+            mutableTargets.toList().also {
+                mutableTargets.clear()
+                publishTargetsSnapshot()
+            }
+        }
+        targets.forEach { it.close() }
+        connection?.close()
+        connection = null
+        http?.close()
+        http = null
+        coroutineScope.cancel()
+        logger.info("Detached from browser")
     }
 
     override suspend fun cleanupTemporaryProfile() {

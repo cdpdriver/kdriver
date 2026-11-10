@@ -24,6 +24,30 @@ class Config(
     val timeBeforeConsideredIdle: Long = Defaults.TIME_BEFORE_CONSIDERED_IDLE,
     val autoDiscoverTargets: Boolean = Defaults.AUTO_DISCOVER_TARGETS,
     val debugStringLimit: Int = Defaults.DEBUG_STRING_LIMIT,
+    /**
+     * Address of an already running browser to connect to, instead of launching one — typically a
+     * browser reached through a reverse proxy, possibly over TLS and under a path prefix:
+     * `https://example.com/browser`.
+     *
+     * The DevTools HTTP endpoints are requested below it (`https://example.com/browser/json/version`)
+     * and the WebSocket connections use the same address with the matching scheme (`ws` for `http`,
+     * `wss` for `https`). The `webSocketDebuggerUrl` the browser advertises (which names its own,
+     * internal, host and port) is rewritten onto this address, keeping only its path.
+     *
+     * Must be an `http://` or `https://` URL, without query, fragment or credentials (put those in
+     * [connectionHeaders]). Takes precedence over [host] and [port]. When null (the
+     * default), [host] and [port] are used as before.
+     *
+     * A browser executable is still looked up when the configuration is created; on a machine
+     * without one, pass any [browserExecutablePath]: it is only used to launch a browser.
+     */
+    val browserUrl: String? = null,
+    /**
+     * Extra HTTP headers sent with every request to the browser's DevTools endpoints: the HTTP
+     * `/json/…` requests and the WebSocket handshakes. Useful to authenticate against a reverse proxy
+     * in front of the browser, e.g. `mapOf("Authorization" to "Bearer …")`. Empty by default.
+     */
+    val connectionHeaders: Map<String, String> = emptyMap(),
 ) {
 
     private val logger = KtorSimpleLogger("Config")
@@ -42,6 +66,7 @@ class Config(
         private set
 
     init {
+        browserUrl?.let(DevToolsEndpoint::validateBrowserUrl)
         if (isPosix() && isRoot() && sandbox) {
             logger.info("Detected root usage, auto disabling sandbox mode")
             this.sandbox = false
@@ -141,6 +166,8 @@ class Config(
         timeBeforeConsideredIdle = timeBeforeConsideredIdle,
         autoDiscoverTargets = autoDiscoverTargets,
         debugStringLimit = debugStringLimit,
+        browserUrl = browserUrl,
+        connectionHeaders = connectionHeaders,
     ).also { copy ->
         // Copy the backing field, never the userDataDir getter: reading it would materialise a
         // temporary profile directory on a config that may never be started.

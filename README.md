@@ -72,6 +72,20 @@ fun main() = runBlocking {
 }
 ```
 
+Attach to a browser that is already running, for instance behind a reverse proxy, and let go of it
+without closing it:
+
+```kotlin
+fun main() = runBlocking {
+    val browser = createBrowser(this) {
+        browserUrl = "https://browsers.example.com/team/one" // http(s), optional path prefix
+        connectionHeaders = mapOf("Authorization" to "Bearer <token>") // HTTP and WebSocket
+    }
+    browser.mainTab?.evaluate<String>("document.title")
+    browser.detach() // closes kdriver's connections, leaves the browser running
+}
+```
+
 More examples can be found on the [tutorial section of the documentation](https://kdriver.dev/tutorials/).
 
 ## Acknowledgments

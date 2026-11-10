@@ -1,8 +1,8 @@
 package dev.kdriver.core.connection
 
-import dev.kdriver.core.browser.WebSocketInfo
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.*
+import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.flow.Flow
@@ -11,9 +11,14 @@ import kotlinx.coroutines.isActive
 
 /**
  * Default [WebSocketTransport] backed by a Ktor WebSocket session.
+ *
+ * @param websocketUrl The `ws://` or `wss://` URL to open.
+ * @param headers Extra HTTP headers sent with the WebSocket handshake, for instance credentials
+ * expected by a reverse proxy in front of the browser.
  */
 class KtorWebSocketTransport(
     private val websocketUrl: String,
+    private val headers: Map<String, String> = emptyMap(),
 ) : WebSocketTransport {
 
     private val client = HttpClient(getWebSocketClientEngine()) {
@@ -28,13 +33,10 @@ class KtorWebSocketTransport(
     override suspend fun connect() {
         if (isActive) return
         session = client.webSocketSession {
-            url {
-                val parsed = parseWebSocketUrl(websocketUrl)
-                this.protocol = URLProtocol.WS
-                this.host = parsed.host
-                this.port = parsed.port
-                this.path(parsed.path)
-            }
+            // Take the whole URL as given — scheme included — so a wss:// endpoint (for instance a
+            // browser reached through a TLS-terminating reverse proxy) is opened over TLS.
+            url.takeFrom(websocketUrl)
+            this@KtorWebSocketTransport.headers.forEach { (name, value) -> header(name, value) }
         }
     }
 
@@ -59,20 +61,6 @@ class KtorWebSocketTransport(
         // Close the engine-backed client too, otherwise its threads/connection pool leak across
         // browser create/stop cycles (ISSUE-9).
         client.close()
-    }
-
-    private fun parseWebSocketUrl(url: String): WebSocketInfo {
-        val uri = Url(url)
-
-        val host = uri.host
-        val port = if (uri.port != -1) uri.port else when (uri.protocol) {
-            URLProtocol.WS -> 80
-            URLProtocol.WSS -> 443
-            else -> throw IllegalArgumentException("Unsupported scheme: ${uri.protocol}")
-        }
-        val path = uri.encodedPath
-
-        return WebSocketInfo(host, port, path)
     }
 
 }
