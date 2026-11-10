@@ -6,11 +6,14 @@ import dev.kdriver.cdp.domain.Target
 import dev.kdriver.core.connection.DefaultConnection
 import dev.kdriver.core.tab.DefaultTab
 import dev.kdriver.core.tab.Tab
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
@@ -39,7 +42,7 @@ class DetachTest {
     /** Records every CDP method sent and whether it was closed. */
     private class RecordingConnection(
         scope: CoroutineScope,
-        private val targetInfos: List<Target.TargetInfo>,
+        var targetInfos: List<Target.TargetInfo>,
     ) : DefaultConnection("ws://stub/devtools/browser/stub", scope) {
         val methods = mutableListOf<String>()
         var closed = false
@@ -57,8 +60,11 @@ class DetachTest {
         }
     }
 
-    private class RecordingTab(scope: CoroutineScope, targetInfo: Target.TargetInfo) :
-        DefaultTab("ws://stub/devtools/page/stub", scope, targetInfo) {
+    private class RecordingTab(
+        scope: CoroutineScope,
+        targetInfo: Target.TargetInfo,
+        private val closeGate: CompletableDeferred<Unit>?,
+    ) : DefaultTab("ws://stub/devtools/page/stub", scope, targetInfo) {
         val methods = mutableListOf<String>()
         var closed = false
         override suspend fun callCommand(method: String, parameter: JsonElement?, mode: CommandMode): JsonElement? {
@@ -67,17 +73,21 @@ class DetachTest {
         }
 
         override suspend fun close() {
+            closeGate?.await()
             closed = true
         }
     }
 
-    private class TestBrowser(scope: CoroutineScope) : DefaultBrowser(
+    private class TestBrowser(
+        scope: CoroutineScope,
+        private val closeGate: CompletableDeferred<Unit>? = null,
+    ) : DefaultBrowser(
         scope,
         Config(browserExecutablePath = Path("/fake/chrome"), host = "127.0.0.1", port = 9222, autoDiscoverTargets = false),
     ) {
         val createdTabs = mutableListOf<RecordingTab>()
         override fun createTab(websocketUrl: String, targetInfo: Target.TargetInfo): Tab =
-            RecordingTab(coroutineScope, targetInfo).also { createdTabs += it }
+            RecordingTab(coroutineScope, targetInfo, closeGate).also { createdTabs += it }
     }
 
     /** A scope of its own, so the browser cancelling it does not cancel the test. */
@@ -102,6 +112,28 @@ class DetachTest {
         assertNull(browser.connection)
         assertEquals(emptyList(), browser.targets)
         assertFalse(scope.isActive, "the browser's coroutines must be released")
+    }
+
+    @Test
+    fun detach_ignoresTargetsDiscoveredWhileItRuns() = runTest {
+        val scope = browserScope()
+        val closeGate = CompletableDeferred<Unit>()
+        val browser = TestBrowser(scope, closeGate)
+        val connection = RecordingConnection(scope, listOf(pageInfo("t1")))
+        browser.connection = connection
+        browser.updateTargets()
+
+        // detach() is now busy closing the first page's connection…
+        val detaching = launch { browser.detach() }
+        runCurrent()
+        // …when another page shows up (a target event or a poll racing the detach).
+        connection.targetInfos = listOf(pageInfo("t1"), pageInfo("t2"))
+        browser.updateTargets()
+        closeGate.complete(Unit)
+        detaching.join()
+
+        assertEquals(emptyList(), browser.targets, "nothing may be registered once detaching started")
+        assertEquals(1, browser.createdTabs.size, "no connection may be opened once detaching started")
     }
 
     @Test
