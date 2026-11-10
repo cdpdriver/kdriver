@@ -74,9 +74,11 @@ open class DefaultConnection(
     /**
      * Creates the [WebSocketTransport] used to talk to the browser.
      *
-     * Overridable so tests can inject a fake transport without a real browser.
+     * Overridable so tests can inject a fake transport without a real browser. The owner's
+     * [dev.kdriver.core.browser.Config.connectionHeaders] are sent with the handshake.
      */
-    protected open fun createTransport(): WebSocketTransport = KtorWebSocketTransport(websocketUrl)
+    protected open fun createTransport(): WebSocketTransport =
+        KtorWebSocketTransport(websocketUrl, owner?.config?.connectionHeaders.orEmpty())
 
     /**
      * Current time in epoch millis, used to measure how long the connection has been quiet.

@@ -80,6 +80,10 @@ open class DefaultBrowser(
     override val stopped: Boolean
         get() = process?.isAlive()?.not() ?: true
 
+    /** Where the DevTools endpoints are reached: [Config.browserUrl], or else host and port. */
+    private val endpoint: DevToolsEndpoint
+        get() = DevToolsEndpoint.from(config)
+
     companion object {
 
         private const val TARGET_WAIT_TIMEOUT_MS = 10_000L
@@ -129,7 +133,7 @@ open class DefaultBrowser(
         if (existing != null) {
             existing.targetInfo = targetInfo
         } else {
-            val wsUrl = "ws://${config.host}:${config.port}/devtools/${targetInfo.type}/${targetInfo.targetId}"
+            val wsUrl = endpoint.webSocketUrl("/devtools/${targetInfo.type}/${targetInfo.targetId}")
             val created = if (targetInfo.type == "page") createTab(wsUrl, targetInfo)
             else createConnection(wsUrl, targetInfo)
             mutableTargets.add(created)
