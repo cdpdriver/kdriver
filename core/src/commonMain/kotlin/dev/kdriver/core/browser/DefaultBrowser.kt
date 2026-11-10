@@ -232,7 +232,7 @@ open class DefaultBrowser(
             return this
         }
 
-        val connectExisting = config.host != null && config.port != null
+        val connectExisting = config.browserUrl != null || (config.host != null && config.port != null)
 
         if (!connectExisting) {
             config.host = "127.0.0.1"
@@ -263,7 +263,8 @@ open class DefaultBrowser(
         }
 
         logger.info("Browser process started with PID: ${process?.pid()}")
-        http = HTTPApi(config.host ?: "127.0.0.1", config.port ?: error("Port not set"))
+        if (config.browserUrl == null && config.port == null) error("Port not set")
+        http = HTTPApi(endpoint.httpBaseUrl, config.connectionHeaders)
 
         delay(config.browserConnectionTimeout)
         val connected = awaitConnection(config.browserConnectionMaxTries, config.browserConnectionTimeout) {
@@ -280,7 +281,7 @@ open class DefaultBrowser(
             val stderr = process?.readStderrSnapshot()
             logger.error(
                 browserStartFailureMessage(
-                    endpoint = "${config.host}:${config.port}",
+                    endpoint = config.browserUrl ?: "${config.host}:${config.port}",
                     waitedMs = waitedMs,
                     fate = processFate(process?.pid(), process?.isAlive() ?: false, process?.exitCodeOrNull()),
                     lastConnectionError = lastConnectionError,
@@ -351,7 +352,9 @@ open class DefaultBrowser(
     override suspend fun testConnection(): Boolean {
         val http = http ?: error("HTTPApi not initialized")
         return try {
-            info = http.get<ContraDict>("version")
+            val version = http.get<ContraDict>("version")
+            // The browser advertises its own listening address, unreachable behind a reverse proxy.
+            info = version.copy(webSocketDebuggerUrl = endpoint.rewriteWebSocketDebuggerUrl(version.webSocketDebuggerUrl))
             true
         } catch (e: CancellationException) {
             throw e
