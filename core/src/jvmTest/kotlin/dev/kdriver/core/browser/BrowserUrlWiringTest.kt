@@ -64,7 +64,11 @@ class BrowserUrlWiringTest {
     fun targets_areOpenedOnTheBrowserUrl() = runTest {
         val browser = RecordingBrowser(
             this,
-            Config(browserExecutablePath = chrome, browserUrl = "https://example.com/team/one", autoDiscoverTargets = false),
+            Config(
+                browserExecutablePath = chrome,
+                browserUrl = "https://example.com/team/one",
+                autoDiscoverTargets = false,
+            ),
         )
         browser.connection = FakeConnection(this, listOf(pageInfo("t1")))
 

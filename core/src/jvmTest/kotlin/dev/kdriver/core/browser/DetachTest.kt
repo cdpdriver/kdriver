@@ -83,7 +83,12 @@ class DetachTest {
         private val closeGate: CompletableDeferred<Unit>? = null,
     ) : DefaultBrowser(
         scope,
-        Config(browserExecutablePath = Path("/fake/chrome"), host = "127.0.0.1", port = 9222, autoDiscoverTargets = false),
+        Config(
+            browserExecutablePath = Path("/fake/chrome"),
+            host = "127.0.0.1",
+            port = 9222,
+            autoDiscoverTargets = false,
+        ),
     ) {
         val createdTabs = mutableListOf<RecordingTab>()
         override fun createTab(websocketUrl: String, targetInfo: Target.TargetInfo): Tab =

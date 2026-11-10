@@ -30,12 +30,10 @@ internal class DevToolsEndpoint private constructor(
      * proxy cannot reach: only its path (and query, if any) is kept. Without [Config.browserUrl] the
      * advertised URL is returned unchanged, and so is one already on this endpoint.
      */
-    fun rewriteWebSocketDebuggerUrl(advertised: String): String {
-        if (!rewritesAdvertisedUrls) return advertised
+    fun rewriteWebSocketDebuggerUrl(advertised: String): String =
         // Already on this endpoint, e.g. rewritten by the proxy itself: prefixing again would break it.
-        if (advertised.startsWith("$webSocketBaseUrl/")) return advertised
-        return webSocketUrl(Url(advertised).encodedPathAndQuery)
-    }
+        if (!rewritesAdvertisedUrls || advertised.startsWith("$webSocketBaseUrl/")) advertised
+        else webSocketUrl(Url(advertised).encodedPathAndQuery)
 
     companion object {
 

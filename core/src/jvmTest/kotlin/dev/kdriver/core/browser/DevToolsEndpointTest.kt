@@ -47,7 +47,9 @@ class DevToolsEndpointTest {
 
     @Test
     fun httpBrowserUrl_withExplicitPort_mapsToWsOnThatPort() {
-        val endpoint = DevToolsEndpoint.from(Config(browserExecutablePath = chrome, browserUrl = "http://10.0.0.5:8080"))
+        val endpoint = DevToolsEndpoint.from(
+            Config(browserExecutablePath = chrome, browserUrl = "http://10.0.0.5:8080")
+        )
 
         assertEquals("http://10.0.0.5:8080/", endpoint.httpBaseUrl)
         assertEquals(
@@ -59,7 +61,12 @@ class DevToolsEndpointTest {
     @Test
     fun browserUrl_takesPrecedenceOverHostAndPort() {
         val endpoint = DevToolsEndpoint.from(
-            Config(browserExecutablePath = chrome, host = "127.0.0.1", port = 9222, browserUrl = "https://example.com/b")
+            Config(
+                browserExecutablePath = chrome,
+                host = "127.0.0.1",
+                port = 9222,
+                browserUrl = "https://example.com/b",
+            )
         )
 
         assertEquals("https://example.com/b/", endpoint.httpBaseUrl)

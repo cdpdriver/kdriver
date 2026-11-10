@@ -55,7 +55,11 @@ class PrefixProxy(
     }
 
     private fun handle(client: Socket) {
-        val head = readHead(client.getInputStream()) ?: return run { client.close() }
+        val head = readHead(client.getInputStream())
+        if (head == null) client.close() else handleRequest(client, head)
+    }
+
+    private fun handleRequest(client: Socket, head: String) {
         val lines = head.split("\r\n")
         val (method, path, version) = lines.first().split(" ", limit = 3)
         val headers = lines.drop(1).map { it.substringBefore(":").trim() to it.substringAfter(":").trim() }
@@ -66,7 +70,8 @@ class PrefixProxy(
         if (!path.startsWith("$prefix/") || !authorized) {
             refusedPaths.add(path)
             val status = if (authorized) "404 Not Found" else "401 Unauthorized"
-            client.getOutputStream().write("HTTP/1.1 $status\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray())
+            client.getOutputStream()
+                .write("HTTP/1.1 $status\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray())
             client.close()
             return
         }
