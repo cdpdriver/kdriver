@@ -13,7 +13,7 @@ import io.ktor.serialization.kotlinx.json.*
  *
  * @param baseUrl The DevTools HTTP address, `http://` or `https://`, optionally with a path prefix
  * (`https://example.com/browser`). The `json/…` endpoints are resolved below it.
- * @param headers Extra HTTP headers sent with every request, for instance credentials expected by a
+ * @property headers Extra HTTP headers sent with every request, for instance credentials expected by a
  * reverse proxy in front of the browser.
  */
 class HTTPApi(
@@ -28,6 +28,9 @@ class HTTPApi(
 
     val baseUrl = baseUrl.trimEnd('/') + "/"
     val client = HttpClient(getHttpApiClientEngine()) {
+        // Report a non-2xx answer (e.g. a reverse proxy refusing the credentials) as the HTTP error
+        // it is, rather than as a failure to parse its body.
+        expectSuccess = true
         install(ContentNegotiation) {
             json(Serialization.json)
         }
