@@ -20,13 +20,13 @@ suspend fun Element.sendKeysWithSpecialChars(text: String) {
 }
 
 /**
- * Types [text] into the element like [sendKeysWithSpecialChars], waiting [delayBetweenClusters] milliseconds between two
- * grapheme clusters (a human typing pace, for instance).
+ * Types [text] into the element like [sendKeysWithSpecialChars], waiting [delayBetweenClusters] milliseconds
+ * between two grapheme clusters (a human typing pace, for instance).
  *
- * The element is focused once; then each cluster is written as soon as its delay is over, without waiting for the reply
- * of the previous one, so the page receives the keys at the pace of the delays whatever the latency of the link, and the
- * text costs about one round trip on top of the delays. Replies are all read at the end; an error that already came back
- * stops the typing at the next cluster.
+ * The element is focused once; then each cluster is written as soon as its delay is over, without waiting for the
+ * reply of the previous one, so the page receives the keys at the pace of the delays whatever the latency of the
+ * link, and the text costs about one round trip on top of the delays. Replies are all read at the end; an error that
+ * already came back stops the typing at the next cluster.
  *
  * @param text The text to type.
  * @param delayBetweenClusters Called before each cluster but the first: the pause, in milliseconds, before it.

@@ -287,7 +287,7 @@ open class DefaultElement(
                 mouse(Input.DispatchMouseEventParameter(type = "mouseMoved", x = x, y = y))
 
                 // Random delay between steps for natural variation (a plain delay: no need to refresh the target)
-                if (i < steps) delay(Random.nextLong(8, 25))
+                if (i < steps) delay(Random.nextLong(TRAJECTORY_STEP_DELAY_MIN, TRAJECTORY_STEP_DELAY_MAX))
             }
         }
 
@@ -420,7 +420,7 @@ open class DefaultElement(
         mouseMoveWithTrajectory(x, y)
 
         // Randomized delay to make it more realistic (P1 - Anti-detection)
-        delay(Random.nextLong(5, 20))
+        delay(Random.nextLong(SETTLE_DELAY_MIN, SETTLE_DELAY_MAX))
 
         // 2. Verify element hasn't moved during trajectory (handles React re-renders, animations, etc.)
         val finalCoordinates = try {
@@ -486,7 +486,7 @@ open class DefaultElement(
                 )
 
                 // Randomized delay between press and release (P1 - Anti-detection)
-                delay(Random.nextLong(40, 120))
+                delay(Random.nextLong(PRESS_DELAY_MIN, PRESS_DELAY_MAX))
 
                 // 4. Release mouse button
                 mouse(
@@ -622,7 +622,7 @@ open class DefaultElement(
             ) ?: 0
 
             // Random delay between deletions (50-100ms) for natural variation
-            if (remaining > 0) delay(Random.nextLong(50, 100))
+            if (remaining > 0) delay(Random.nextLong(DELETE_DELAY_MIN, DELETE_DELAY_MAX))
         }
     }
 
@@ -653,7 +653,11 @@ open class DefaultElement(
         return callFunctionOn(remoteObject?.objectId, wrappedFunction, awaitPromise)
     }
 
-    private suspend fun callFunctionOn(objectId: String?, wrappedFunction: String, awaitPromise: Boolean): JsonElement? {
+    private suspend fun callFunctionOn(
+        objectId: String?,
+        wrappedFunction: String,
+        awaitPromise: Boolean,
+    ): JsonElement? {
         val result = tab.runtime.callFunctionOn(
             functionDeclaration = wrappedFunction,
             objectId = objectId,
@@ -791,6 +795,16 @@ open class DefaultElement(
     private companion object {
         // No node resolved yet: backend node ids are positive.
         const val NO_NODE = Int.MIN_VALUE
+
+        // Human-like pauses, in milliseconds (lower bound inclusive, upper bound exclusive).
+        const val TRAJECTORY_STEP_DELAY_MIN = 8L
+        const val TRAJECTORY_STEP_DELAY_MAX = 25L
+        const val SETTLE_DELAY_MIN = 5L
+        const val SETTLE_DELAY_MAX = 20L
+        const val PRESS_DELAY_MIN = 40L
+        const val PRESS_DELAY_MAX = 120L
+        const val DELETE_DELAY_MIN = 50L
+        const val DELETE_DELAY_MAX = 100L
 
         val BACKSPACE_DOWN = Input.DispatchKeyEventParameter(
             type = "keyDown",

@@ -63,8 +63,11 @@ class ScriptedTransport(
     }
 
     private fun deliver(id: Long, r: Reply) {
-        val frame = if (r.error != null) """{"id":$id,"error":{"code":-32000,"message":${Json.encodeToString(r.error)}}}"""
-        else """{"id":$id,"result":${r.result}}"""
+        val frame = if (r.error != null) {
+            """{"id":$id,"error":{"code":-32000,"message":${Json.encodeToString(r.error)}}}"""
+        } else {
+            """{"id":$id,"result":${r.result}}"""
+        }
         if (r.latency <= 0) incoming.trySend(frame)
         else scope.launch {
             delay(r.latency)
@@ -108,7 +111,8 @@ open class ScriptedTab(
             canAccessOpener = false,
         )
         const val TARGET_INFO =
-            """{"targetInfo":{"targetId":"stub","type":"page","title":"t","url":"https://example.test/","attached":true,"canAccessOpener":false}}"""
+            """{"targetInfo":{"targetId":"stub","type":"page","title":"t","url":"https://example.test/",""" +
+                """"attached":true,"canAccessOpener":false}}"""
     }
 }
 
@@ -136,6 +140,14 @@ fun objectReply(objectId: String) = """{"object":{"type":"object","objectId":"$o
 
 /** The `objectId` a `Runtime.callFunctionOn` was sent with. */
 val ScriptedTransport.Sent.objectId: String? get() = params?.get("objectId")?.jsonPrimitive?.content
+
+/** The `objectId` of every command sent with [method], in order. */
+fun ScriptedTransport.objectIdsOf(method: String = "Runtime.callFunctionOn"): List<String?> =
+    sent.filter { it.method == method }.map { it.objectId }
+
+/** The methods sent at virtual time [atMillis]. */
+fun ScriptedTransport.methodsSentAt(atMillis: Long): Set<String> =
+    sent.filter { it.atMillis == atMillis }.map { it.method }.toSet()
 
 /** A string param of a sent command. */
 fun ScriptedTransport.Sent.param(name: String): String? = (params?.get(name) as? JsonElement)?.jsonPrimitive?.content

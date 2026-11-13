@@ -7,6 +7,7 @@ import dev.kdriver.core.ScriptedTab
 import dev.kdriver.core.ScriptedTransport
 import dev.kdriver.core.ScriptedTransport.Reply
 import dev.kdriver.core.exceptions.TimeoutWaitingForElementException
+import dev.kdriver.core.methodsSentAt
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -51,10 +52,10 @@ class SettledLookupTest {
         assertEquals("button", button.tag)
         assertEquals("Send", button.text)
         assertEquals("https://example.test/", tab.targetInfo!!.url, "the target info is still refreshed")
-        val sentAtStart = transport.sent.filter { it.atMillis == 0L }.map { it.method }.toSet()
+        val sentAtStart = transport.methodsSentAt(0)
         assertEquals(setOf("DOM.getDocument", "Target.getTargetInfo"), sentAtStart)
         assertEquals(listOf("DOM.querySelector"), transport.sent.filter { it.atMillis > 0 }.map { it.method })
-        assertEquals(200, testScheduler.currentTime, "two round trips (refresh ∥ document, then query) instead of three")
+        assertEquals(200, testScheduler.currentTime, "two round trips (refresh ∥ document, then query), not three")
         tab.close()
     }
 
@@ -89,7 +90,7 @@ class SettledLookupTest {
         val button = tab.find("Send", timeout = 1_000)
 
         assertEquals("button", button.tag)
-        assertEquals(setOf("DOM.getDocument", "Target.getTargetInfo"), transport.sent.filter { it.atMillis == 0L }.map { it.method }.toSet())
+        assertEquals(setOf("DOM.getDocument", "Target.getTargetInfo"), transport.methodsSentAt(0))
         tab.close()
     }
 
@@ -110,7 +111,7 @@ class SettledLookupTest {
         val found = tab.findAll("Send", timeout = 1_000)
 
         assertEquals(listOf("button"), found.map { it.tag })
-        assertEquals(setOf("DOM.getDocument", "Target.getTargetInfo"), transport.sent.filter { it.atMillis == 0L }.map { it.method }.toSet())
+        assertEquals(setOf("DOM.getDocument", "Target.getTargetInfo"), transport.methodsSentAt(0))
         tab.close()
     }
 

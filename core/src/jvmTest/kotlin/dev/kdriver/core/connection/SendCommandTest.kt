@@ -168,7 +168,9 @@ class SendCommandTest {
 
     @Test
     fun sleep_throwsWhenTheRefreshFails() = runTest(StandardTestDispatcher()) {
-        val transport = ScriptedTransport(this) { ScriptedTransport.Reply.error("No target with given id found", latency = 50) }
+        val transport = ScriptedTransport(this) {
+            ScriptedTransport.Reply.error("No target with given id found", latency = 50)
+        }
         val tab = ScriptedTab(this, transport)
 
         assertFailsWith<CDPException> { tab.sleep(1_000) }

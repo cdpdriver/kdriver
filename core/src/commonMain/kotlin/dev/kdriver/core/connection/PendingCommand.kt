@@ -13,8 +13,8 @@ import kotlin.time.Duration.Companion.milliseconds
  * A CDP command that has been written to the socket and whose reply has not been read yet.
  *
  * Returned by [DefaultConnection.sendCommand], so that several commands can be put on the wire back to back and their
- * replies read afterwards: the batch then costs one round trip instead of one per command. [DefaultConnection.callCommand]
- * is exactly `sendCommand(...).await()`.
+ * replies read afterwards: the batch then costs one round trip instead of one per command.
+ * [DefaultConnection.callCommand] is exactly `sendCommand(...).await()`.
  */
 @InternalCdpApi
 class PendingCommand internal constructor(

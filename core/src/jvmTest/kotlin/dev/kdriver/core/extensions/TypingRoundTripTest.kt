@@ -30,7 +30,8 @@ class TypingRoundTripTest {
         when (it.method) {
             "DOM.resolveNode" -> Reply.ok(objectReply("obj-1"), latency)
             "Runtime.callFunctionOn" -> Reply.ok(valueReply("null"), latency)
-            "Input.dispatchKeyEvent" -> if (keyError) Reply.error("Invalid parameters", latency) else Reply.ok(latency = latency)
+            "Input.dispatchKeyEvent" ->
+                if (keyError) Reply.error("Invalid parameters", latency) else Reply.ok(latency = latency)
             else -> Reply.ok(latency = latency)
         }
     }
@@ -46,7 +47,10 @@ class TypingRoundTripTest {
         tab.element().sendKeysWithSpecialChars("ab é!\t~\u007f")
 
         assertEquals(1, transport.methods.count { it == "Runtime.callFunctionOn" }, "a single focus")
-        assertEquals(listOf("char:a", "char:b", "char: ", "insert:é", "char:!", "insert:\t", "char:~", "insert:\u007f"), transport.typed())
+        assertEquals(
+            listOf("char:a", "char:b", "char: ", "insert:é", "char:!", "insert:\t", "char:~", "insert:\u007f"),
+            transport.typed(),
+        )
         assertEquals(300, testScheduler.currentTime, "resolve, focus, then one round trip for the whole text")
         tab.close()
     }
@@ -76,19 +80,20 @@ class TypingRoundTripTest {
     }
 
     @Test
-    fun sendKeysWithSpecialChars_onACustomElement_usesItsOwnSendKeysAndInsertText() = runTest(StandardTestDispatcher()) {
-        val element = mockk<Element>(relaxed = true)
-        coEvery { element.rawApply(any(), any()) } returns null
+    fun sendKeysWithSpecialChars_onACustomElement_usesItsOwnSendKeysAndInsertText() =
+        runTest(StandardTestDispatcher()) {
+            val element = mockk<Element>(relaxed = true)
+            coEvery { element.rawApply(any(), any()) } returns null
 
-        element.sendKeysWithSpecialChars("aé") { 30L }
+            element.sendKeysWithSpecialChars("aé") { 30L }
 
-        coVerifyOrder {
-            element.rawApply("(elem) => elem.focus()", false)
-            element.sendKeys("a")
-            element.insertText("é")
+            coVerifyOrder {
+                element.rawApply("(elem) => elem.focus()", false)
+                element.sendKeys("a")
+                element.insertText("é")
+            }
+            assertEquals(30, testScheduler.currentTime)
         }
-        assertEquals(30, testScheduler.currentTime)
-    }
 
     @Test
     fun sendKeysWithSpecialChars_withoutDelay_onACustomElement() = runTest(StandardTestDispatcher()) {

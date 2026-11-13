@@ -11,6 +11,7 @@ import dev.kdriver.core.ScriptedTransport.Reply
 import dev.kdriver.core.element
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.objectId
+import dev.kdriver.core.objectIdsOf
 import dev.kdriver.core.objectReply
 import dev.kdriver.core.param
 import dev.kdriver.core.scriptedNode
@@ -32,9 +33,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Round trips of [DefaultElement]: the remote object reused by [DefaultElement.rawApply], input gestures written back to
- * back ([InputPipeline]), and plain delays instead of `tab.sleep()` inside a gesture. Each test pins the commands sent,
- * their order and the result or error, so the behaviour is the one of the previous implementation.
+ * Round trips of [DefaultElement]: the remote object reused by [DefaultElement.rawApply], input gestures written
+ * back to back ([InputPipeline]), and plain delays instead of `tab.sleep()` inside a gesture. Each test pins the
+ * commands sent, their order and the result or error, so the behaviour is the one of the previous implementation.
  */
 class ElementRoundTripTest {
 
@@ -66,7 +67,7 @@ class ElementRoundTripTest {
         assertEquals("abc", el.getInputValue())
 
         assertEquals(listOf("DOM.resolveNode", "Runtime.callFunctionOn", "Runtime.callFunctionOn"), transport.methods)
-        assertEquals(listOf("obj-1", "obj-1"), transport.sent.filter { it.method == "Runtime.callFunctionOn" }.map { it.objectId })
+        assertEquals(listOf("obj-1", "obj-1"), transport.objectIdsOf())
         assertEquals("obj-1", el.objectId)
         (el.tab as ScriptedTab).close()
     }
@@ -75,7 +76,11 @@ class ElementRoundTripTest {
     fun rawApply_resolvesAgain_whenTheCachedObjectIsStale() = runTest(StandardTestDispatcher()) {
         var calls = 0
         val transport = ScriptedTransport(this, page(override = {
-            if (it.method == "Runtime.callFunctionOn" && ++calls == 2) Reply.error("Could not find object with given id") else null
+            if (it.method == "Runtime.callFunctionOn" && ++calls == 2) {
+                Reply.error("Could not find object with given id")
+            } else {
+                null
+            }
         }))
         val el = ScriptedTab(this, transport).element()
 
@@ -83,10 +88,16 @@ class ElementRoundTripTest {
         assertEquals("abc", el.getInputValue())
 
         assertEquals(
-            listOf("DOM.resolveNode", "Runtime.callFunctionOn", "Runtime.callFunctionOn", "DOM.resolveNode", "Runtime.callFunctionOn"),
+            listOf(
+                "DOM.resolveNode",
+                "Runtime.callFunctionOn",
+                "Runtime.callFunctionOn",
+                "DOM.resolveNode",
+                "Runtime.callFunctionOn",
+            ),
             transport.methods,
         )
-        assertEquals(listOf("obj-1", "obj-1", "obj-2"), transport.sent.filter { it.method == "Runtime.callFunctionOn" }.map { it.objectId })
+        assertEquals(listOf("obj-1", "obj-1", "obj-2"), transport.objectIdsOf())
         (el.tab as ScriptedTab).close()
     }
 
@@ -120,16 +131,21 @@ class ElementRoundTripTest {
         el.node = scriptedNode(9)
         el.getInputValue()
 
-        assertEquals(listOf("7", "9"), transport.sent.filter { it.method == "DOM.resolveNode" }.map { it.param("backendNodeId") })
-        assertEquals(listOf("obj-1", "obj-2"), transport.sent.filter { it.method == "Runtime.callFunctionOn" }.map { it.objectId })
+        val resolved = transport.sent.filter { it.method == "DOM.resolveNode" }.map { it.param("backendNodeId") }
+        assertEquals(listOf("7", "9"), resolved)
+        assertEquals(listOf("obj-1", "obj-2"), transport.objectIdsOf())
         (el.tab as ScriptedTab).close()
     }
 
     @Test
     fun rawApply_reusesTheObjectOfUpdate() = runTest(StandardTestDispatcher()) {
-        val doc = """{"root":{"nodeId":1,"backendNodeId":1,"nodeType":9,"nodeName":"#document","localName":"","nodeValue":"",""" +
-            """"childNodeCount":1,"children":[{"nodeId":7,"backendNodeId":7,"nodeType":1,"nodeName":"INPUT","localName":"input","nodeValue":""}]}}"""
-        val transport = ScriptedTransport(this, page(override = { if (it.method == "DOM.getDocument") Reply.ok(doc) else null }))
+        val doc = """{"root":{"nodeId":1,"backendNodeId":1,"nodeType":9,"nodeName":"#document","localName":"",""" +
+            """"nodeValue":"","childNodeCount":1,"children":[{"nodeId":7,"backendNodeId":7,"nodeType":1,""" +
+            """"nodeName":"INPUT","localName":"input","nodeValue":""}]}}"""
+        val transport = ScriptedTransport(
+            this,
+            page(override = { if (it.method == "DOM.getDocument") Reply.ok(doc) else null }),
+        )
         val el = ScriptedTab(this, transport).element(nodeId = 7)
 
         el.update()
@@ -141,7 +157,8 @@ class ElementRoundTripTest {
 
     @Test
     fun rawApply_jsErrorIsAnEvaluateException_andIsNotRetried() = runTest(StandardTestDispatcher()) {
-        val jsError = """{"result":{"type":"object"},"exceptionDetails":{"exceptionId":1,"text":"Uncaught","lineNumber":0,""" +
+        val jsError = """{"result":{"type":"object"},"exceptionDetails":{"exceptionId":1,"text":"Uncaught",""" +
+            """"lineNumber":0,""" +
             """"columnNumber":0,"exception":{"type":"object","description":"Error: Element is detached from DOM"}}}"""
         var calls = 0
         val transport = ScriptedTransport(this, page(override = {
@@ -152,7 +169,8 @@ class ElementRoundTripTest {
         el.getInputValue()
         assertFailsWith<EvaluateException> { el.getInputValue() }
 
-        assertEquals(1, transport.methods.count { it == "DOM.resolveNode" }, "a JS error ran the function: no second try")
+        val resolves = transport.methods.count { it == "DOM.resolveNode" }
+        assertEquals(1, resolves, "a JS error ran the function: no second try")
         (el.tab as ScriptedTab).close()
     }
 
@@ -309,7 +327,8 @@ class ElementRoundTripTest {
 
         assertFalse("Target.getTargetInfo" in transport.methods)
         val events = transport.sent.filter { it.method == "Input.dispatchMouseEvent" }
-        assertEquals(listOf("mousePressed", "mouseReleased"), events.map { it.param("type") }.filter { it != "mouseMoved" })
+        val buttons = events.map { it.param("type") }.filter { it != "mouseMoved" }
+        assertEquals(listOf("mousePressed", "mouseReleased"), buttons)
         val press = events.first { it.param("type") == "mousePressed" }
         val release = events.first { it.param("type") == "mouseReleased" }
         assertEquals("left", press.param("button"))
