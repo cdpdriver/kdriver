@@ -28,6 +28,7 @@ import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlin.concurrent.Volatile
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.abs
@@ -441,7 +442,9 @@ open class DefaultTab(
     override suspend fun querySelectorAll(
         selector: String,
         node: NodeOrElement?,
-    ): List<Element> = querySelectorAllInternal(selector, node, retried = false)
+    ): List<Element> =
+        if (node == null) onDocument { doc -> querySelectorAllInternal(selector, null, retried = false, doc) }
+        else querySelectorAllInternal(selector, node, retried = false, rootOf(node))
 
     // `retried` carries the "already retried once" state across the recursive call. It must be a
     // parameter, not a local: a local would be reset on every recursion and the guard would never
@@ -450,21 +453,15 @@ open class DefaultTab(
         selector: String,
         node: NodeOrElement?,
         retried: Boolean,
+        doc: DOM.Node,
     ): List<Element> {
-        val doc = if (node == null) {
-            dom.getDocument(-1, true).root
-        } else {
-            if (node.node.nodeName == "IFRAME") node.node.contentDocument ?: node.node
-            else node.node
-        }
-
         val nodeIds = try {
             dom.querySelectorAll(doc.nodeId, selector)
         } catch (e: Exception) {
             if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
                 if (retried) return emptyList()
                 if (node is NodeOrElement.WrappedElement) node.element.update()
-                return querySelectorAllInternal(selector, node, retried = true)
+                return querySelectorAllInternal(selector, node, retried = true, rootOf(node))
             } else {
                 disableDomAgent()
                 throw e
@@ -487,7 +484,18 @@ open class DefaultTab(
     override suspend fun querySelector(
         selector: String,
         node: NodeOrElement?,
-    ): Element? = querySelectorInternal(selector.trim(), node, retried = false)
+    ): Element? {
+        val trimmedSelector = selector.trim()
+        return if (node == null) {
+            onDocument { doc -> querySelectorInternal(trimmedSelector, null, retried = false, doc) }
+        } else {
+            querySelectorInternal(trimmedSelector, node, retried = false, rootOf(node))
+        }
+    }
+
+    // The node a lookup under [node] queries: the document of a frame, the node itself otherwise.
+    private fun rootOf(node: NodeOrElement): DOM.Node =
+        if (node.node.nodeName == "IFRAME") node.node.contentDocument ?: node.node else node.node
 
     // See querySelectorAllInternal: `retried` must be a parameter so the retry-once guard survives
     // the recursive call (ISSUE-7).
@@ -495,21 +503,15 @@ open class DefaultTab(
         selector: String,
         node: NodeOrElement?,
         retried: Boolean,
+        doc: DOM.Node,
     ): Element? {
-        val doc = if (node == null) {
-            dom.getDocument(-1, true).root
-        } else {
-            if (node.node.nodeName == "IFRAME") node.node.contentDocument ?: node.node
-            else node.node
-        }
-
         val nodeId = try {
             dom.querySelector(doc.nodeId, selector)
         } catch (e: Exception) {
             if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
                 if (retried) return null
                 if (node is NodeOrElement.WrappedElement) node.element.update()
-                return querySelectorInternal(selector, node, retried = true)
+                return querySelectorInternal(selector, node, retried = true, rootOf(node))
             } else if (e.message?.contains("could not find node", ignoreCase = true) == true) {
                 return null
             } else {
@@ -524,12 +526,62 @@ open class DefaultTab(
         return foundNode?.let { DefaultElement(this, it, doc) }
     }
 
+    /**
+     * The last whole document read for a lookup (`DOM.getDocument(depth = -1, pierce = true)`), and the
+     * [documentEpoch] it still matches the page at.
+     */
+    private class DocumentSnapshot(val root: DOM.Node, val epoch: Long)
+
+    @Volatile
+    private var documentSnapshot: DocumentSnapshot? = null
+
+    /**
+     * The whole document, as `DOM.getDocument(depth = -1, pierce = true)` returns it.
+     *
+     * Read again only when the page may have changed since the last read: once the document was read, the browser
+     * reports every change to it as a `DOM.*` event, and [documentEpoch] counts those, the commands that make the
+     * browser forget its node ids, and reconnects. While none happened, a new read would return the same tree.
+     *
+     * @return the root of the document, and whether it is the copy kept from an earlier read.
+     */
+    internal suspend fun currentDocument(): Pair<DOM.Node, Boolean> {
+        documentSnapshot?.takeIf { it.epoch == documentEpoch }?.let { return it.root to true }
+        return readDocument() to false
+    }
+
+    private suspend fun readDocument(): DOM.Node {
+        val before = documentEpoch
+        val root = dom.getDocument(-1, true).root
+        // The read itself counts once. Anything more (an event, another read, a reconnect) means the page or its ids
+        // may have moved while the read was in flight: this copy serves the current lookup only.
+        val after = documentEpoch
+        documentSnapshot = if (after == before + 1) DocumentSnapshot(root, after) else null
+        return root
+    }
+
+    /**
+     * Runs [lookup] on the whole document ([currentDocument]).
+     *
+     * A lookup on a kept copy is checked afterwards: when the browser reported a change while it ran, its answer may
+     * name nodes the copy does not have, so the document is read again and [lookup] runs once more, as it would have
+     * on a fresh read. A lookup on a fresh read is not repeated.
+     */
+    private suspend fun <T> onDocument(lookup: suspend (DOM.Node) -> T): T {
+        val (root, kept) = currentDocument()
+        val epoch = documentEpoch
+        val result = lookup(root)
+        return if (kept && documentEpoch != epoch) lookup(readDocument()) else result
+    }
+
     override suspend fun findElementsByText(
         text: String,
         tagHint: String?,
     ): List<Element> {
         val trimmedText = text.trim()
-        val doc = dom.getDocument(-1, true).root
+        return onDocument { doc -> findElementsByTextIn(doc, trimmedText) }
+    }
+
+    private suspend fun findElementsByTextIn(doc: DOM.Node, trimmedText: String): List<Element> {
         val search = dom.performSearch(trimmedText, true)
         val nodeIds =
             if (search.resultCount > 0) dom.getSearchResults(search.searchId, 0, search.resultCount).nodeIds

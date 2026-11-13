@@ -4,6 +4,7 @@ import dev.kdriver.cdp.CDPException
 import dev.kdriver.cdp.Serialization
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.exceptions.EvaluateException
+import dev.kdriver.core.tab.DefaultTab
 import dev.kdriver.core.tab.Tab
 import io.ktor.util.logging.*
 import kotlinx.coroutines.CancellationException
@@ -97,7 +98,7 @@ open class DefaultElement(
     }
 
     override suspend fun update(nodeOverride: DOM.Node?): Element {
-        val doc = nodeOverride ?: tab.dom.getDocument(depth = -1, pierce = true).root
+        val doc = nodeOverride ?: currentDocument()
         val updatedNode = doc.filterRecurse { it.backendNodeId == node.backendNodeId }
         if (updatedNode != null) {
             logger.debug("node seems changed, and has now been updated.")
@@ -117,6 +118,11 @@ open class DefaultElement(
         }
         return this
     }
+
+    // The whole document [update] refreshes from: the copy a [DefaultTab] keeps while the page has not changed, a new
+    // read on any other tab.
+    private suspend fun currentDocument(): DOM.Node =
+        if (tab is DefaultTab) tab.currentDocument().first else tab.dom.getDocument(depth = -1, pierce = true).root
 
     private suspend fun flash(duration: Long = 250) {
         // TODO: Do we really need this?

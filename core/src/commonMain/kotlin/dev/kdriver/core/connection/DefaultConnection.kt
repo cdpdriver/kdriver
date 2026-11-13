@@ -17,6 +17,9 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.concurrent.Volatile
+import kotlin.concurrent.atomics.AtomicLong
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.reflect.KClass
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
@@ -39,6 +42,11 @@ open class DefaultConnection(
         // How often idleness is re-read while waiting. Only bounds how quickly `wait` notices the
         // connection went quiet; it is not itself a wait.
         private const val IDLE_POLL_INTERVAL_MS = 50L
+
+        // Commands after which the node ids the browser handed out no longer hold: the browser forgets them before it
+        // answers.
+        private val NODE_ID_RESETTING_COMMANDS = setOf("DOM.getDocument", "DOM.getFlattenedDocument", "DOM.disable")
+        private const val DOM_EVENT_PREFIX = "DOM."
     }
 
     private val logger = KtorSimpleLogger("Connection")
@@ -108,6 +116,27 @@ open class DefaultConnection(
     @Volatile
     private var lastMessageAt: Long? = null
 
+    @OptIn(ExperimentalAtomicApi::class)
+    private val documentEpochCounter = AtomicLong(0)
+
+    /**
+     * Grows every time a document read earlier with `DOM.getDocument` may stop matching the page or its node ids: on
+     * every `DOM.*` event received (once the document was read, the browser reports each change to it), on every
+     * command sent that makes the browser forget the node ids it handed out (`DOM.getDocument`,
+     * `DOM.getFlattenedDocument`, `DOM.disable`), and on every reconnect (a new session knows none of the old ids).
+     *
+     * The receive loop counts an event before it delivers any reply that follows it, so a value read after a reply
+     * already counts every event the browser sent before that reply.
+     */
+    @OptIn(ExperimentalAtomicApi::class)
+    protected val documentEpoch: Long
+        get() = documentEpochCounter.load()
+
+    @OptIn(ExperimentalAtomicApi::class)
+    private fun documentMayHaveChanged() {
+        documentEpochCounter.incrementAndFetch()
+    }
+
     private val allMessages = MutableSharedFlow<Message>(extraBufferCapacity = Channel.UNLIMITED)
 
     @InternalCdpApi
@@ -159,6 +188,7 @@ open class DefaultConnection(
                 prepareHeadlessDone = false
                 prepareExpertDone = false
                 needsRestore = true
+                documentMayHaveChanged()
             }
             val t = transport ?: createTransport().also { transport = it }
             if (!t.isActive) {
@@ -178,6 +208,9 @@ open class DefaultConnection(
                     try {
                         logger.debug("WS < CDP: ${text.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
                         val received = Serialization.json.decodeFromString<Message>(text)
+                        if (received is Message.Event && received.method.startsWith(DOM_EVENT_PREFIX)) {
+                            documentMayHaveChanged()
+                        }
                         if (received is Message.Response) {
                             pendingRequestsMutex.withLock { pendingRequests.remove(received.id) }
                                 ?.complete(received)
@@ -323,6 +356,7 @@ open class DefaultConnection(
             val deferred = CompletableDeferred<Message.Response>()
             pendingRequestsMutex.withLock { pendingRequests[requestId] = deferred }
 
+            if (method in NODE_ID_RESETTING_COMMANDS) documentMayHaveChanged()
             val sent = try {
                 transport.send(jsonString)
                 true

@@ -81,6 +81,11 @@ class ScriptedTransport(
     /** Answers a held command with a CDP error. */
     fun fail(id: Long, message: String) = deliver(id, Reply.error(message))
 
+    /** Sends the browser event [method] with [params] (a JSON object), after anything already on its way. */
+    fun event(method: String, params: String = "{}") {
+        incoming.trySend("""{"method":${Json.encodeToString(method)},"params":$params}""")
+    }
+
     /** The methods sent, in order. */
     val methods: List<String> get() = sent.map { it.method }
 
