@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lookup</title>
+</head>
+<body>
+<h1 id="title">Lookup</h1>
+<ul id="list">
+    <li class="item" data-rank="1">Alpha</li>
+    <li class="item" data-rank="2">Beta</li>
+    <li class="item" data-rank="3">Gamma</li>
+</ul>
+<p id="counter">one</p>
+<div id="panel" data-state="closed"><span id="label">Panel</span></div>
+<p class="phrase">Send a message to the seller</p>
+<button class="phrase">Send</button>
+<div id="host"></div>
+<iframe id="frame" srcdoc="<p class='inner'>Inside the frame</p>"></iframe>
+<script>
+    document.getElementById('host').attachShadow({mode: 'open'}).innerHTML = '<b id="shadowed">Shadowed</b>';
+</script>
+</body>
+</html>
