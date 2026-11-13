@@ -4,7 +4,6 @@ import dev.kdriver.cdp.*
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.browser.Config.Defaults
-import dev.kdriver.core.exceptions.CommandTimeoutException
 import dev.kdriver.core.exceptions.ConnectionClosedException
 import io.ktor.util.logging.*
 import kotlinx.coroutines.*
@@ -273,7 +272,25 @@ open class DefaultConnection(
     }
 
     @InternalCdpApi
-    override suspend fun callCommand(method: String, parameter: JsonElement?, mode: CommandMode): JsonElement? {
+    override suspend fun callCommand(method: String, parameter: JsonElement?, mode: CommandMode): JsonElement? =
+        sendCommand(method, parameter, mode).await()
+
+    /**
+     * Writes a CDP command to the socket and returns as soon as it is sent, without waiting for its reply.
+     *
+     * The reply is read later with [PendingCommand.await]. Several commands sent one after the other from the same
+     * coroutine reach the browser in that order, so a caller can put a sequence on the wire back to back (input events
+     * paced by its own delays, for instance) and pay a single round trip for the whole sequence. [callCommand] is
+     * `sendCommand(...).await()`: everything else (reconnect, restore, preparation, timeout) is the same.
+     *
+     * @param method The CDP method, e.g. `Input.dispatchMouseEvent`.
+     * @param parameter The parameters of the command, or null.
+     * @param mode Whether the built-in preparation of the session runs first ([CommandMode.DEFAULT]) or not.
+     * @return the command in flight.
+     * @throws ConnectionClosedException when the command could not be written (connection closed or gone).
+     */
+    @InternalCdpApi
+    suspend fun sendCommand(method: String, parameter: JsonElement?, mode: CommandMode): PendingCommand {
         val requestId = currentIdMutex.withLock { currentId++ }
         val jsonString = Serialization.json.encodeToString(Request(requestId, method, parameter))
         val timeout = owner?.config?.commandTimeout ?: Defaults.COMMAND_TIMEOUT
@@ -331,16 +348,7 @@ open class DefaultConnection(
             }
 
             logger.debug("WS > CDP: ${jsonString.take(owner?.config?.debugStringLimit ?: Defaults.DEBUG_STRING_LIMIT)}")
-            try {
-                // A non-null Message.Response means success; null can only come from the timeout, so
-                // there's no ambiguity with a legitimate value. A timeout <= 0 waits indefinitely.
-                val result =
-                    if (timeout > 0) withTimeoutOrNull(timeout.milliseconds) { deferred.await() }
-                        ?: throw CommandTimeoutException(method, requestId, timeout)
-                    else deferred.await()
-                result.error?.throwAsException(method)
-                return result.result
-            } finally {
+            return PendingCommand(method, requestId, deferred, timeout) {
                 pendingRequestsMutex.withLock { pendingRequests.remove(requestId) }
             }
         }
@@ -373,7 +381,20 @@ open class DefaultConnection(
 
     override suspend fun wait(t: Long?, idleTimeout: Long) {
         updateTarget()
+        awaitIdle(t, idleTimeout)
+    }
 
+    /**
+     * The idle part of [wait], without [updateTarget]: watches for the connection to settle (never longer than
+     * [idleTimeout]), then honours the floor [t] measured from the call.
+     *
+     * Lets a caller that needs both a settled page and fresh target info overlap [updateTarget] with its own next
+     * command instead of paying a round trip before the watching starts.
+     *
+     * @param t Minimum time in milliseconds to wait, or null for no minimum.
+     * @param idleTimeout Upper bound in milliseconds on watching for idleness.
+     */
+    protected suspend fun awaitIdle(t: Long?, idleTimeout: Long) {
         val start = currentTimeMillis()
 
         // Watch for the connection to settle, but never longer than `idleTimeout`: a page can keep
@@ -397,8 +418,13 @@ open class DefaultConnection(
     }
 
     override suspend fun sleep(t: Long) {
-        updateTarget()
-        delay(t.milliseconds)
+        // The target info is refreshed while the delay runs rather than before it: the call lasts the longer of the
+        // two instead of their sum, and still returns with fresh target info (or the refresh's failure).
+        coroutineScope {
+            val refresh = async { updateTarget() }
+            delay(t.milliseconds)
+            refresh.await()
+        }
     }
 
     private suspend fun prepareHeadless() {

@@ -1,11 +1,13 @@
 package dev.kdriver.core.dom
 
+import dev.kdriver.cdp.CDPException
 import dev.kdriver.cdp.Serialization
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.core.exceptions.EvaluateException
 import dev.kdriver.core.tab.Tab
 import io.ktor.util.logging.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.io.files.Path
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -23,6 +25,10 @@ open class DefaultElement(
     private val logger = KtorSimpleLogger("Element")
 
     private var remoteObject: Runtime.RemoteObject? = null
+
+    // The node the cached [remoteObject] was resolved for: [rawApply] reuses the object only while [node] is still
+    // that node (it is a public `var`, so a caller can swap it).
+    private var remoteObjectBackendNodeId: Int = NO_NODE
 
     override val tag: String
         get() = node.nodeName.lowercase()
@@ -84,7 +90,9 @@ open class DefaultElement(
         get() = node.attributes?.chunked(2)?.map { it.first() } ?: emptyList()
 
     override suspend fun updateRemoteObject(): Runtime.RemoteObject? {
-        remoteObject = tab.dom.resolveNode(backendNodeId = backendNodeId).`object`
+        val resolvedFor = backendNodeId
+        remoteObject = tab.dom.resolveNode(backendNodeId = resolvedFor).`object`
+        remoteObjectBackendNodeId = resolvedFor
         return remoteObject
     }
 
@@ -98,6 +106,7 @@ open class DefaultElement(
         this.tree = doc
 
         remoteObject = tab.dom.resolveNode(backendNodeId = node.backendNodeId).`object`
+        remoteObjectBackendNodeId = node.backendNodeId
 
         if (node.nodeName != "IFRAME") {
             val parentNode = doc.filterRecurse { it.nodeId == node.parentId }
@@ -265,17 +274,21 @@ open class DefaultElement(
 
         logger.debug("Mouse trajectory from ($startX, $startY) to ($targetX, $targetY) via control point ($ctrlX, $ctrlY) in $steps steps")
 
-        for (i in 0..steps) {
-            val t = i.toDouble() / steps
+        // The steps go out paced by the delays below without waiting for each reply (one round trip for the whole
+        // trajectory, not one per step), and the trajectory still returns only once every step was dispatched.
+        tab.pipelineInput {
+            repeat(steps + 1) { i ->
+                val t = i.toDouble() / steps
 
-            // Quadratic Bezier curve formula: B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
-            val x = (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * ctrlX + t * t * targetX
-            val y = (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * ctrlY + t * t * targetY
+                // Quadratic Bezier curve formula: B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
+                val x = (1 - t) * (1 - t) * startX + 2 * (1 - t) * t * ctrlX + t * t * targetX
+                val y = (1 - t) * (1 - t) * startY + 2 * (1 - t) * t * ctrlY + t * t * targetY
 
-            tab.input.dispatchMouseEvent(type = "mouseMoved", x = x, y = y)
+                mouse(Input.DispatchMouseEventParameter(type = "mouseMoved", x = x, y = y))
 
-            // Random delay between steps for natural variation
-            if (i < steps) tab.sleep(Random.nextLong(8, 25))
+                // Random delay between steps for natural variation (a plain delay: no need to refresh the target)
+                if (i < steps) delay(Random.nextLong(8, 25))
+            }
         }
 
         // Update last position
@@ -407,7 +420,7 @@ open class DefaultElement(
         mouseMoveWithTrajectory(x, y)
 
         // Randomized delay to make it more realistic (P1 - Anti-detection)
-        tab.sleep(Random.nextLong(5, 20))
+        delay(Random.nextLong(5, 20))
 
         // 2. Verify element hasn't moved during trajectory (handles React re-renders, animations, etc.)
         val finalCoordinates = try {
@@ -458,29 +471,36 @@ open class DefaultElement(
         // 3. Press and release mouse button with guaranteed cleanup
         // Use try-finally to ensure button state is always cleaned up even on error
         try {
-            tab.input.dispatchMouseEvent(
-                type = "mousePressed",
-                x = finalX,
-                y = finalY,
-                button = button,
-                buttons = button.buttonsMask,
-                clickCount = clickCount,
-                modifiers = modifiers
-            )
+            // Press and release go out paced by the delay without waiting for the press's reply in between.
+            tab.pipelineInput {
+                mouse(
+                    Input.DispatchMouseEventParameter(
+                        type = "mousePressed",
+                        x = finalX,
+                        y = finalY,
+                        button = button,
+                        buttons = button.buttonsMask,
+                        clickCount = clickCount,
+                        modifiers = modifiers
+                    )
+                )
 
-            // Randomized delay between press and release (P1 - Anti-detection)
-            tab.sleep(Random.nextLong(40, 120))
+                // Randomized delay between press and release (P1 - Anti-detection)
+                delay(Random.nextLong(40, 120))
 
-            // 4. Release mouse button
-            tab.input.dispatchMouseEvent(
-                type = "mouseReleased",
-                x = finalX,
-                y = finalY,
-                button = button,
-                buttons = button.buttonsMask,
-                clickCount = clickCount,
-                modifiers = modifiers
-            )
+                // 4. Release mouse button
+                mouse(
+                    Input.DispatchMouseEventParameter(
+                        type = "mouseReleased",
+                        x = finalX,
+                        y = finalY,
+                        button = button,
+                        buttons = button.buttonsMask,
+                        clickCount = clickCount,
+                        modifiers = modifiers
+                    )
+                )
+            }
         } catch (e: Exception) {
             // Ensure button is released even on error to prevent stuck button state
             runCatching {
@@ -510,10 +530,10 @@ open class DefaultElement(
 
     override suspend fun sendKeys(text: String) {
         focus()
-        for (char in text) tab.input.dispatchKeyEvent(
-            type = "char",
-            text = char.toString()
-        )
+        // One `char` event per character, as before, written back to back: one round trip for the text.
+        tab.pipelineInput {
+            for (char in text) key(Input.DispatchKeyEventParameter(type = "char", text = char.toString()))
+        }
     }
 
     override suspend fun insertText(text: String) {
@@ -583,22 +603,11 @@ open class DefaultElement(
         while (remaining > 0) {
             // Dispatch keydown event — this natively deletes one character and fires
             // a real input event that React's change detection processes correctly
-            tab.input.dispatchKeyEvent(
-                type = "keyDown",
-                key = "Backspace",
-                code = "Backspace",
-                windowsVirtualKeyCode = 8,
-                nativeVirtualKeyCode = 8
-            )
-
-            // Dispatch keyup event
-            tab.input.dispatchKeyEvent(
-                type = "keyUp",
-                key = "Backspace",
-                code = "Backspace",
-                windowsVirtualKeyCode = 8,
-                nativeVirtualKeyCode = 8
-            )
+            // keydown then keyup, back to back: one round trip for the pair
+            tab.pipelineInput {
+                key(BACKSPACE_DOWN)
+                key(BACKSPACE_UP)
+            }
 
             // Read remaining length and reset cursor to end so the next Backspace
             // always has a character to delete regardless of where the browser left it
@@ -613,7 +622,7 @@ open class DefaultElement(
             ) ?: 0
 
             // Random delay between deletions (50-100ms) for natural variation
-            if (remaining > 0) tab.sleep(Random.nextLong(50, 100))
+            if (remaining > 0) delay(Random.nextLong(50, 100))
         }
     }
 
@@ -621,17 +630,35 @@ open class DefaultElement(
         jsFunction: String,
         awaitPromise: Boolean,
     ): JsonElement? {
-        val remoteObject = updateRemoteObject()
-
         // Wrap user's function with connection validation
         // This ensures the element is still connected before executing user code
         val wrappedFunction = wrapSafe(jsFunction, validateVisible = false)
 
+        // The object resolved by a previous call is reused while it is still valid, saving a `DOM.resolveNode` round
+        // trip per call. A protocol error means the function did not run (a JS exception comes back as
+        // `exceptionDetails`, not as an error), so it is safe to resolve the node again and call once more: an object
+        // released by a navigation, a destroyed context or a swapped [node] all end up here, and from then on the call
+        // behaves exactly as when the node was resolved before every call.
+        val cached = remoteObject?.objectId?.takeIf { remoteObjectBackendNodeId == backendNodeId }
+        if (cached != null) {
+            try {
+                return callFunctionOn(cached, wrappedFunction, awaitPromise)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: CDPException) {
+                logger.debug("Cached remote object of $backendNodeId is stale, resolving it again")
+            }
+        }
+        val remoteObject = updateRemoteObject()
+        return callFunctionOn(remoteObject?.objectId, wrappedFunction, awaitPromise)
+    }
+
+    private suspend fun callFunctionOn(objectId: String?, wrappedFunction: String, awaitPromise: Boolean): JsonElement? {
         val result = tab.runtime.callFunctionOn(
             functionDeclaration = wrappedFunction,
-            objectId = remoteObject?.objectId,
+            objectId = objectId,
             arguments = listOf(
-                Runtime.CallArgument(objectId = remoteObject?.objectId)
+                Runtime.CallArgument(objectId = objectId)
             ),
             returnByValue = true,
             userGesture = true,
@@ -759,6 +786,26 @@ open class DefaultElement(
                 return userFn.call(elem, elem);
             }
         """.trimIndent()
+    }
+
+    private companion object {
+        // No node resolved yet: backend node ids are positive.
+        const val NO_NODE = Int.MIN_VALUE
+
+        val BACKSPACE_DOWN = Input.DispatchKeyEventParameter(
+            type = "keyDown",
+            key = "Backspace",
+            code = "Backspace",
+            windowsVirtualKeyCode = 8,
+            nativeVirtualKeyCode = 8
+        )
+        val BACKSPACE_UP = Input.DispatchKeyEventParameter(
+            type = "keyUp",
+            key = "Backspace",
+            code = "Backspace",
+            windowsVirtualKeyCode = 8,
+            nativeVirtualKeyCode = 8
+        )
     }
 
 }

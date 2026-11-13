@@ -339,11 +339,27 @@ open class DefaultTab(
         val startTime = Clock.System.now().toEpochMilliseconds()
         val trimmedText = text.trim()
         while (true) {
-            wait()
-            findElementByText(trimmedText, bestMatch, returnEnclosingElement)?.let { return it }
+            settledThen { findElementByText(trimmedText, bestMatch, returnEnclosingElement) }?.let { return it }
             val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
             if (elapsed > timeout) throw TimeoutWaitingForElementException(trimmedText, timeout)
             delay(500)
+        }
+    }
+
+    /**
+     * What [wait] does before each attempt of [find], [select] and [findAll], with one round trip less: the page is
+     * left to settle first, then the target info is refreshed while [lookup] runs, instead of before it.
+     *
+     * The order of the watching and the lookup is the same as with `wait()` followed by the lookup; only the refresh
+     * of the target info overlaps the lookup. A failure of either is thrown.
+     */
+    private suspend fun <T> settledThen(lookup: suspend () -> T): T {
+        awaitIdle(null, dev.kdriver.core.browser.Config.Defaults.IDLE_WAIT_TIMEOUT)
+        return coroutineScope {
+            val refresh = async { updateTarget() }
+            val found = lookup()
+            refresh.await()
+            found
         }
     }
 
@@ -355,8 +371,7 @@ open class DefaultTab(
         val startTime = Clock.System.now().toEpochMilliseconds()
 
         while (true) {
-            wait()
-            querySelector(trimmedSelector)?.let { return it }
+            settledThen { querySelector(trimmedSelector) }?.let { return it }
             val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
             if (elapsed > timeout) throw TimeoutWaitingForElementException(selector, timeout)
             delay(500) // sleep for 0.5 seconds
@@ -370,8 +385,7 @@ open class DefaultTab(
         val startTime = Clock.System.now().toEpochMilliseconds()
         val trimmedText = text.trim()
         while (true) {
-            wait()
-            findElementsByText(trimmedText).takeIf { it.isNotEmpty() }?.let { return it }
+            settledThen { findElementsByText(trimmedText) }.takeIf { it.isNotEmpty() }?.let { return it }
             val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
             if (elapsed > timeout) throw TimeoutWaitingForElementException(trimmedText, timeout)
             delay(500)
