@@ -37,7 +37,12 @@ suspend fun Process.destroyAndAwaitExit(
     }
 }
 
-private suspend fun Process.awaitExit(timeoutMillis: Long): Boolean {
+/**
+ * Waits up to [timeoutMillis] for the process to exit, without asking it to.
+ *
+ * @return true if the process has exited.
+ */
+internal suspend fun Process.awaitExit(timeoutMillis: Long): Boolean {
     var waited = 0L
     while (waited < timeoutMillis) {
         if (!isAlive()) return true

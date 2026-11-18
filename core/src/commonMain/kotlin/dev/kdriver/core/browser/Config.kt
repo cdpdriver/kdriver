@@ -55,6 +55,15 @@ class Config(
     private var _userDataDir: Path? = null
     private var _customDataDir: Boolean = false
 
+    /**
+     * True only when *this* instance created the temporary profile in [userDataDir].
+     *
+     * Deliberately not carried over by [copy]: a copy that inherits an already created temporary
+     * profile shares it with the original, so it must not delete it.
+     */
+    internal var createdTemporaryProfile: Boolean = false
+        private set
+
     private val _browserArgs: MutableList<String> = browserArgs?.toMutableList() ?: mutableListOf()
     internal val _extensions: MutableList<Path> = mutableListOf()
 
@@ -81,12 +90,14 @@ class Config(
             if (_userDataDir == null) {
                 _userDataDir = tempProfileDir()
                 _customDataDir = false
+                createdTemporaryProfile = true
             }
             return _userDataDir!!
         }
         set(value) {
             _userDataDir = value
             _customDataDir = true
+            createdTemporaryProfile = false
         }
 
     val usesCustomDataDir: Boolean

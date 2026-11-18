@@ -8,6 +8,18 @@ import kotlinx.io.files.Path
 import platform.posix.*
 
 private class PosixProcess(override val processIdentifier: Int) : Process() {
+    private var reaped = false
+
+    /**
+     * Reaps the child once it has exited. Nothing else waits for it here, so without this it stays a
+     * zombie and [isAlive] never turns false. Remembered, because the pid may be reused afterwards.
+     */
+    @OptIn(ExperimentalForeignApi::class)
+    override fun hasExited(): Boolean {
+        if (!reaped) reaped = waitpid(processIdentifier, null, WNOHANG) == processIdentifier
+        return reaped
+    }
+
     override fun destroy() {
         if (isAlive()) {
             kill(processIdentifier, SIGTERM)

@@ -64,3 +64,7 @@ actual fun freePort(): Int? {
 actual fun defaultBrowserSearchConfig(): BrowserSearchConfig {
     throw UnsupportedOperationException()
 }
+
+internal actual fun deleteRecursively(path: Path): Boolean {
+    throw UnsupportedOperationException()
+}

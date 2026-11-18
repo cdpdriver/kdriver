@@ -138,6 +138,16 @@ interface Browser {
      */
     suspend fun detach()
 
+    /**
+     * Deletes the temporary profile this browser created, when no [Config.userDataDir] was given.
+     *
+     * A profile passed as [Config.userDataDir] is never deleted. Nor is the temporary one while the
+     * browser process still runs: this waits a few seconds for it to exit, then gives up and leaves
+     * the profile in place. Calling it again, or after the profile is gone, does nothing.
+     *
+     * [stop] already calls it, and so does the shutdown hook that stops the browsers still running
+     * when the host process exits (on the JVM). There is usually no need to call it yourself.
+     */
     suspend fun cleanupTemporaryProfile()
 
     /**

@@ -9,9 +9,16 @@ actual abstract class Process {
     abstract val processIdentifier: Int
 
     actual fun isAlive(): Boolean {
+        if (hasExited()) return false
         // Check if process exists by sending signal 0
         return kill(processIdentifier, 0) == 0
     }
+
+    /**
+     * Whether the process is known to have exited. Signal 0 alone cannot tell: a child that exited
+     * but was not reaped yet (a zombie) still has its pid, so it would look alive forever.
+     */
+    protected open fun hasExited(): Boolean = false
 
     actual fun pid(): Long {
         return processIdentifier.toLong()

@@ -19,7 +19,7 @@ actual abstract class Process {
         val handle = processHandle ?: return false
         val exitCode = memScoped {
             val code = alloc<DWORDVar>()
-            GetExitCodeProcess(handle, code.ptr)
+            if (GetExitCodeProcess(handle, code.ptr) == 0) return false
             code.value
         }
         return exitCode == STILL_ACTIVE
@@ -37,12 +37,15 @@ private class WindowsProcess(
     override val processHandle: HANDLE?,
     override val processId: DWORD,
 ) : Process() {
+    /**
+     * Keeps the handle open: [isAlive] reads the exit code through it after `destroy`, to know when the
+     * process is really gone (and its profile can be deleted). A closed handle would make it guess.
+     */
     override fun destroy() {
         processHandle?.let {
             if (isAlive()) {
                 TerminateProcess(it, 1u)
             }
-            CloseHandle(it)
         }
     }
 }

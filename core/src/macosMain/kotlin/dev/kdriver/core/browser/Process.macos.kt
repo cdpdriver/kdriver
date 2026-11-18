@@ -13,6 +13,9 @@ private class NSTaskProcess(private val task: NSTask) : Process() {
     override val processIdentifier: Int
         get() = task.processIdentifier
 
+    /** NSTask reaps its own child, and knows when it has exited. */
+    override fun hasExited(): Boolean = !task.isRunning()
+
     override fun destroy() {
         if (task.isRunning()) {
             task.terminate()
