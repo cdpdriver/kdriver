@@ -68,6 +68,20 @@ class TemporaryProfileTest {
     }
 
     @Test
+    fun cleanup_keepsTheProfileWhileTheBrowserStillRuns() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val profile = File(browser.config.userDataDir.toString())
+        try {
+            // Not stopped: the browser keeps writing to its profile, which must not be deleted under it.
+            browser.cleanupTemporaryProfile()
+            assertTrue(profile.isDirectory, "a running browser's profile must be kept")
+        } finally {
+            browser.stop()
+        }
+        assertFalse(profile.exists(), "stop() deletes it once the browser is gone")
+    }
+
+    @Test
     fun exitHook_stopsRunningBrowsersAndDeletesTheirProfiles() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val profile = File(browser.config.userDataDir.toString())
@@ -122,6 +136,23 @@ class TemporaryProfileTest {
         } finally {
             root.deleteRecursively()
             outside.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun deleteTemporaryProfile_givesUpOnAnEntryItCannotDelete() = runBlocking {
+        // A read-only directory protects its entries on POSIX only, and never from root.
+        if (!isPosix() || isRoot()) return@runBlocking
+        val root = createTempDirectory(prefix = "kdriver_delete_test_")
+        val locked = Files.createDirectories(root.resolve("locked"))
+        locked.resolve("file").writeText("x")
+        locked.toFile().setWritable(false)
+        try {
+            assertFalse(deleteTemporaryProfile(Path(root.toString()), attempts = 2, retryDelayMillis = 10))
+            assertTrue(locked.resolve("file").exists())
+        } finally {
+            locked.toFile().setWritable(true)
+            root.deleteRecursively()
         }
     }
 
