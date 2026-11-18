@@ -1,6 +1,7 @@
 package dev.kdriver.core.browser
 
 import kotlinx.io.files.Path
+import java.io.IOException
 import java.nio.file.LinkOption
 import java.nio.file.Paths
 import kotlin.io.path.ExperimentalPathApi
@@ -16,7 +17,7 @@ internal actual fun deleteRecursively(path: Path): Boolean {
     val target = Paths.get(path.toString())
     try {
         target.deleteRecursively()
-    } catch (_: Exception) {
+    } catch (_: IOException) {
         // Reported below, through whether the directory is still there.
     }
     return !target.exists(LinkOption.NOFOLLOW_LINKS)

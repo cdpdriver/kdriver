@@ -131,12 +131,14 @@ open class DefaultBrowser(
             val instance = DefaultBrowser(browserScope, config)
             // start() registers the browser with StartedBrowsers, whose shutdown hook stops it and
             // deletes its temporary profile if the host process exits without calling stop().
+            var started = false
             try {
                 instance.start()
-            } catch (e: Throwable) {
-                // The caller never gets this instance, so it could never stop the browser it launched.
-                withContext(NonCancellable) { instance.stop() }
-                throw e
+                started = true
+            } finally {
+                // On failure the caller never gets this instance, so it could never stop the browser
+                // it launched.
+                if (!started) withContext(NonCancellable) { instance.stop() }
             }
             return instance
         }
@@ -293,11 +295,11 @@ open class DefaultBrowser(
             if (!config.usesCustomDataDir && config.createdTemporaryProfile) {
                 temporaryProfile = config.userDataDir
             }
-            val launched = try {
-                startProcess(exe, params)
-            } catch (e: Throwable) {
-                withContext(NonCancellable) { cleanupTemporaryProfile() }
-                throw e
+            var launched: Process? = null
+            try {
+                launched = startProcess(exe, params)
+            } finally {
+                if (launched == null) withContext(NonCancellable) { cleanupTemporaryProfile() }
             }
             process = launched
             temporaryProfileUser = launched
@@ -379,13 +381,15 @@ open class DefaultBrowser(
         temporaryProfile = null
         temporaryProfileUser = null
         StartedBrowsers.unregister(this)
-        val restarted = try {
-            create(coroutineScope, config)
-        } catch (e: Throwable) {
-            // Nothing runs on the profile anymore: this browser's process is dead and the new one failed.
-            temporaryProfile = inherited
-            withContext(NonCancellable) { cleanupTemporaryProfile() }
-            throw e
+        var restarted: Browser? = null
+        try {
+            restarted = create(coroutineScope, config)
+        } finally {
+            if (restarted == null) {
+                // Nothing runs on the profile anymore: this browser's process is dead and the new one failed.
+                temporaryProfile = inherited
+                withContext(NonCancellable) { cleanupTemporaryProfile() }
+            }
         }
         if (inherited != null) {
             if (restarted is DefaultBrowser) restarted.adoptTemporaryProfile(inherited)
