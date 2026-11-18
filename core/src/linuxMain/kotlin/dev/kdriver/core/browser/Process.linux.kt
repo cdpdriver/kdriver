@@ -6,17 +6,24 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import kotlinx.io.files.Path
 import platform.posix.*
+import kotlin.concurrent.Volatile
 
 private class PosixProcess(override val processIdentifier: Int) : Process() {
+    @Volatile
     private var reaped = false
 
     /**
      * Reaps the child once it has exited. Nothing else waits for it here, so without this it stays a
      * zombie and [isAlive] never turns false. Remembered, because the pid may be reused afterwards.
+     *
+     * Only ever set to true: when two threads race, the loser gets `ECHILD` (already reaped), which
+     * means exited too.
      */
     @OptIn(ExperimentalForeignApi::class)
     override fun hasExited(): Boolean {
-        if (!reaped) reaped = waitpid(processIdentifier, null, WNOHANG) == processIdentifier
+        if (reaped) return true
+        val result = waitpid(processIdentifier, null, WNOHANG)
+        if (result == processIdentifier || (result == -1 && errno == ECHILD)) reaped = true
         return reaped
     }
 

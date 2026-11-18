@@ -8,19 +8,22 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * The browsers this process launched and has not stopped yet.
+ * The browsers this process started and has not stopped (nor detached) yet.
  *
  * When the host process exits without calling [Browser.stop], they are stopped from a single
  * shutdown hook (see [addShutdownHook]), which also deletes their temporary profiles. Without it, a
  * program that simply returns from `main` leaves a `kdriver_*` profile behind on every run.
  *
+ * Only the JVM has such a hook: [addShutdownHook] does nothing on the native and JS targets, where
+ * a browser that is never stopped keeps its profile on disk.
+ *
  * One hook for the whole process rather than one per browser: a hook cannot be removed once added,
  * so a hook per browser would keep every browser ever created reachable until the process exits.
  * A browser leaves this registry as soon as it is stopped or detached.
  */
-internal object LaunchedBrowsers {
+internal object StartedBrowsers {
 
-    private val logger = KtorSimpleLogger("LaunchedBrowsers")
+    private val logger = KtorSimpleLogger("StartedBrowsers")
     private val mutex = Mutex()
     private val browsers = LinkedHashSet<Browser>()
     private var hookInstalled = false

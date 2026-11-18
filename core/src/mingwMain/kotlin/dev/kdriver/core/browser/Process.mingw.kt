@@ -8,6 +8,8 @@ import kotlinx.io.files.Path
 import platform.posix.getenv
 import platform.posix.memset
 import platform.windows.*
+import kotlin.concurrent.AtomicReference
+import kotlin.concurrent.Volatile
 import kotlin.random.Random
 
 @OptIn(ExperimentalForeignApi::class)
@@ -15,15 +17,31 @@ actual abstract class Process {
     abstract val processHandle: HANDLE?
     abstract val processId: DWORD
 
+    /** The exit code, once the process has been seen to exit; its handle is closed from then on. */
+    @Volatile
+    internal var exitCode: DWORD? = null
+        private set
+
     actual fun isAlive(): Boolean {
+        if (exitCode != null) return false
         val handle = processHandle ?: return false
-        val exitCode = memScoped {
-            val code = alloc<DWORDVar>()
-            if (GetExitCodeProcess(handle, code.ptr) == 0) return false
-            code.value
+        val code = memScoped {
+            val c = alloc<DWORDVar>()
+            if (GetExitCodeProcess(handle, c.ptr) == 0) return false
+            c.value
         }
-        return exitCode == STILL_ACTIVE
+        if (code == STILL_ACTIVE) return true
+        exitCode = code
+        releaseHandle()
+        return false
     }
+
+    /**
+     * Closes the process handle, once the process has exited and nothing needs it anymore. Kept open
+     * until then, `destroy` included: [isAlive] reads the exit code through it, to know when the
+     * process is really gone (and its profile can be deleted).
+     */
+    protected abstract fun releaseHandle()
 
     actual fun pid(): Long {
         return processId.toLong()
@@ -34,13 +52,19 @@ actual abstract class Process {
 
 @OptIn(ExperimentalForeignApi::class)
 private class WindowsProcess(
-    override val processHandle: HANDLE?,
+    processHandle: HANDLE?,
     override val processId: DWORD,
 ) : Process() {
-    /**
-     * Keeps the handle open: [isAlive] reads the exit code through it after `destroy`, to know when the
-     * process is really gone (and its profile can be deleted). A closed handle would make it guess.
-     */
+    private val handle = AtomicReference(processHandle)
+
+    override val processHandle: HANDLE?
+        get() = handle.value
+
+    /** Atomic, so two threads seeing the exit at once do not close the same handle twice. */
+    override fun releaseHandle() {
+        handle.getAndSet(null)?.let { CloseHandle(it) }
+    }
+
     override fun destroy() {
         processHandle?.let {
             if (isAlive()) {
@@ -65,19 +89,11 @@ actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long
  * the one running browsers in production, uses `ProcessHandle.descendants()` for that.
  */
 /**
- * Reads the exit status via `GetExitCodeProcess`, the same call [Process.isAlive] uses — null while
- * it still reports `STILL_ACTIVE`.
+ * Reads the exit status recorded by [Process.isAlive] through `GetExitCodeProcess` — null while the
+ * process still runs.
  */
 @OptIn(ExperimentalForeignApi::class)
-actual fun Process.exitCodeOrNull(): Int? {
-    val handle = processHandle ?: return null
-    val code = memScoped {
-        val c = alloc<DWORDVar>()
-        GetExitCodeProcess(handle, c.ptr)
-        c.value
-    }
-    return if (code == STILL_ACTIVE) null else code.toInt()
-}
+actual fun Process.exitCodeOrNull(): Int? = if (isAlive()) null else exitCode?.toInt()
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun Process.killTree() {

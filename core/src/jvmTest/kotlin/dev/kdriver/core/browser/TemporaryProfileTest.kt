@@ -32,7 +32,7 @@ class TemporaryProfileTest {
         browser.stop()
 
         assertFalse(profile.exists(), "the temporary profile must be deleted by stop()")
-        assertFalse(browser in LaunchedBrowsers, "a stopped browser is no longer stopped on exit")
+        assertFalse(browser in StartedBrowsers, "a stopped browser is no longer stopped on exit")
     }
 
     @Test
@@ -70,10 +70,10 @@ class TemporaryProfileTest {
     fun exitHook_stopsRunningBrowsersAndDeletesTheirProfiles() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val profile = File(browser.config.userDataDir.toString())
-        assertTrue(browser in LaunchedBrowsers, "a launched browser is stopped on exit")
+        assertTrue(browser in StartedBrowsers, "a launched browser is stopped on exit")
 
         // What the shutdown hook runs when the host process exits without calling stop().
-        LaunchedBrowsers.stopAll()
+        StartedBrowsers.stopAll()
 
         assertTrue(browser.stopped)
         assertFalse(profile.exists(), "the temporary profile must be deleted on exit")

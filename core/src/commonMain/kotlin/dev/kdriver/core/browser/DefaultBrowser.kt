@@ -129,9 +129,15 @@ open class DefaultBrowser(
         suspend fun create(coroutineScope: CoroutineScope, config: Config): Browser {
             val browserScope = CoroutineScope(coroutineScope.coroutineContext + SupervisorJob())
             val instance = DefaultBrowser(browserScope, config)
-            // start() registers the launched browser with LaunchedBrowsers, whose shutdown hook stops
-            // it and deletes its temporary profile if the host process exits without calling stop().
-            instance.start()
+            // start() registers the browser with StartedBrowsers, whose shutdown hook stops it and
+            // deletes its temporary profile if the host process exits without calling stop().
+            try {
+                instance.start()
+            } catch (e: Throwable) {
+                // The caller never gets this instance, so it could never stop the browser it launched.
+                withContext(NonCancellable) { instance.stop() }
+                throw e
+            }
             return instance
         }
 
@@ -295,8 +301,8 @@ open class DefaultBrowser(
             }
             process = launched
             temporaryProfileUser = launched
-            LaunchedBrowsers.register(this)
         }
+        StartedBrowsers.register(this)
 
         logger.info("Browser process started with PID: ${process?.pid()}")
         if (config.browserUrl == null && config.port == null) error("Port not set")
@@ -372,7 +378,7 @@ open class DefaultBrowser(
         val inherited = temporaryProfile
         temporaryProfile = null
         temporaryProfileUser = null
-        LaunchedBrowsers.unregister(this)
+        StartedBrowsers.unregister(this)
         val restarted = try {
             create(coroutineScope, config)
         } catch (e: Throwable) {
@@ -382,10 +388,14 @@ open class DefaultBrowser(
             throw e
         }
         if (inherited != null) {
-            if (restarted is DefaultBrowser) restarted.temporaryProfile = inherited
+            if (restarted is DefaultBrowser) restarted.adoptTemporaryProfile(inherited)
             else logger.warn("Temporary profile $inherited will not be deleted")
         }
         return restarted
+    }
+
+    private suspend fun adoptTemporaryProfile(profile: Path) = temporaryProfileMutex.withLock {
+        temporaryProfile = profile
     }
 
     private suspend fun handleTargetUpdate(event: Any) = updateTargetInfoMutex.withLock {
@@ -451,9 +461,10 @@ open class DefaultBrowser(
         // Before cancelling the scope, which may be the caller's own; and non-cancellable, so a stop()
         // called from a `finally` of a cancelled coroutine still deletes the profile.
         withContext(NonCancellable) {
-            cleanupTemporaryProfile()
+            // No further wait: the process has just been waited for, and killed if it lingered.
+            cleanupTemporaryProfile(releaseTimeoutMillis = 0)
             // Still registered if the profile could not be deleted, so the exit hook tries again.
-            if (temporaryProfile == null) LaunchedBrowsers.unregister(this@DefaultBrowser)
+            if (temporaryProfile == null) StartedBrowsers.unregister(this@DefaultBrowser)
         }
         logger.debug("Canceling coroutine scope...")
         coroutineScope.cancel()
@@ -466,7 +477,7 @@ open class DefaultBrowser(
         // keeps the shutdown hook from stopping a browser we chose to leave running. Its temporary
         // profile is kept too, since the browser still runs on it.
         process = null
-        LaunchedBrowsers.unregister(this)
+        StartedBrowsers.unregister(this)
         val targets = updateTargetInfoMutex.withLock {
             detached = true
             mutableTargets.toList().also {
@@ -483,12 +494,14 @@ open class DefaultBrowser(
         logger.info("Detached from browser")
     }
 
-    override suspend fun cleanupTemporaryProfile() = temporaryProfileMutex.withLock {
+    override suspend fun cleanupTemporaryProfile() = cleanupTemporaryProfile(PROFILE_RELEASE_TIMEOUT_MS)
+
+    private suspend fun cleanupTemporaryProfile(releaseTimeoutMillis: Long) = temporaryProfileMutex.withLock {
         val profile = temporaryProfile ?: return@withLock
         // The browser keeps writing to its profile while it shuts down: deleting it earlier would race
         // those writes, and leave files (or recreated directories) behind.
         val user = temporaryProfileUser
-        if (user != null && !user.awaitExit(PROFILE_RELEASE_TIMEOUT_MS)) {
+        if (user != null && !user.awaitExit(releaseTimeoutMillis)) {
             logger.warn("Not deleting temporary profile $profile: browser process ${user.pid()} is still running")
             return@withLock
         }

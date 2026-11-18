@@ -15,9 +15,12 @@ internal actual fun deleteRecursively(path: Path): Boolean {
  * Deletes [path], and its content first if it is a directory. A symbolic link is unlinked, never
  * followed: `lstat` describes the link itself.
  */
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, UnsafeNumber::class)
 private fun deleteEntry(path: String) {
     if (isRealDirectory(path)) {
+        // A directory without read or search permission cannot be listed nor emptied. It is ours (it
+        // is inside the profile we created), and lstat said it is not a link, so chmod is safe here.
+        chmod(path, S_IRWXU.convert())
         children(path).forEach { deleteEntry("$path/$it") }
         rmdir(path)
     } else {
