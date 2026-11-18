@@ -48,7 +48,8 @@ class TemporaryProfileTest {
             assertTrue(custom.exists(), "a userDataDir given by the caller must never be deleted")
             assertTrue(custom.toFile().list().orEmpty().isNotEmpty(), "the browser's files in it are kept too")
         } finally {
-            custom.deleteRecursively()
+            // With retries: on Windows the browser's children may hold its files for a moment more.
+            deleteTemporaryProfile(Path(custom.toString()))
         }
     }
 
