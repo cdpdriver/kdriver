@@ -405,7 +405,10 @@ open class DefaultTab(
         while (true) {
             val items = mutableListOf<Element>()
             if (includeFrames) {
-                val frames = querySelectorAll("iframe")
+                // The frames are searched through the document (Element.querySelectorAll reads it anyway), so they
+                // are found there too: with Config.lookupsInPage, describing them in the page would add their
+                // whole content to that read.
+                val frames = onDocument { doc -> querySelectorAllInternal("iframe", null, retried = false, doc) }
                 for (fr in frames) items.addAll(fr.querySelectorAll(trimmedSelector))
             }
             items.addAll(querySelectorAll(trimmedSelector))
@@ -446,7 +449,7 @@ open class DefaultTab(
     ): List<Element> =
         if (node == null && lookupsInPage) querySelectorAllInPage(selector)
         else if (node == null) onDocument { doc -> querySelectorAllInternal(selector, null, retried = false, doc) }
-        else querySelectorAllInternal(selector, node, retried = false, rootOf(node))
+        else querySelectorAllInternal(selector, node, retried = false, boundRootOf(node))
 
     // Config.lookupsInPage of the browser this tab belongs to; off for a tab without one.
     private val lookupsInPage: Boolean
@@ -462,12 +465,19 @@ open class DefaultTab(
             "(() => { const all = Array.from(document.querySelectorAll(${jsStringLiteral(selector)}));" +
                 " return all.length ? all : null; })()"
         ) ?: return emptyList()
-        val matches = runtime.getProperties(objectId = array.objectId!!, ownProperties = true).result
+        val arrayId = array.objectId!!
+        val properties = unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true).result }
+            ?: return emptyList()
+        val matches = properties
             .mapNotNull { property -> property.name.toIntOrNull()?.let { index -> index to property.value } }
             .sortedBy { it.first }
             .mapNotNull { (_, value) -> value?.takeIf { it.objectId != null } }
         return coroutineScope {
-            matches.map { match -> async { describeMatch(match) } }.awaitAll().filterNotNull()
+            // The array is no longer needed: released while the matches are described, at no extra wait.
+            val release = async { unlessGone { runtime.releaseObject(arrayId) } }
+            val found = matches.map { match -> async { describeMatch(match) } }.awaitAll().filterNotNull()
+            release.await()
+            found
         }
     }
 
@@ -485,7 +495,7 @@ open class DefaultTab(
      * An exception thrown by the page (an invalid selector) is thrown as an [EvaluateException].
      */
     private suspend fun evaluateLookup(expression: String): Runtime.RemoteObject? {
-        val evaluated = runtime.evaluate(expression = expression)
+        val evaluated = unlessGone { runtime.evaluate(expression = expression) } ?: return null
         evaluated.exceptionDetails?.let { throw EvaluateException(it) }
         return evaluated.result.takeIf { it.objectId != null }
     }
@@ -496,15 +506,22 @@ open class DefaultTab(
      * the object (the page navigated in between): the match is gone, and `select` tries again as for no match.
      */
     private suspend fun describeMatch(match: Runtime.RemoteObject): Element? {
-        val node = try {
-            dom.describeNode(objectId = match.objectId, depth = -1, pierce = true).node
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: CDPException) {
-            return null
-        }
+        val node = unlessGone { dom.describeNode(objectId = match.objectId, depth = -1, pierce = true).node }
+            ?: return null
         return DefaultElement(this, node).also { it.keepRemoteObject(match) }
     }
+
+    /**
+     * Runs [command] of an in-page lookup, or returns null when the browser no longer knows what it refers to: the
+     * object or the execution context was dropped by a navigation in between, so the lookup found nothing and `select`
+     * tries again. Any other protocol error is thrown.
+     */
+    private suspend fun <T> unlessGone(command: suspend () -> T): T? =
+        try {
+            command()
+        } catch (e: CDPException) {
+            if (GONE.any { e.originalMessage.contains(it, ignoreCase = true) }) null else throw e
+        }
 
     // A JavaScript string literal for [value]: its JSON encoding, which escapes quotes, backslashes and control
     // characters, so the value can only ever be read as one string.
@@ -556,8 +573,15 @@ open class DefaultTab(
         } else if (node == null) {
             onDocument { doc -> querySelectorInternal(trimmedSelector, null, retried = false, doc) }
         } else {
-            querySelectorInternal(trimmedSelector, node, retried = false, rootOf(node))
+            querySelectorInternal(trimmedSelector, node, retried = false, boundRootOf(node))
         }
+    }
+
+    // rootOf for a lookup under [node], once an element found with Config.lookupsInPage (no node id yet) has been
+    // updated from the document.
+    private suspend fun boundRootOf(node: NodeOrElement): DOM.Node {
+        if (node is NodeOrElement.WrappedElement && node.node.nodeId == 0) node.element.update()
+        return rootOf(node)
     }
 
     // The node a lookup under [node] queries: the document of a frame, the node itself otherwise.
@@ -902,3 +926,10 @@ open class DefaultTab(
     }
 
 }
+
+/**
+ * Error texts of the browser for an object, a node or an execution context it no longer knows (a navigation dropped
+ * it): "Could not find object with given id", "No node with given id found", "Cannot find context with specified id",
+ * "Execution context was destroyed".
+ */
+private val GONE = listOf("could not find", "no node with given id", "cannot find context", "context was destroyed")

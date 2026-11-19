@@ -246,6 +246,10 @@ class LookupsInPageTest {
         assertEquals("array", tab.transport.sent.single { it.method == "Runtime.getProperties" }.param("objectId"))
         assertEquals("true", tab.transport.sent.single { it.method == "Runtime.getProperties" }.param("ownProperties"))
         assertEquals(100, testScheduler.currentTime, "the descriptions are sent together, one round trip for all")
+        assertEquals(
+            "array", tab.transport.sent.single { it.method == "Runtime.releaseObject" }.param("objectId"),
+            "the array is released while the matches are described"
+        )
         assertTrue("DOM.getDocument" !in tab.sent)
         tab.close()
     }
@@ -264,6 +268,7 @@ class LookupsInPageTest {
                 "DOM.describeNode" ->
                     if (it.param("objectId") == "li-0") Reply.error("Could not find object with given id")
                     else Reply.ok(item(20, "Beta"))
+                "Runtime.releaseObject" -> Reply.error("Could not find object with given id")
                 else -> Reply.ok()
             }
         }
@@ -345,6 +350,137 @@ class LookupsInPageTest {
 
         assertEquals(8, child!!.node.nodeId)
         assertEquals(listOf("DOM.querySelector"), tab.sent)
+        tab.close()
+    }
+
+    private val arrayOfOne = """{"result":[""" +
+        """{"name":"0","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-0"}}""" +
+        """]}"""
+
+    @Test
+    fun querySelectorAll_findsNothing_whenTheArrayIsGoneBeforeItIsRead() = runTest(StandardTestDispatcher()) {
+        val tab = tab(lookupsInPage = true) {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
+                "Runtime.getProperties" -> Reply.error("Could not find object with given id")
+                else -> Reply.ok()
+            }
+        }
+
+        assertEquals(emptyList(), tab.querySelectorAll(".item"))
+        assertEquals(listOf("Runtime.evaluate", "Runtime.getProperties"), tab.sent)
+        tab.close()
+    }
+
+    @Test
+    fun querySelector_findsNothing_whenTheContextIsGone() = runTest(StandardTestDispatcher()) {
+        for (error in listOf("Cannot find context with specified id", "Execution context was destroyed.")) {
+            val tab = tab(lookupsInPage = true) {
+                when (it.method) {
+                    "Runtime.evaluate" -> Reply.error(error)
+                    else -> Reply.ok()
+                }
+            }
+
+            assertNull(tab.querySelector("#go"), error)
+            assertEquals(listOf("Runtime.evaluate"), tab.sent)
+            tab.close()
+        }
+    }
+
+    @Test
+    fun querySelector_findsNothing_whenTheNodeIsGoneBeforeItIsDescribed() = runTest(StandardTestDispatcher()) {
+        val tab = tab(lookupsInPage = true) {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(found("obj-1"))
+                "DOM.describeNode" -> Reply.error("No node with given id found")
+                else -> Reply.ok()
+            }
+        }
+
+        assertNull(tab.querySelector("#go"))
+        tab.close()
+    }
+
+    @Test
+    fun anyOtherProtocolError_isThrown() = runTest(StandardTestDispatcher()) {
+        val describing = tab(lookupsInPage = true) {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(found("obj-1"))
+                "DOM.describeNode" -> Reply.error("Message is too large")
+                else -> Reply.ok()
+            }
+        }
+        assertEquals(
+            "Message is too large",
+            assertFailsWith<dev.kdriver.cdp.CDPException> { describing.querySelector("#go") }.originalMessage
+        )
+        describing.close()
+
+        val listing = tab(lookupsInPage = true) {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
+                "Runtime.getProperties" -> Reply.ok(arrayOfOne)
+                "DOM.describeNode" -> Reply.ok(item(10, "Alpha"))
+                "Runtime.releaseObject" -> Reply.error("Session closed")
+                else -> Reply.ok()
+            }
+        }
+        assertEquals("Session closed", assertFailsWith<dev.kdriver.cdp.CDPException> { listing.querySelectorAll(".item") }.originalMessage)
+        listing.close()
+
+        val evaluating = tab(lookupsInPage = true) {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.error("Session closed")
+                else -> Reply.ok()
+            }
+        }
+        assertFailsWith<dev.kdriver.cdp.CDPException> { evaluating.querySelectorAll(".item") }
+        evaluating.close()
+    }
+
+    @Test
+    fun selectAllWithFrames_findsTheFramesInTheDocument_andTheMatchesInThePage() = runTest(StandardTestDispatcher()) {
+        val tab = tab(lookupsInPage = true) {
+            when (it.method) {
+                "DOM.getDocument" -> Reply.ok(document)
+                "DOM.querySelectorAll" -> Reply.ok("""{"nodeIds":[]}""")
+                "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
+                "Runtime.getProperties" -> Reply.ok(arrayOfOne)
+                "DOM.describeNode" -> Reply.ok(item(10, "Alpha"))
+                else -> Reply.ok()
+            }
+        }
+
+        assertEquals(listOf("Alpha"), tab.selectAll(".item", timeout = 1_000, includeFrames = true).map { it.text })
+        assertEquals("iframe", tab.transport.sent.single { it.method == "DOM.querySelectorAll" }.param("selector"))
+        assertTrue("DOM.getDocument" in tab.sent)
+        tab.close()
+    }
+
+    @Test
+    fun aLookupUnderAnElementFoundInThePage_updatesItFromTheDocumentFirst() = runTest(StandardTestDispatcher()) {
+        val tab = tab(lookupsInPage = true) {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(found("obj-1"))
+                "DOM.describeNode" -> Reply.ok(button)
+                "DOM.getDocument" -> Reply.ok(document)
+                "DOM.querySelector" -> Reply.ok("""{"nodeId":8}""")
+                "DOM.resolveNode" -> Reply.ok("""{"object":{"type":"object","subtype":"node","objectId":"obj-2"}}""")
+                else -> Reply.ok()
+            }
+        }
+        val button = tab.querySelector("#go")!!
+
+        val text = tab.querySelector("*", dev.kdriver.core.dom.NodeOrElement.WrappedElement(button))
+
+        assertEquals(7, button.node.nodeId, "updated from the document")
+        assertEquals("7", tab.transport.sent.single { it.method == "DOM.querySelector" }.param("nodeId"))
+        assertEquals(8, text!!.node.nodeId)
+        val resolvesBefore = tab.sent.count { it == "DOM.resolveNode" }
+        tab.querySelector("*", dev.kdriver.core.dom.NodeOrElement.WrappedElement(button))
+        assertEquals(resolvesBefore, tab.sent.count { it == "DOM.resolveNode" }, "a bound element is not updated again")
+        assertEquals(2, tab.sent.count { it == "DOM.querySelector" })
         tab.close()
     }
 

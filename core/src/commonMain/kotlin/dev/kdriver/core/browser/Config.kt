@@ -67,18 +67,25 @@ class Config(
      *   throws until [dev.kdriver.core.dom.Element.update] is called, which reads the document as before. Each element
      *   keeps the remote object the page returned, so its first call (`click`, `apply`, …) needs no `DOM.resolveNode`.
      * - **Shadow DOM and iframes**: same results as off: neither `document.querySelector` nor `DOM.querySelector` on
-     *   the document looks inside a shadow root or an iframe. `selectAll(includeFrames = true)` still finds the iframes
-     *   in the page, then reads the document to search inside each one.
+     *   the document looks inside a shadow root or an iframe. `selectAll(includeFrames = true)` reads the document to
+     *   find the iframes and search inside each one, as off; only its lookup on the page itself runs in the page.
      * - **Waiting**: `select` and `selectAll` poll and time out as before. Until something reads the document again
      *   (a lookup under an element, `find`, `update`…), the browser sends no `DOM.*` mutation events for the page, so
      *   on a busy page the connection may count as idle sooner.
+     * - **Navigation**: an object or execution context dropped by a navigation during the lookup counts as no match
+     *   (`select` tries again), as a node gone from a document read does off.
      * - **Errors**: an invalid selector throws an [dev.kdriver.core.exceptions.EvaluateException] (the page's
      *   `SyntaxError`) instead of a [dev.kdriver.cdp.CDPException]. The page's own `document.querySelector` is used:
      *   a page that replaces it changes the result.
      * - **Round trips**: `querySelector` costs two small ones (evaluate, describe) instead of a document read and a
      *   query; `querySelectorAll` costs one when nothing matches, three otherwise (evaluate, the array's properties,
      *   then every match described in parallel). Each match is described with its subtree: many matches, or nested
-     *   ones, can transfer more than the document would.
+     *   ones, can transfer more than the document would: leave the setting off for a selector that matches most of
+     *   the page. Each element holds its remote object until the page navigates, as one used off does after its first
+     *   call; the array of `querySelectorAll` is released.
+     * - **Elements passed back**: a lookup under such an element ([dev.kdriver.core.dom.Element.querySelector], or a
+     *   [dev.kdriver.core.dom.NodeOrElement.WrappedElement] passed to `querySelector`) updates it from the document
+     *   first.
      *
      * Lookups under a node or an element ([dev.kdriver.core.dom.Element.querySelector], `find`, `findAll`, `xpath`)
      * are unchanged and still read the document. Off by default.
