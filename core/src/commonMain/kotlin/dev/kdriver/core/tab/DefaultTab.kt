@@ -19,11 +19,13 @@ import io.ktor.util.logging.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -471,40 +473,43 @@ open class DefaultTab(
                 " return all.length ? all : null; })()"
         ) ?: return emptyList()
         val arrayId = array.objectId!!
-        val properties = try {
-            unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true).result } ?: return emptyList()
-        } catch (e: CDPException) {
-            releaseQuietly(arrayId)
-            throw e
-        }
-        val matches = properties
-            .mapNotNull { property -> property.name.toIntOrNull()?.let { index -> index to property.value } }
-            .sortedBy { it.first }
-            .mapNotNull { (_, value) -> value?.takeIf { it.objectId != null } }
-        // supervisorScope: a description that fails does not cancel the release, which is a cleanup that never fails.
-        return supervisorScope {
-            // The array is no longer needed: released while the matches are described, at no extra wait.
-            val release = async { releaseQuietly(arrayId) }
-            val described = try {
-                matches.map { match -> async { describeMatch(match) } }.awaitAll()
-            } finally {
-                release.await()
+        // The array is a cleanup to release on every path, cancellation included (NonCancellable); while the matches
+        // are described, in parallel with them, at no extra wait. Gone with the page, it needs no release.
+        var release: Deferred<Unit>? = null
+        var gone = false
+        try {
+            val properties = unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true).result }
+            if (properties == null) {
+                gone = true
+                return emptyList()
             }
-            // A match gone before it was described means the page navigated during the lookup: no match at all, as
-            // for one lookup, rather than a part of the old page's matches.
-            if (null in described) emptyList() else described.filterNotNull()
+            val matches = properties
+                .mapNotNull { property -> property.name.toIntOrNull()?.let { index -> index to property.value } }
+                .sortedBy { it.first }
+                .mapNotNull { (_, value) -> value?.takeIf { it.objectId != null } }
+            return coroutineScope {
+                release = async(NonCancellable) { releaseQuietly(arrayId) }
+                val described = matches.map { match -> async { describeMatch(match) } }.awaitAll()
+                // A match gone before it was described means the page navigated during the lookup: no match at all,
+                // as for one lookup, rather than a part of the old page's matches.
+                if (null in described) emptyList() else described.filterNotNull()
+            }
+        } finally {
+            val pending = release
+            withContext(NonCancellable) {
+                if (pending != null) pending.await() else if (!gone) releaseQuietly(arrayId)
+            }
         }
     }
 
-    // Releases a remote object the lookup no longer needs. A cleanup: its failure never fails the lookup (the page
-    // drops the object at its next navigation anyway).
+    // Releases a remote object the lookup no longer needs. A cleanup, always run under NonCancellable, so a
+    // CancellationException here is the command's own timeout, never the caller's cancellation: no failure of it ever
+    // fails the lookup (the page drops the object at its next navigation anyway).
     private suspend fun releaseQuietly(objectId: String) {
         try {
             runtime.releaseObject(objectId)
-        } catch (e: CancellationException) {
-            throw e
         } catch (_: Exception) {
-            // Already gone, or the connection is closing: nothing to clean up.
+            // Already gone, timed out, or the connection is closing: nothing to clean up.
         }
     }
 

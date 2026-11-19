@@ -333,7 +333,9 @@ interface Tab : Connection {
      * Can also be used to wait for such elements to appear. Optionally includes results from iframes.
      *
      * With [dev.kdriver.core.browser.Config.lookupsInPage], the page runs the selector instead of the whole document
-     * being read; the elements then carry no node id nor tree. See that setting for every difference. With [includeFrames], the document is read as without that setting.
+     * being read; the elements then carry no node id nor tree. See that setting for every difference.
+     * With [includeFrames], `selectAll` reads the document even with that setting on, for the page's own matches too:
+     * they then carry a node id and a tree, as without it.
      *
      * @param selector CSS selector, e\.g\., `a[href]`, `button[class*=close]`, `a > img[src]`
      * @param timeout Raise timeout exception when after this many milliseconds nothing is found.

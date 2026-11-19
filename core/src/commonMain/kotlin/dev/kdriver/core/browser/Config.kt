@@ -74,7 +74,8 @@ class Config(
      *   on a busy page the connection may count as idle sooner.
      * - **Navigation**: an object or execution context dropped by a navigation during the lookup counts as no match
      *   (`select` tries again), as a node gone from a document read does off; when only some matches of
-     *   `querySelectorAll` are gone, none is returned rather than part of the old page's.
+     *   `querySelectorAll` are gone, none is returned rather than part of the old page's. A command Chrome cuts with
+     *   "Inspected target navigated or closed" (also sent for a closed tab) is thrown, as off.
      * - **Errors**: an invalid selector throws an [dev.kdriver.core.exceptions.EvaluateException] (the page's
      *   `SyntaxError`) instead of a [dev.kdriver.cdp.CDPException]. The page's own `document.querySelector` is used:
      *   a page that replaces it changes the result.

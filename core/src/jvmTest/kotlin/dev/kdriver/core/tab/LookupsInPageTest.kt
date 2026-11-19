@@ -14,7 +14,10 @@ import dev.kdriver.core.param
 import dev.kdriver.core.valueReply
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -420,12 +423,19 @@ class LookupsInPageTest {
     }
 
     @Test
-    fun aDescriptionThatFails_isThrown_andTheArrayIsStillReleased() = runTest(StandardTestDispatcher()) {
+    fun aDescriptionThatFails_isThrown_stopsTheOthers_andTheArrayIsStillReleased() = runTest(StandardTestDispatcher()) {
         val tab = tab(lookupsInPage = true) {
             when (it.method) {
                 "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
-                "Runtime.getProperties" -> Reply.ok(arrayOfOne)
-                "DOM.describeNode" -> Reply.error("Message is too large")
+                "Runtime.getProperties" -> Reply.ok(
+                    """{"result":[""" +
+                        """{"name":"0","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-0"}},""" +
+                        """{"name":"1","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-1"}}""" +
+                        """]}"""
+                )
+                "DOM.describeNode" ->
+                    if (it.param("objectId") == "li-0") Reply.error("Message is too large", latency = 10)
+                    else Reply.ok(item(20, "Beta"), latency = 1_000)
                 "Runtime.releaseObject" -> Reply.ok(latency = 50)
                 else -> Reply.ok()
             }
@@ -433,7 +443,27 @@ class LookupsInPageTest {
 
         assertFailsWith<dev.kdriver.cdp.CDPException> { tab.querySelectorAll(".item") }
         assertEquals("array", tab.transport.sent.single { it.method == "Runtime.releaseObject" }.param("objectId"))
-        assertEquals(50, testScheduler.currentTime, "the release was awaited, not cancelled")
+        assertEquals(50, testScheduler.currentTime, "the release was awaited, the other description was not")
+        tab.close()
+    }
+
+    @Test
+    fun aLookupCancelledWhileTheArrayIsRead_stillReleasesIt() = runTest(StandardTestDispatcher()) {
+        val tab = tab(lookupsInPage = true) {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
+                "Runtime.getProperties" -> Reply.ok(arrayOfOne, latency = 1_000)
+                else -> Reply.ok()
+            }
+        }
+
+        val lookup = launch { tab.querySelectorAll(".item") }
+        advanceTimeBy(100)
+        lookup.cancel()
+        advanceUntilIdle()
+
+        assertTrue(lookup.isCancelled)
+        assertEquals("array", tab.transport.sent.single { it.method == "Runtime.releaseObject" }.param("objectId"))
         tab.close()
     }
 
