@@ -23,6 +23,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.supervisorScope
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -407,9 +408,8 @@ open class DefaultTab(
             if (includeFrames) {
                 // Searching inside the frames reads the document (Element.querySelectorAll), so the whole lookup goes
                 // through it, Config.lookupsInPage or not: the frames and the page's own matches come from one read.
-                val frames = onDocument { doc -> querySelectorAllInternal("iframe", null, retried = false, doc) }
-                for (fr in frames) items.addAll(fr.querySelectorAll(trimmedSelector))
-                items.addAll(onDocument { doc -> querySelectorAllInternal(trimmedSelector, null, retried = false, doc) })
+                for (fr in querySelectorAllInDocument("iframe")) items.addAll(fr.querySelectorAll(trimmedSelector))
+                items.addAll(querySelectorAllInDocument(trimmedSelector))
             } else {
                 items.addAll(querySelectorAll(trimmedSelector))
             }
@@ -449,8 +449,12 @@ open class DefaultTab(
         node: NodeOrElement?,
     ): List<Element> =
         if (node == null && lookupsInPage) querySelectorAllInPage(selector)
-        else if (node == null) onDocument { doc -> querySelectorAllInternal(selector, null, retried = false, doc) }
+        else if (node == null) querySelectorAllInDocument(selector)
         else querySelectorAllInternal(selector, node, retried = false, boundRootOf(node))
+
+    // querySelectorAll on the whole document read (kept while the page has not changed), whatever Config.lookupsInPage.
+    private suspend fun querySelectorAllInDocument(selector: String): List<Element> =
+        onDocument { doc -> querySelectorAllInternal(selector, null, retried = false, doc) }
 
     // Config.lookupsInPage of the browser this tab belongs to; off for a tab without one.
     private val lookupsInPage: Boolean
@@ -477,11 +481,15 @@ open class DefaultTab(
             .mapNotNull { property -> property.name.toIntOrNull()?.let { index -> index to property.value } }
             .sortedBy { it.first }
             .mapNotNull { (_, value) -> value?.takeIf { it.objectId != null } }
-        return coroutineScope {
+        // supervisorScope: a description that fails does not cancel the release, which is a cleanup that never fails.
+        return supervisorScope {
             // The array is no longer needed: released while the matches are described, at no extra wait.
             val release = async { releaseQuietly(arrayId) }
-            val described = matches.map { match -> async { describeMatch(match) } }.awaitAll()
-            release.await()
+            val described = try {
+                matches.map { match -> async { describeMatch(match) } }.awaitAll()
+            } finally {
+                release.await()
+            }
             // A match gone before it was described means the page navigated during the lookup: no match at all, as
             // for one lookup, rather than a part of the old page's matches.
             if (null in described) emptyList() else described.filterNotNull()
@@ -493,8 +501,10 @@ open class DefaultTab(
     private suspend fun releaseQuietly(objectId: String) {
         try {
             runtime.releaseObject(objectId)
-        } catch (_: CDPException) {
-            // Already gone, or the session is closing: nothing to clean up.
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Already gone, or the connection is closing: nothing to clean up.
         }
     }
 
@@ -947,7 +957,8 @@ open class DefaultTab(
 /**
  * Error texts of the browser for an object, a node or an execution context it no longer knows (a navigation dropped
  * it): "Could not find object with given id", "No node with given id found", "Cannot find context with specified id",
- * "Execution context was destroyed", "Inspected target navigated or closed".
+ * "Execution context was destroyed". Not "Inspected target navigated or closed", also sent for a closed tab, which is an
+ * error and not a lookup to try again.
  */
 private val GONE = listOf(
     "could not find object",
@@ -955,5 +966,4 @@ private val GONE = listOf(
     "no node with given id",
     "cannot find context",
     "context was destroyed",
-    "inspected target navigated or closed",
 )

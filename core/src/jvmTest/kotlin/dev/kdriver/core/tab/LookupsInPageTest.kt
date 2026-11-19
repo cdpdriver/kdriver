@@ -378,7 +378,6 @@ class LookupsInPageTest {
         for (error in listOf(
             "Cannot find context with specified id",
             "Execution context was destroyed.",
-            "Inspected target navigated or closed",
         )) {
             val tab = tab(lookupsInPage = true) {
                 when (it.method) {
@@ -404,6 +403,37 @@ class LookupsInPageTest {
         }
 
         assertNull(tab.querySelector("#go"))
+        tab.close()
+    }
+
+    @Test
+    fun aClosedTarget_isAnError_notANoMatch() = runTest(StandardTestDispatcher()) {
+        val tab = tab(lookupsInPage = true) {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.error("Inspected target navigated or closed")
+                else -> Reply.ok()
+            }
+        }
+
+        assertFailsWith<dev.kdriver.cdp.CDPException> { tab.querySelector("#go") }
+        tab.close()
+    }
+
+    @Test
+    fun aDescriptionThatFails_isThrown_andTheArrayIsStillReleased() = runTest(StandardTestDispatcher()) {
+        val tab = tab(lookupsInPage = true) {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
+                "Runtime.getProperties" -> Reply.ok(arrayOfOne)
+                "DOM.describeNode" -> Reply.error("Message is too large")
+                "Runtime.releaseObject" -> Reply.ok(latency = 50)
+                else -> Reply.ok()
+            }
+        }
+
+        assertFailsWith<dev.kdriver.cdp.CDPException> { tab.querySelectorAll(".item") }
+        assertEquals("array", tab.transport.sent.single { it.method == "Runtime.releaseObject" }.param("objectId"))
+        assertEquals(50, testScheduler.currentTime, "the release was awaited, not cancelled")
         tab.close()
     }
 
@@ -462,6 +492,39 @@ class LookupsInPageTest {
         }
 
         assertEquals(listOf("Alpha"), tab.querySelectorAll(".item").map { it.text })
+        tab.close()
+    }
+
+    private val documentWithAFrame =
+        """{"root":{"nodeId":1,"backendNodeId":1,"nodeType":9,"nodeName":"#document","localName":"","nodeValue":"",""" +
+            """"childNodeCount":2,"children":[{"nodeId":7,"backendNodeId":70,"nodeType":1,"nodeName":"P",""" +
+            """"localName":"p","nodeValue":"","childNodeCount":1,"children":[""" +
+            """{"nodeId":8,"backendNodeId":80,"nodeType":3,"nodeName":"#text","localName":"","nodeValue":"Outer"}]},""" +
+            """{"nodeId":9,"backendNodeId":90,"nodeType":1,"nodeName":"IFRAME","localName":"iframe","nodeValue":"",""" +
+            """"childNodeCount":0,"contentDocument":{"nodeId":10,"backendNodeId":100,"nodeType":9,""" +
+            """"nodeName":"#document","localName":"","nodeValue":"","childNodeCount":1,"children":[""" +
+            """{"nodeId":11,"backendNodeId":110,"nodeType":1,"nodeName":"P","localName":"p","nodeValue":"",""" +
+            """"childNodeCount":1,"children":[{"nodeId":12,"backendNodeId":120,"nodeType":3,"nodeName":"#text",""" +
+            """"localName":"","nodeValue":"Inner"}]}]}}]}}"""
+
+    @Test
+    fun selectAllWithAFrame_findsInsideItAndInThePage_fromOneDocumentRead() = runTest(StandardTestDispatcher()) {
+        val tab = tab(lookupsInPage = true) {
+            when (it.method) {
+                "DOM.getDocument" -> Reply.ok(documentWithAFrame)
+                "DOM.querySelectorAll" -> when (it.param("nodeId")) {
+                    "1" -> if (it.param("selector") == "iframe") Reply.ok("""{"nodeIds":[9]}""") else Reply.ok("""{"nodeIds":[7]}""")
+                    "10" -> Reply.ok("""{"nodeIds":[11]}""")
+                    else -> Reply.error("Could not find node with given id")
+                }
+                "DOM.resolveNode" -> Reply.ok("""{"object":{"type":"object","subtype":"node","objectId":"frame"}}""")
+                else -> Reply.ok()
+            }
+        }
+
+        assertEquals(listOf("Inner", "Outer"), tab.selectAll("p", timeout = 1_000, includeFrames = true).map { it.text })
+        assertEquals(1, tab.sent.count { it == "DOM.getDocument" }, "one read for the frame and the page")
+        assertTrue("Runtime.evaluate" !in tab.sent)
         tab.close()
     }
 
