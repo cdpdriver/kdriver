@@ -188,3 +188,40 @@ fun main() = runBlocking {
 The browser advertises its own, internal, address in `webSocketDebuggerUrl`; when `browserUrl` is
 set, kdriver keeps only the path of that URL and connects to it on `browserUrl`. Without
 `browserUrl`, `host` and `port` keep working as before.
+
+## Lookups on a remote browser
+
+By default, `select`, `selectAll`, `querySelector` and `querySelectorAll` read the whole document
+(`DOM.getDocument`) each time the page changed since the last read, then query it. That read is the
+size of the whole DOM, often a megabyte, and it happens after every navigation and on any page that
+keeps changing. When the browser is far away, it is usually the largest transfer of a script.
+
+With `lookupsInPage`, these lookups ask the page instead: the page runs the selector and only the
+matching elements are sent back.
+
+```kotlin
+val browser = createBrowser(this) {
+    browserUrl = "https://browsers.example.com/team/one"
+    lookupsInPage = true
+}
+```
+
+The setting is off by default. What changes when it is on:
+
+| | Off (default) | On |
+| --- | --- | --- |
+| Commands for `select` / `querySelector` | `DOM.getDocument` (whole document, unless the page has not changed since the last read), then `DOM.querySelector` | `Runtime.evaluate` (`document.querySelector`), then `DOM.describeNode` of the match |
+| Commands for `selectAll` / `querySelectorAll` | `DOM.getDocument`, then `DOM.querySelectorAll` | one `Runtime.evaluate` when nothing matches; otherwise also `Runtime.getProperties`, then one `DOM.describeNode` per match, sent together |
+| Data received per lookup | the whole document | the matches and their subtrees (many or nested matches can add up to more than the document) |
+| First call on a found element (`click`, `apply`, …) | resolves the node first (`DOM.resolveNode`) | uses the object the page returned, no extra command |
+| `element.node.nodeId` | the node id | 0: no document was requested |
+| `element.tree`, `element.parent` | the document, the parent | `null`, and `parent` throws until `element.update()`, which reads the document |
+| Text, attributes, children of an element | read from the node and its subtree | the same |
+| Shadow roots | not searched | not searched |
+| Iframes | not searched; `selectAll(includeFrames = true)` searches inside each one | the same: the iframes are found in the page, then the document is read to search inside each one |
+| Waiting | `select` / `selectAll` retry every 500 ms until the timeout | the same; with no document requested, the browser sends fewer `DOM.*` events, so a busy page may count as idle sooner |
+| Invalid selector | `CDPException` | `EvaluateException` (the page's `SyntaxError`) |
+| A page that replaces `document.querySelector` | not affected | the page's own function runs |
+
+Lookups under an element (`element.querySelector`, `element.querySelectorAll`), `find`, `findAll`
+and `xpath` are the same in both modes: they still read the document.

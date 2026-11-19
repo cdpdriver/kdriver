@@ -294,6 +294,9 @@ interface Tab : Connection {
      *
      * This method waits for the element to appear in the DOM, retrying every 500 milliseconds until the timeout is reached.
      *
+     * With [dev.kdriver.core.browser.Config.lookupsInPage], the page runs the selector instead of the whole document
+     * being read; the elements then carry no node id nor tree. See that setting for every difference.
+     *
      * @param selector The CSS selector of the element to select.
      * @param timeout The maximum time in milliseconds to wait for the element to appear. Defaults to 10 seconds.
      *
@@ -328,6 +331,9 @@ interface Tab : Connection {
      * Finds multiple elements by CSS selector, optionally waiting for them to appear.
      *
      * Can also be used to wait for such elements to appear. Optionally includes results from iframes.
+     *
+     * With [dev.kdriver.core.browser.Config.lookupsInPage], the page runs the selector instead of the whole document
+     * being read; the elements then carry no node id nor tree. See that setting for every difference.
      *
      * @param selector CSS selector, e\.g\., `a[href]`, `button[class*=close]`, `a > img[src]`
      * @param timeout Raise timeout exception when after this many milliseconds nothing is found.
@@ -375,6 +381,9 @@ interface Tab : Connection {
      *
      * It returns all matching [Element] objects.
      *
+     * With [dev.kdriver.core.browser.Config.lookupsInPage], the page runs the selector instead of the whole document
+     * being read; the elements then carry no node id nor tree. See that setting for every difference.
+     *
      * @param selector CSS selector. (first time? See https://www.w3schools.com/cssref/css_selectors.php)
      * @param node For internal use. The node to start the search from. Defaults to the document root.
      *
@@ -387,6 +396,9 @@ interface Tab : Connection {
 
     /**
      * Finds a single element based on a CSS selector string.
+     *
+     * With [dev.kdriver.core.browser.Config.lookupsInPage], the page runs the selector instead of the whole document
+     * being read; the elements then carry no node id nor tree. See that setting for every difference.
      *
      * @param selector CSS selector(s).
      * @param node For internal use. The node to start the search from. Defaults to the document root.

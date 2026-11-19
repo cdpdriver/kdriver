@@ -48,6 +48,12 @@ class ConfigBuilder {
     var connectionHeaders: Map<String, String> = emptyMap()
 
     /**
+     * Whether selector lookups on the whole page ask the page instead of reading the whole document. See
+     * [Config.lookupsInPage] for what changes.
+     */
+    var lookupsInPage: Boolean = Defaults.LOOKUPS_IN_PAGE
+
+    /**
      * Builds the Config instance with the configured parameters.
      */
     fun build(): Config {
@@ -70,6 +76,7 @@ class ConfigBuilder {
             debugStringLimit = debugStringLimit,
             browserUrl = browserUrl,
             connectionHeaders = connectionHeaders,
+            lookupsInPage = lookupsInPage,
         )
     }
 }

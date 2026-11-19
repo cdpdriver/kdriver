@@ -184,4 +184,15 @@ class ConfigTest {
         assertTrue(args.contains("--disable-site-isolation-trials"))
     }
 
+    @Test
+    fun lookupsInPage_isOffByDefault_andKeptByCopyAndTheBuilder() {
+        assertFalse(Config(browserExecutablePath = Path("/usr/bin/chromium")).lookupsInPage)
+
+        val on = Config(browserExecutablePath = Path("/usr/bin/chromium"), lookupsInPage = true)
+        assertTrue(on.copy().lookupsInPage)
+
+        assertTrue(config { browserExecutablePath = Path("/usr/bin/chromium"); lookupsInPage = true }.lookupsInPage)
+        assertFalse(config { browserExecutablePath = Path("/usr/bin/chromium") }.lookupsInPage)
+    }
+
 }

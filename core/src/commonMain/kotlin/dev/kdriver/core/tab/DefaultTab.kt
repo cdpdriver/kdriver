@@ -26,6 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.concurrent.Volatile
@@ -443,8 +444,72 @@ open class DefaultTab(
         selector: String,
         node: NodeOrElement?,
     ): List<Element> =
-        if (node == null) onDocument { doc -> querySelectorAllInternal(selector, null, retried = false, doc) }
+        if (node == null && lookupsInPage) querySelectorAllInPage(selector)
+        else if (node == null) onDocument { doc -> querySelectorAllInternal(selector, null, retried = false, doc) }
         else querySelectorAllInternal(selector, node, retried = false, rootOf(node))
+
+    // Config.lookupsInPage of the browser this tab belongs to; off for a tab without one.
+    private val lookupsInPage: Boolean
+        get() = owner?.let { browser -> browser.config.lookupsInPage } == true
+
+    /**
+     * `document.querySelectorAll(selector)` run by the page, each match then described with its subtree: see
+     * [dev.kdriver.core.browser.Config.lookupsInPage]. One round trip when nothing matches (the page answers `null`),
+     * otherwise three: the evaluation, the array's own properties, and the descriptions, sent together.
+     */
+    private suspend fun querySelectorAllInPage(selector: String): List<Element> {
+        val array = evaluateLookup(
+            "(() => { const all = Array.from(document.querySelectorAll(${jsStringLiteral(selector)}));" +
+                " return all.length ? all : null; })()"
+        ) ?: return emptyList()
+        val matches = runtime.getProperties(objectId = array.objectId!!, ownProperties = true).result
+            .mapNotNull { property -> property.name.toIntOrNull()?.let { index -> index to property.value } }
+            .sortedBy { it.first }
+            .mapNotNull { (_, value) -> value?.takeIf { it.objectId != null } }
+        return coroutineScope {
+            matches.map { match -> async { describeMatch(match) } }.awaitAll().filterNotNull()
+        }
+    }
+
+    /**
+     * `document.querySelector(selector)` run by the page, the match then described with its subtree: see
+     * [dev.kdriver.core.browser.Config.lookupsInPage]. Two round trips when something matches, one otherwise.
+     */
+    private suspend fun querySelectorInPage(selector: String): Element? {
+        val match = evaluateLookup("document.querySelector(${jsStringLiteral(selector)})") ?: return null
+        return describeMatch(match)
+    }
+
+    /**
+     * Evaluates [expression] in the page and returns the object it yields, or null when it yields no object (`null`).
+     * An exception thrown by the page (an invalid selector) is thrown as an [EvaluateException].
+     */
+    private suspend fun evaluateLookup(expression: String): Runtime.RemoteObject? {
+        val evaluated = runtime.evaluate(expression = expression)
+        evaluated.exceptionDetails?.let { throw EvaluateException(it) }
+        return evaluated.result.takeIf { it.objectId != null }
+    }
+
+    /**
+     * The element of [match], a remote object the page returned: its node and subtree (`DOM.describeNode`, depth -1,
+     * piercing), with [match] kept so its first call needs no `DOM.resolveNode`. Null when the browser no longer knows
+     * the object (the page navigated in between): the match is gone, and `select` tries again as for no match.
+     */
+    private suspend fun describeMatch(match: Runtime.RemoteObject): Element? {
+        val node = try {
+            dom.describeNode(objectId = match.objectId, depth = -1, pierce = true).node
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: CDPException) {
+            return null
+        }
+        return DefaultElement(this, node).also { it.keepRemoteObject(match) }
+    }
+
+    // A JavaScript string literal for [value]: its JSON encoding, which escapes quotes, backslashes and control
+    // characters, so the value can only ever be read as one string.
+    private fun jsStringLiteral(value: String): String =
+        Serialization.json.encodeToString(String.serializer(), value)
 
     // `retried` carries the "already retried once" state across the recursive call. It must be a
     // parameter, not a local: a local would be reset on every recursion and the guard would never
@@ -486,7 +551,9 @@ open class DefaultTab(
         node: NodeOrElement?,
     ): Element? {
         val trimmedSelector = selector.trim()
-        return if (node == null) {
+        return if (node == null && lookupsInPage) {
+            querySelectorInPage(trimmedSelector)
+        } else if (node == null) {
             onDocument { doc -> querySelectorInternal(trimmedSelector, null, retried = false, doc) }
         } else {
             querySelectorInternal(trimmedSelector, node, retried = false, rootOf(node))

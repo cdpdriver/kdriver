@@ -48,6 +48,42 @@ class Config(
      * in front of the browser, e.g. `mapOf("Authorization" to "Bearer …")`. Empty by default.
      */
     val connectionHeaders: Map<String, String> = emptyMap(),
+    /**
+     * Whether a CSS selector lookup on the whole page asks the page itself instead of reading the whole document.
+     *
+     * Concerns [dev.kdriver.core.tab.Tab.select], [dev.kdriver.core.tab.Tab.selectAll],
+     * [dev.kdriver.core.tab.Tab.querySelector] and [dev.kdriver.core.tab.Tab.querySelectorAll] called without a node.
+     * Off (the default), each of these reads the whole document (`DOM.getDocument`, depth -1, piercing) whenever the
+     * page changed since the last read, which is after every navigation and on any live page, then queries it by node
+     * id. On a large page that is a transfer of the size of the whole DOM (often a megabyte) per lookup.
+     *
+     * On, the page runs the selector (`Runtime.evaluate` of `document.querySelector` / `querySelectorAll`, the
+     * selector passed as a JSON string literal) and only the match is described (`DOM.describeNode`, depth -1,
+     * piercing). What changes for the caller:
+     *
+     * - **Elements**: they carry their node and its subtree (so [dev.kdriver.core.dom.Element.text],
+     *   [dev.kdriver.core.dom.Element.textAll], attributes and children read the same), but no node id
+     *   (`node.nodeId` is 0) and no [dev.kdriver.core.dom.Element.tree]: [dev.kdriver.core.dom.Element.parent]
+     *   throws until [dev.kdriver.core.dom.Element.update] is called, which reads the document as before. Each element
+     *   keeps the remote object the page returned, so its first call (`click`, `apply`, …) needs no `DOM.resolveNode`.
+     * - **Shadow DOM and iframes**: same results as off: neither `document.querySelector` nor `DOM.querySelector` on
+     *   the document looks inside a shadow root or an iframe. `selectAll(includeFrames = true)` still finds the iframes
+     *   in the page, then reads the document to search inside each one.
+     * - **Waiting**: `select` and `selectAll` poll and time out as before. Until something reads the document again
+     *   (a lookup under an element, `find`, `update`…), the browser sends no `DOM.*` mutation events for the page, so
+     *   on a busy page the connection may count as idle sooner.
+     * - **Errors**: an invalid selector throws an [dev.kdriver.core.exceptions.EvaluateException] (the page's
+     *   `SyntaxError`) instead of a [dev.kdriver.cdp.CDPException]. The page's own `document.querySelector` is used:
+     *   a page that replaces it changes the result.
+     * - **Round trips**: `querySelector` costs two small ones (evaluate, describe) instead of a document read and a
+     *   query; `querySelectorAll` costs one when nothing matches, three otherwise (evaluate, the array's properties,
+     *   then every match described in parallel). Each match is described with its subtree: many matches, or nested
+     *   ones, can transfer more than the document would.
+     *
+     * Lookups under a node or an element ([dev.kdriver.core.dom.Element.querySelector], `find`, `findAll`, `xpath`)
+     * are unchanged and still read the document. Off by default.
+     */
+    val lookupsInPage: Boolean = Defaults.LOOKUPS_IN_PAGE,
 ) {
 
     private val logger = KtorSimpleLogger("Config")
@@ -168,6 +204,7 @@ class Config(
         debugStringLimit = debugStringLimit,
         browserUrl = browserUrl,
         connectionHeaders = connectionHeaders,
+        lookupsInPage = lookupsInPage,
     ).also { copy ->
         // Copy the backing field, never the userDataDir getter: reading it would materialise a
         // temporary profile directory on a config that may never be started.
@@ -214,6 +251,9 @@ class Config(
         const val IDLE_WAIT_TIMEOUT: Long = 10_000
         const val AUTO_DISCOVER_TARGETS: Boolean = true
         const val DEBUG_STRING_LIMIT: Int = 128
+
+        /** See [Config.lookupsInPage]: off by default, lookups read the whole document. */
+        const val LOOKUPS_IN_PAGE: Boolean = false
     }
 
 }
