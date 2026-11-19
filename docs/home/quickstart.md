@@ -218,11 +218,11 @@ The setting is off by default. What changes when it is on:
 | `element.tree`, `element.parent` | the document, the parent | `null`, and `parent` throws until `element.update()`, which reads the document |
 | Text, attributes, children of an element | read from the node and its subtree | the same |
 | Shadow roots | not searched | not searched |
-| Iframes | not searched; `selectAll(includeFrames = true)` searches inside each one | the same: the document is read to find the iframes and search inside each one |
+| Iframes | not searched; `selectAll(includeFrames = true)` searches inside each one | the same: with `includeFrames = true`, `selectAll` reads the document as off, for the page's own matches too |
 | Waiting | `select` / `selectAll` retry every 500 ms until the timeout | the same; with no document requested, the browser sends fewer `DOM.*` events, so a busy page may count as idle sooner |
-| A navigation during the lookup | a node gone from the document read counts as no match | an object or context dropped by the navigation counts as no match: `select` tries again |
+| A navigation during the lookup | a node gone from the document read counts as no match | an object or context dropped by the navigation counts as no match (all of them, even if only some matches are gone): `select` tries again |
 | Invalid selector | `CDPException` | `EvaluateException` (the page's `SyntaxError`) |
-| Remote objects held | one per element used, from its first call | one per match, until the page navigates; the array of `selectAll` is released |
+| Remote objects held | one per element used, from its first call | one per match, until the page navigates; the array of `selectAll` is released (one more command, sent with the descriptions) |
 | A page that replaces `document.querySelector` | not affected | the page's own function runs |
 
 Lookups under an element (`element.querySelector`, `element.querySelectorAll`), `find`, `findAll`

@@ -255,7 +255,7 @@ class LookupsInPageTest {
     }
 
     @Test
-    fun querySelectorAll_leavesOutAMatchGoneBeforeItIsDescribed() = runTest(StandardTestDispatcher()) {
+    fun querySelectorAll_findsNothing_whenAMatchIsGoneBeforeItIsDescribed() = runTest(StandardTestDispatcher()) {
         val tab = tab(lookupsInPage = true) {
             when (it.method) {
                 "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
@@ -273,7 +273,8 @@ class LookupsInPageTest {
             }
         }
 
-        assertEquals(listOf("Beta"), tab.querySelectorAll(".item").map { it.text })
+        assertEquals(emptyList(), tab.querySelectorAll(".item"), "the page navigated: none of its old matches")
+        assertTrue("Runtime.releaseObject" in tab.sent)
         tab.close()
     }
 
@@ -374,7 +375,11 @@ class LookupsInPageTest {
 
     @Test
     fun querySelector_findsNothing_whenTheContextIsGone() = runTest(StandardTestDispatcher()) {
-        for (error in listOf("Cannot find context with specified id", "Execution context was destroyed.")) {
+        for (error in listOf(
+            "Cannot find context with specified id",
+            "Execution context was destroyed.",
+            "Inspected target navigated or closed",
+        )) {
             val tab = tab(lookupsInPage = true) {
                 when (it.method) {
                     "Runtime.evaluate" -> Reply.error(error)
@@ -420,13 +425,18 @@ class LookupsInPageTest {
         val listing = tab(lookupsInPage = true) {
             when (it.method) {
                 "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
-                "Runtime.getProperties" -> Reply.ok(arrayOfOne)
-                "DOM.describeNode" -> Reply.ok(item(10, "Alpha"))
-                "Runtime.releaseObject" -> Reply.error("Session closed")
+                "Runtime.getProperties" -> Reply.error("Message is too large")
                 else -> Reply.ok()
             }
         }
-        assertEquals("Session closed", assertFailsWith<dev.kdriver.cdp.CDPException> { listing.querySelectorAll(".item") }.originalMessage)
+        assertEquals(
+            "Message is too large",
+            assertFailsWith<dev.kdriver.cdp.CDPException> { listing.querySelectorAll(".item") }.originalMessage
+        )
+        assertEquals(
+            "array", listing.transport.sent.single { it.method == "Runtime.releaseObject" }.param("objectId"),
+            "the array is released before the error is thrown"
+        )
         listing.close()
 
         val evaluating = tab(lookupsInPage = true) {
@@ -440,21 +450,39 @@ class LookupsInPageTest {
     }
 
     @Test
-    fun selectAllWithFrames_findsTheFramesInTheDocument_andTheMatchesInThePage() = runTest(StandardTestDispatcher()) {
+    fun querySelectorAll_keepsItsMatches_whenTheReleaseOfTheArrayFails() = runTest(StandardTestDispatcher()) {
         val tab = tab(lookupsInPage = true) {
             when (it.method) {
-                "DOM.getDocument" -> Reply.ok(document)
-                "DOM.querySelectorAll" -> Reply.ok("""{"nodeIds":[]}""")
                 "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
                 "Runtime.getProperties" -> Reply.ok(arrayOfOne)
                 "DOM.describeNode" -> Reply.ok(item(10, "Alpha"))
+                "Runtime.releaseObject" -> Reply.error("Session closed")
                 else -> Reply.ok()
             }
         }
 
-        assertEquals(listOf("Alpha"), tab.selectAll(".item", timeout = 1_000, includeFrames = true).map { it.text })
-        assertEquals("iframe", tab.transport.sent.single { it.method == "DOM.querySelectorAll" }.param("selector"))
-        assertTrue("DOM.getDocument" in tab.sent)
+        assertEquals(listOf("Alpha"), tab.querySelectorAll(".item").map { it.text })
+        tab.close()
+    }
+
+    @Test
+    fun selectAllWithFrames_readsTheDocumentAsOff() = runTest(StandardTestDispatcher()) {
+        val tab = tab(lookupsInPage = true) {
+            when (it.method) {
+                "DOM.getDocument" -> Reply.ok(document)
+                "DOM.querySelectorAll" ->
+                    if (it.param("selector") == "iframe") Reply.ok("""{"nodeIds":[]}""") else Reply.ok("""{"nodeIds":[7]}""")
+                else -> Reply.ok()
+            }
+        }
+
+        assertEquals(listOf("Send"), tab.selectAll("#go", timeout = 1_000, includeFrames = true).map { it.text })
+        assertEquals(
+            listOf("iframe", "#go"),
+            tab.transport.sent.filter { it.method == "DOM.querySelectorAll" }.map { it.param("selector") }
+        )
+        assertEquals(1, tab.sent.count { it == "DOM.getDocument" }, "one read for the frames and the page")
+        assertTrue("Runtime.evaluate" !in tab.sent)
         tab.close()
     }
 

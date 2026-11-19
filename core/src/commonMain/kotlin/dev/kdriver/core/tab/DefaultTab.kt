@@ -405,13 +405,14 @@ open class DefaultTab(
         while (true) {
             val items = mutableListOf<Element>()
             if (includeFrames) {
-                // The frames are searched through the document (Element.querySelectorAll reads it anyway), so they
-                // are found there too: with Config.lookupsInPage, describing them in the page would add their
-                // whole content to that read.
+                // Searching inside the frames reads the document (Element.querySelectorAll), so the whole lookup goes
+                // through it, Config.lookupsInPage or not: the frames and the page's own matches come from one read.
                 val frames = onDocument { doc -> querySelectorAllInternal("iframe", null, retried = false, doc) }
                 for (fr in frames) items.addAll(fr.querySelectorAll(trimmedSelector))
+                items.addAll(onDocument { doc -> querySelectorAllInternal(trimmedSelector, null, retried = false, doc) })
+            } else {
+                items.addAll(querySelectorAll(trimmedSelector))
             }
-            items.addAll(querySelectorAll(trimmedSelector))
             items.takeIf { it.isNotEmpty() }?.let { return it }
 
             val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
@@ -466,18 +467,34 @@ open class DefaultTab(
                 " return all.length ? all : null; })()"
         ) ?: return emptyList()
         val arrayId = array.objectId!!
-        val properties = unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true).result }
-            ?: return emptyList()
+        val properties = try {
+            unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true).result } ?: return emptyList()
+        } catch (e: CDPException) {
+            releaseQuietly(arrayId)
+            throw e
+        }
         val matches = properties
             .mapNotNull { property -> property.name.toIntOrNull()?.let { index -> index to property.value } }
             .sortedBy { it.first }
             .mapNotNull { (_, value) -> value?.takeIf { it.objectId != null } }
         return coroutineScope {
             // The array is no longer needed: released while the matches are described, at no extra wait.
-            val release = async { unlessGone { runtime.releaseObject(arrayId) } }
-            val found = matches.map { match -> async { describeMatch(match) } }.awaitAll().filterNotNull()
+            val release = async { releaseQuietly(arrayId) }
+            val described = matches.map { match -> async { describeMatch(match) } }.awaitAll()
             release.await()
-            found
+            // A match gone before it was described means the page navigated during the lookup: no match at all, as
+            // for one lookup, rather than a part of the old page's matches.
+            if (null in described) emptyList() else described.filterNotNull()
+        }
+    }
+
+    // Releases a remote object the lookup no longer needs. A cleanup: its failure never fails the lookup (the page
+    // drops the object at its next navigation anyway).
+    private suspend fun releaseQuietly(objectId: String) {
+        try {
+            runtime.releaseObject(objectId)
+        } catch (_: CDPException) {
+            // Already gone, or the session is closing: nothing to clean up.
         }
     }
 
@@ -930,6 +947,13 @@ open class DefaultTab(
 /**
  * Error texts of the browser for an object, a node or an execution context it no longer knows (a navigation dropped
  * it): "Could not find object with given id", "No node with given id found", "Cannot find context with specified id",
- * "Execution context was destroyed".
+ * "Execution context was destroyed", "Inspected target navigated or closed".
  */
-private val GONE = listOf("could not find", "no node with given id", "cannot find context", "context was destroyed")
+private val GONE = listOf(
+    "could not find object",
+    "could not find node",
+    "no node with given id",
+    "cannot find context",
+    "context was destroyed",
+    "inspected target navigated or closed",
+)
