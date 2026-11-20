@@ -294,7 +294,7 @@ interface Tab : Connection {
      *
      * This method waits for the element to appear in the DOM, retrying every 500 milliseconds until the timeout is reached.
      *
-     * The page runs the selector, and the element has no node id nor tree until [Element.update]: see
+     * The page runs the selector, and the element's node ids and tree are filled on demand: see
      * [querySelector] for how lookups work.
      *
      * @param selector The CSS selector of the element to select.
@@ -332,7 +332,7 @@ interface Tab : Connection {
      *
      * Can also be used to wait for such elements to appear. Optionally includes results from iframes.
      *
-     * The page runs the selector, and the elements have no node id nor tree until [Element.update]: see
+     * The page runs the selector, and the elements' node ids and tree are filled on demand: see
      * [querySelector] for how lookups work. With [includeFrames], `selectAll` reads the whole document instead
      * (searching inside the frames needs it), for the page's own matches too: they then have a node id and a tree.
      *
@@ -414,10 +414,13 @@ interface Tab : Connection {
      * - has its node and subtree: [Element.tag], [Element.text], [Element.textAll], attributes,
      *   [Element.children] and [Element.backendNodeId] read as from a document;
      * - keeps no object of the page: its first call (`click`, `apply`, …) resolves its node, as before;
-     * - has no node id yet: `node.nodeId` and the node ids of its subtree are 0, [Element.parentId] and
-     *   [Element.tree] are null and [Element.parent] throws, until [Element.update] reads the document, which also
-     *   binds it. A lookup under the element ([Element.querySelector], or a [NodeOrElement] passed back here) binds it
-     *   first by itself. These are plain properties, so the first read of one cannot fetch the document on its own.
+     * - gets its node ids and tree on demand: the first read of `node`, [Element.tree], [Element.parentId] or
+     *   [Element.parent] takes them from the document kept by an earlier read ([find], [xpath], a lookup under an
+     *   element, [Element.update]…) while the page has not changed since, with no command; a lookup under the element
+     *   ([Element.querySelector], or a [NodeOrElement] passed back here) binds it first by itself. These are plain
+     *   properties, so their read cannot fetch the document on its own: without such a document, `node.nodeId` and
+     *   the node ids of its subtree are 0, [Element.parentId] and [Element.tree] are null and [Element.parent] throws,
+     *   until [Element.update] reads the document.
      *
      * What else differs from reading the document:
      * - the page's own `document.querySelector` runs: a page that replaces it changes the result;

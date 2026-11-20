@@ -19,11 +19,58 @@ import kotlin.random.Random
  */
 open class DefaultElement(
     val tab: Tab,
-    override var node: DOM.Node,
-    override var tree: DOM.Node? = null,
+    node: DOM.Node,
+    tree: DOM.Node? = null,
 ) : Element {
 
     private val logger = KtorSimpleLogger("Element")
+
+    private var currentNode: DOM.Node = node
+    private var currentTree: DOM.Node? = tree
+
+    // The document epoch the last binding attempt looked at (see [bindFromKeptDocument]).
+    private var bindingCheckedAt: Long = NOT_CHECKED
+
+    /**
+     * The node of this element. For an element found in the page (no node id, no [tree]), the first read after the
+     * document was read, while the page has not changed since, takes the document's node of the same backend node id,
+     * with its node ids, as a lookup on the document gave it.
+     */
+    override var node: DOM.Node
+        get() {
+            bindFromKeptDocument()
+            return currentNode
+        }
+        set(value) {
+            currentNode = value
+            bindingCheckedAt = NOT_CHECKED
+        }
+
+    /** The document this element was read from: for an element found in the page, filled as [node] is. */
+    override var tree: DOM.Node?
+        get() {
+            bindFromKeptDocument()
+            return currentTree
+        }
+        set(value) {
+            currentTree = value
+            bindingCheckedAt = NOT_CHECKED
+        }
+
+    /**
+     * Binds an element found in the page to the document [DefaultTab] keeps from its last read, when it still matches
+     * the page, without any command: node ids, [tree] and [parent] are then those a lookup on the document gave. Each
+     * kept document is looked at once; without one, the element stays as found until [update] or a lookup under it.
+     */
+    private fun bindFromKeptDocument() {
+        if (currentTree != null || currentNode.nodeId != 0) return
+        val (doc, epoch) = (tab as? DefaultTab)?.keptDocument() ?: return
+        if (epoch == bindingCheckedAt) return
+        bindingCheckedAt = epoch
+        val documentNode = doc.filterRecurse { it.backendNodeId == currentNode.backendNodeId } ?: return
+        currentNode = documentNode
+        currentTree = doc
+    }
 
     private var remoteObject: Runtime.RemoteObject? = null
 
@@ -812,6 +859,9 @@ open class DefaultElement(
     private companion object {
         // No node resolved yet: backend node ids are positive.
         const val NO_NODE = Int.MIN_VALUE
+
+        // No kept document looked at yet: epochs are never negative.
+        const val NOT_CHECKED = -1L
 
         // Human-like pauses, in milliseconds (lower bound inclusive, upper bound exclusive).
         const val TRAJECTORY_STEP_DELAY_MIN = 8L

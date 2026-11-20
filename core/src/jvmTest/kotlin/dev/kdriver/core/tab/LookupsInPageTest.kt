@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -702,6 +703,64 @@ class LookupsInPageTest {
         assertEquals("ul", item.parent!!.tag)
         assertEquals(before.children.map { it.node }, item.children.map { it.node })
         assertEquals(1, tab.sent.count { it == "DOM.getDocument" }, "one document read for both")
+        tab.close()
+    }
+
+    @Test
+    fun anElementFoundInThePage_fillsItsNodeIdsTreeAndParent_onFirstRead_fromAKeptDocument() =
+        runTest(StandardTestDispatcher()) {
+            val tab = listTab()
+            val before = tab.onTheDocument("li.item")
+            val item = tab.select("li.item", timeout = 1_000)
+            val sentBefore = tab.sent.size
+
+            assertEquals(before.node, item.node)
+            assertEquals(7, item.node.nodeId)
+            assertEquals(5, item.parentId)
+            assertEquals(before.tree, item.tree)
+            assertEquals("ul", item.parent!!.tag)
+            assertEquals(listOf(8), item.children.map { it.node.nodeId })
+            assertEquals(sentBefore, tab.sent.size, "filled from the kept document, with no command")
+            assertEquals(1, tab.sent.count { it == "DOM.getDocument" })
+            tab.close()
+        }
+
+    @Test
+    fun anElementFoundInThePage_isNotFilledFromADocumentThePageChangedSince() = runTest(StandardTestDispatcher()) {
+        val tab = listTab()
+        tab.onTheDocument("li.item")
+        tab.transport.event("DOM.attributeModified", """{"nodeId":7,"name":"class","value":"busy"}""")
+        runCurrent()
+
+        val item = tab.select("li.item", timeout = 1_000)
+
+        assertEquals(0, item.node.nodeId)
+        assertNull(item.tree)
+        item.update()
+        assertEquals(7, item.node.nodeId, "update() still reads the document")
+        assertEquals(2, tab.sent.count { it == "DOM.getDocument" })
+        tab.close()
+    }
+
+    @Test
+    fun anElementFoundInThePage_whoseNodeTheKeptDocumentLacks_staysAsFound() = runTest(StandardTestDispatcher()) {
+        val tab = tab {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(found("obj-1"))
+                "DOM.describeNode" -> Reply.ok(item(30, "Gone"))
+                "DOM.getDocument" -> Reply.ok(list)
+                "Target.getTargetInfo" -> Reply.ok(ScriptedTab.TARGET_INFO)
+                else -> Reply.ok()
+            }
+        }
+        tab.currentDocument()
+        val gone = tab.select("li", timeout = 1_000)
+
+        assertEquals(0, gone.node.nodeId)
+        assertNull(gone.tree)
+        assertEquals("Gone", gone.text)
+        gone.node = gone.node.copy(nodeName = "P")
+        assertEquals("p", gone.tag, "a node set by hand is kept")
         tab.close()
     }
 

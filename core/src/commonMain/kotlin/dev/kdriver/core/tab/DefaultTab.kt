@@ -751,9 +751,17 @@ open class DefaultTab(
      * @return the root of the document, and whether it is the copy kept from an earlier read.
      */
     internal suspend fun currentDocument(): Pair<DOM.Node, Boolean> {
-        documentSnapshot?.takeIf { it.epoch == documentEpoch }?.let { return it.root to true }
+        keptDocument()?.let { return it.first to true }
         return readDocument() to false
     }
+
+    /**
+     * The document kept from an earlier read while it still matches the page, with the [documentEpoch] it matches,
+     * without reading anything: null when there is none. The properties of an element found in the page take their
+     * node ids and tree from it on their first read ([DefaultElement.node], [DefaultElement.tree]).
+     */
+    internal fun keptDocument(): Pair<DOM.Node, Long>? =
+        documentSnapshot?.takeIf { it.epoch == documentEpoch }?.let { it.root to it.epoch }
 
     private suspend fun readDocument(): DOM.Node {
         val before = documentEpoch

@@ -158,6 +158,21 @@ class LookupsInPageBehaviourTest {
     }
 
     @Test
+    fun anElementFoundInThePage_fillsItsNodeIdsTreeAndParent_onFirstRead_onceTheDocumentWasRead() = onPage {
+        selectAll("p.inner", timeout = 5_000, includeFrames = true) // the frame loaded: the read below stays current
+        val (tree, _) = (this as DefaultTab).currentDocument()
+        val onTheSameRead = querySelector("li[data-rank='3']", NodeOrElement.WrappedNode(tree))!!
+
+        val item = select("li[data-rank='3']", timeout = 5_000)
+
+        assertEquals(onTheSameRead.node, item.node, "node, subtree and node ids of the document read")
+        assertEquals(tree, item.tree)
+        assertEquals(onTheSameRead.parentId, item.parentId)
+        assertEquals("ul", item.parent?.tag)
+        assertEquals(item.node.nodeId, dom.querySelector(tree.nodeId, "li[data-rank='3']").nodeId, "a live node id")
+    }
+
+    @Test
     fun update_givesTheNodeIdsTreeAndParent_theDocumentLookupGives() = onPage {
         selectAll("p.inner", timeout = 5_000, includeFrames = true) // the frame loaded: both reads see the same page
         // The same lookup on the whole document, read first: a later read gives every node a new id, so ids are

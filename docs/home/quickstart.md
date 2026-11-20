@@ -204,7 +204,7 @@ the page is large or keeps changing.
 | Data received | the matches and their subtrees; when they would hold more elements than the whole document (nested matches, a selector matching most of the page), the document is read instead, as before |
 | First call on a found element (`click`, `apply`, …) | resolves the node first (`DOM.resolveNode`), as before: a lookup leaves no object behind in the page |
 | Text, attributes, children, `backendNodeId` | read from the match and its subtree, as before |
-| `element.node.nodeId`, `element.parentId`, `element.tree`, `element.parent` | 0, `null`, `null`, and `parent` throws, until `element.update()` reads the document; a lookup under the element does it by itself |
+| `element.node.nodeId`, `element.parentId`, `element.tree`, `element.parent` | filled on their first read from the document kept by an earlier read (`find`, `xpath`, a lookup under an element, `update`…) while the page has not changed since; otherwise 0, `null`, `null`, and `parent` throws, until `element.update()` reads the document; a lookup under the element binds it by itself |
 | Shadow roots, iframes | not searched (`selectAll(includeFrames = true)` reads the document to search inside each iframe, as before) |
 | Waiting | `select` / `selectAll` retry every 500 ms until the timeout, as before |
 | A navigation during the lookup | an object or context dropped by the navigation counts as no match: `select` tries again |
@@ -214,9 +214,12 @@ the page is large or keeps changing.
 val item = tab.select("li.item")
 item.text            // read from the match
 item.click()         // resolves the element, then clicks it
-item.tree            // null: no document was read
+item.tree            // null: no document was read yet
 item.update()        // reads the document (one DOM.getDocument)
 item.parent?.tag     // "ul"
+
+val other = tab.select("li.other")
+other.parent?.tag    // "ul": the document read above still matches the page, no command sent
 ```
 
 What still differs from reading the whole document:
@@ -226,8 +229,9 @@ What still differs from reading the whole document:
   sends no `DOM.*` mutation events for the page, so a busy page may count as idle sooner, and the DOM
   agent is not enabled: a `tab.dom.disable()` sent by hand then fails, as on a tab that never read it;
 - `element.node.nodeId`, `element.parentId`, `element.tree` and `element.parent` are plain
-  properties: their first read cannot fetch the document by itself, so code that reads them calls
-  `element.update()` first.
+  properties, not suspend functions: their first read fills them from a document kept by an earlier
+  read, but cannot fetch one by itself. When no document was read since the page last changed, code
+  that reads them calls `element.update()` first.
 
 Lookups under an element (`element.querySelector`, `element.querySelectorAll`), `find`, `findAll`
 and `xpath` read the document, as before.
