@@ -225,7 +225,11 @@ What still differs from reading the whole document:
 - each found element holds the remote object of its match until the page navigates (an element read
   from the document held one only after its first call);
 - until something reads the document (`find`, `update`, a lookup under an element…), the browser
-  sends no `DOM.*` mutation events for the page, so a busy page may count as idle sooner.
+  sends no `DOM.*` mutation events for the page, so a busy page may count as idle sooner, and the DOM
+  agent is not enabled: a `tab.dom.disable()` sent by hand then fails, as on a tab that never read it;
+- `element.node.nodeId`, `element.parentId`, `element.tree` and `element.parent` are plain
+  properties: their first read cannot fetch the document by itself, so code that reads them calls
+  `element.update()` first.
 
 Lookups under an element (`element.querySelector`, `element.querySelectorAll`), `find`, `findAll`
 and `xpath` read the document, as before.

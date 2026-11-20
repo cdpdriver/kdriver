@@ -422,7 +422,8 @@ interface Tab : Connection {
      * - each element holds the remote object of its match until the page navigates (an element read from the document
      *   holds one only after its first call);
      * - until something reads the document (a lookup under an element, [find], [Element.update]…), the browser sends
-     *   no `DOM.*` mutation events for the page, so on a busy page the connection may count as idle sooner.
+     *   no `DOM.*` mutation events for the page, so on a busy page the connection may count as idle sooner; the DOM
+     *   agent is not enabled either, so a `DOM.disable` sent by hand then fails, as on a tab that never read it.
      *
      * Unchanged: shadow roots and iframes are not searched; an invalid selector throws the
      * [dev.kdriver.cdp.CDPException] the browser gives `DOM.querySelector` (code -32000, "DOM Error while querying"),
