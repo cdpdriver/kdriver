@@ -1,9 +1,9 @@
 package dev.kdriver.core.browser
 
 import io.ktor.util.logging.*
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -42,20 +42,20 @@ internal object StartedBrowsers {
 
     suspend operator fun contains(browser: Browser): Boolean = mutex.withLock { browser in browsers }
 
-    /** Stops every browser still registered, concurrently, so their grace periods overlap. */
+    /**
+     * Stops every browser still registered, concurrently, so their grace periods overlap.
+     *
+     * A browser that fails to stop is logged and does not keep the others from stopping: each runs in
+     * its own child of a supervisor scope, whose failure goes to a handler rather than to its siblings.
+     */
     internal suspend fun stopAll() {
         val remaining = mutex.withLock { browsers.toList() }
-        coroutineScope {
+        supervisorScope {
             remaining.forEach { browser ->
-                launch {
-                    try {
-                        browser.stop()
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        logger.warn("Could not stop browser ${browser.pid} on exit: ${e.message}")
-                    }
+                val onFailure = CoroutineExceptionHandler { _, e ->
+                    logger.warn("Could not stop browser ${browser.pid} on exit: ${e.message}")
                 }
+                launch(onFailure) { browser.stop() }
             }
         }
     }

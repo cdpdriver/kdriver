@@ -23,17 +23,18 @@ actual abstract class Process {
         private set
 
     actual fun isAlive(): Boolean {
-        if (exitCode != null) return false
-        val handle = processHandle ?: return false
-        val code = memScoped {
-            val c = alloc<DWORDVar>()
-            if (GetExitCodeProcess(handle, c.ptr) == 0) return false
-            c.value
+        // Null once the exit was seen (the handle is closed then), without a handle, or if unreadable.
+        val code = if (exitCode == null) processHandle?.let { readExitCode(it) } else null
+        if (code != null && code != STILL_ACTIVE) {
+            exitCode = code
+            releaseHandle()
         }
-        if (code == STILL_ACTIVE) return true
-        exitCode = code
-        releaseHandle()
-        return false
+        return code == STILL_ACTIVE
+    }
+
+    private fun readExitCode(handle: HANDLE): DWORD? = memScoped {
+        val c = alloc<DWORDVar>()
+        if (GetExitCodeProcess(handle, c.ptr) == 0) null else c.value
     }
 
     /**

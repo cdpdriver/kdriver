@@ -6,10 +6,14 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+/**
+ * The temporary profile is deleted by this platform's own recursive delete once the browser stops.
+ */
 class TemporaryProfileTest {
 
+    /** The profile is gone after `stop()`; stopping or cleaning up again is harmless. */
     @Test
-    fun stop_deletesTheTemporaryProfile() = runBlocking {
+    fun stopDeletesTheTemporaryProfile() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val profile = browser.config.userDataDir
         assertTrue(SystemFileSystem.exists(profile), "the browser runs on a temporary profile")
