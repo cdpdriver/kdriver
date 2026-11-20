@@ -497,6 +497,45 @@ class LookupsInPageTest {
     }
 
     @Test
+    fun aLookupCancelledWhileThePageEvaluates_stillReleasesItsObjects() = runTest(StandardTestDispatcher()) {
+        val tab = tab {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(found("obj-1"), latency = 1_000)
+                else -> Reply.ok()
+            }
+        }
+
+        val lookup = launch { tab.querySelector("#go") }
+        advanceTimeBy(100)
+        lookup.cancel()
+        advanceUntilIdle()
+
+        assertTrue(lookup.isCancelled)
+        assertEquals(
+            tab.transport.sent.single { it.method == "Runtime.evaluate" }.param("objectGroup"),
+            tab.transport.sent.single { it.method == "Runtime.releaseObjectGroup" }.param("objectGroup"),
+            "the page may still run an evaluation cut in flight",
+        )
+        tab.close()
+    }
+
+    @Test
+    fun aLookupThatFindsNothing_sendsNoRelease() = runTest(StandardTestDispatcher()) {
+        val tab = tab {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(nothing)
+                else -> Reply.ok()
+            }
+        }
+
+        assertNull(tab.querySelector("#go"))
+        assertEquals(emptyList(), tab.querySelectorAll("#go"))
+
+        assertTrue("Runtime.releaseObjectGroup" !in tab.sent)
+        tab.close()
+    }
+
+    @Test
     fun anyOtherProtocolError_isThrown() = runTest(StandardTestDispatcher()) {
         val describing = tab {
             when (it.method) {

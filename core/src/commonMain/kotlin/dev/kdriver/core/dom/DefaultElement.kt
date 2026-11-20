@@ -32,9 +32,9 @@ open class DefaultElement(
     private var bindingCheckedAt: Long = NOT_CHECKED
 
     /**
-     * The node of this element. For an element found in the page (no node id, no [tree]), the first read after the
-     * document was read, while the page has not changed since, takes the document's node of the same backend node id,
-     * with its node ids, as a lookup on the document gave it.
+     * The node of this element. For an element found in the page (no [tree]), the first read after the document was
+     * read, while the page has not changed since, takes the document's node of the same backend node id, with its node
+     * ids and parent id, as a lookup on the document gave it, when it holds the same subtree.
      */
     override var node: DOM.Node
         get() {
@@ -59,17 +59,21 @@ open class DefaultElement(
 
     /**
      * Binds an element found in the page to the document [DefaultTab] keeps from its last read, when it still matches
-     * the page, without any command: node ids, [tree] and [parent] are then those a lookup on the document gave. Each
-     * kept document is looked at once; without one, the element stays as found until [update] or a lookup under it.
+     * the page, without any command: node ids, [tree] and [parent] are then those a lookup on the document gave. The
+     * document's node is taken only when it holds the same subtree as the one found (ids aside), so a read never
+     * changes what the element shows. Each kept document is looked at once; without one, the element stays as found
+     * until [update] or a lookup under it.
      */
     private fun bindFromKeptDocument() {
-        if (currentTree != null || currentNode.nodeId != 0) return
-        val (doc, epoch) = (tab as? DefaultTab)?.keptDocument() ?: return
-        if (epoch == bindingCheckedAt) return
-        bindingCheckedAt = epoch
-        val documentNode = doc.filterRecurse { it.backendNodeId == currentNode.backendNodeId } ?: return
+        if (currentTree != null) return
+        val kept = (tab as? DefaultTab)?.keptDocument() ?: return
+        if (kept.epoch == bindingCheckedAt) return
+        bindingCheckedAt = kept.epoch
+        val found = currentNode
+        val documentNode = kept.nodeOf(found.backendNodeId) ?: return
+        if (documentNode.withoutIds() != found.withoutIds()) return
+        currentTree = kept.root
         currentNode = documentNode
-        currentTree = doc
     }
 
     private var remoteObject: Runtime.RemoteObject? = null

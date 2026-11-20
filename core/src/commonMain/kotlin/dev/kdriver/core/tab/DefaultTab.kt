@@ -413,7 +413,8 @@ open class DefaultTab(
             val items = mutableListOf<Element>()
             if (includeFrames) {
                 // Searching inside the frames reads the document (Element.querySelectorAll), so the whole lookup goes
-                // through it: the frames and the page's own matches come from one read.
+                // through it, as before: the frames and the page's own matches share the kept read while the page
+                // does not change.
                 for (fr in querySelectorAllInDocument("iframe")) items.addAll(fr.querySelectorAll(trimmedSelector))
                 items.addAll(querySelectorAllInDocument(trimmedSelector))
             } else {
@@ -473,7 +474,8 @@ open class DefaultTab(
      * own size. The script uses no global of the page but `document.querySelectorAll` and `getElementsByTagName`.
      */
     private suspend fun querySelectorAllInPage(selector: String): List<Element> = inLookupGroup { group ->
-        val found = evaluateLookup(
+        val found = evaluateInGroup(
+            group,
             "(() => { const all = document.querySelectorAll(${jsStringLiteral(selector)});" +
                 " if (!all.length) return null;" +
                 " const most = document.getElementsByTagName('*').length; const matches = []; let described = 0;" +
@@ -482,10 +484,8 @@ open class DefaultTab(
                 " if (described > most) return 'document'; matches[i] = all[i]; }" +
                 " return matches; })()",
             protocolMethod = "DOM.querySelectorAll",
-            objectGroup = group.name,
         ) ?: return@inLookupGroup emptyList()
         val arrayId = found.objectId ?: return@inLookupGroup querySelectorAllInDocument(selector)
-        group.holdsObjects = true
         val properties = unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true) }
             ?: return@inLookupGroup emptyList()
         val matches = properties.result
@@ -501,12 +501,11 @@ open class DefaultTab(
      * release of the object, sent together), one otherwise.
      */
     private suspend fun querySelectorInPage(selector: String): Element? = inLookupGroup { group ->
-        val match = evaluateLookup(
+        val match = evaluateInGroup(
+            group,
             "document.querySelector(${jsStringLiteral(selector)})",
             protocolMethod = "DOM.querySelector",
-            objectGroup = group.name,
         )?.objectId ?: return@inLookupGroup null
-        group.holdsObjects = true
         describeAndRelease(group, listOf(match))?.single()?.let { DefaultElement(this, it) }
     }
 
@@ -544,6 +543,30 @@ open class DefaultTab(
                 }
             }
         }
+    }
+
+    /**
+     * [evaluateLookup] with the objects it creates in [group]. The group counts as holding objects from the moment the
+     * evaluation is sent, so that one cut while in flight (cancelled, timed out, connection lost), which the page may
+     * still run, is released all the same; once the page answered, only when it returned an object.
+     */
+    private suspend fun evaluateInGroup(
+        group: LookupGroup,
+        expression: String,
+        protocolMethod: String,
+    ): Runtime.RemoteObject? {
+        group.holdsObjects = true
+        val found = try {
+            evaluateLookup(expression, protocolMethod, objectGroup = group.name)
+        } catch (e: CDPException) {
+            group.holdsObjects = false // answered with an error: nothing was created
+            throw e
+        } catch (e: EvaluateException) {
+            group.holdsObjects = false // the script threw: nothing was returned
+            throw e
+        }
+        group.holdsObjects = found?.objectId != null
+        return found
     }
 
     /**
@@ -736,7 +759,24 @@ open class DefaultTab(
      * The last whole document read for a lookup (`DOM.getDocument(depth = -1, pierce = true)`), and the
      * [documentEpoch] it still matches the page at.
      */
-    private class DocumentSnapshot(val root: DOM.Node, val epoch: Long)
+    internal class DocumentSnapshot(val root: DOM.Node, val epoch: Long) {
+
+        private val byBackendNodeId: Map<Int, DOM.Node> by lazy {
+            buildMap {
+                fun index(node: DOM.Node) {
+                    for (child in node.children.orEmpty()) {
+                        if (child.backendNodeId !in this) put(child.backendNodeId, child)
+                        child.shadowRoots?.firstOrNull()?.let { index(it) }
+                        index(child)
+                    }
+                }
+                index(root)
+            }
+        }
+
+        /** The node of [backendNodeId] in this document, as `root.filterRecurse` finds it, from an index built once. */
+        fun nodeOf(backendNodeId: Int): DOM.Node? = byBackendNodeId[backendNodeId]
+    }
 
     @Volatile
     private var documentSnapshot: DocumentSnapshot? = null
@@ -751,17 +791,16 @@ open class DefaultTab(
      * @return the root of the document, and whether it is the copy kept from an earlier read.
      */
     internal suspend fun currentDocument(): Pair<DOM.Node, Boolean> {
-        keptDocument()?.let { return it.first to true }
+        keptDocument()?.let { return it.root to true }
         return readDocument() to false
     }
 
     /**
-     * The document kept from an earlier read while it still matches the page, with the [documentEpoch] it matches,
-     * without reading anything: null when there is none. The properties of an element found in the page take their
-     * node ids and tree from it on their first read ([DefaultElement.node], [DefaultElement.tree]).
+     * The document kept from an earlier read while it still matches the page, without reading anything: null when
+     * there is none. The properties of an element found in the page take their node ids and tree from it on their
+     * first read ([DefaultElement.node], [DefaultElement.tree]).
      */
-    internal fun keptDocument(): Pair<DOM.Node, Long>? =
-        documentSnapshot?.takeIf { it.epoch == documentEpoch }?.let { it.root to it.epoch }
+    internal fun keptDocument(): DocumentSnapshot? = documentSnapshot?.takeIf { it.epoch == documentEpoch }
 
     private suspend fun readDocument(): DOM.Node {
         val before = documentEpoch
