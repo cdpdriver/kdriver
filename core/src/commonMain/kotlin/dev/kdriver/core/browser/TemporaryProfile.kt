@@ -40,5 +40,7 @@ internal suspend fun deleteTemporaryProfile(
     return false
 }
 
-private const val PROFILE_DELETE_ATTEMPTS = 10
+// About 5 seconds in all: a profile Chrome has only just written (a browser stopped right after its
+// start) can stay locked on Windows for more than 2 seconds.
+private const val PROFILE_DELETE_ATTEMPTS = 26
 private const val PROFILE_DELETE_RETRY_DELAY_MILLIS = 200L

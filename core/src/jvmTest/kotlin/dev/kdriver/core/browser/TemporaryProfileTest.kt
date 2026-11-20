@@ -10,6 +10,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -42,7 +43,7 @@ import kotlin.time.measureTime
  * The temporary profile kdriver creates when no `userDataDir` is given must be deleted once the
  * browser is stopped; a profile the caller supplied must never be.
  */
-@OptIn(ExperimentalPathApi::class)
+@OptIn(ExperimentalPathApi::class, ExperimentalCoroutinesApi::class)
 class TemporaryProfileTest {
 
     @Test
@@ -167,7 +168,8 @@ class TemporaryProfileTest {
         // The caller never got this instance, so create() had to stop it.
         val browser = assertNotNull(launched)
         assertTrue(browser.stopped, "the browser process must be stopped")
-        assertFalse(File(browser.config.userDataDir.toString()).exists(), "and its profile deleted")
+        val profile = File(browser.config.userDataDir.toString())
+        assertFalse(profile.exists(), "and its profile deleted, left: ${profile.walk().take(20).toList()}")
         assertFalse(browser in StartedBrowsers)
     }
 
@@ -392,13 +394,13 @@ class TemporaryProfileTest {
     }
 
     @Test
-    fun deleteTemporaryProfile_triesTenTimesOverAboutTwoSecondsByDefault() = runTest {
+    fun deleteTemporaryProfile_triesForAboutFiveSecondsByDefault() = runTest {
         var attempts = 0
 
         assertFalse(deleteTemporaryProfile(Path("kdriver_profile")) { attempts++; false })
 
-        assertEquals(10, attempts)
-        assertEquals(1_800, currentTime)
+        assertEquals(26, attempts)
+        assertEquals(5_000, currentTime)
     }
 
     @Test
