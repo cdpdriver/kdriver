@@ -264,7 +264,9 @@ class LookupsInPageTest {
         assertEquals(listOf("Runtime.evaluate"), tab.sent)
         assertEquals(
             "(() => { const all = Array.from(document.querySelectorAll(\".item\"));" +
-                " return all.length ? all : null; })()",
+                " if (!all.length) return null;" +
+                " const described = all.reduce((sum, e) => sum + 1 + e.getElementsByTagName('*').length, 0);" +
+                " return described > document.getElementsByTagName('*').length ? 'document' : all; })()",
             tab.transport.sent.single().param("expression"),
         )
         tab.close()
@@ -302,10 +304,16 @@ class LookupsInPageTest {
         assertEquals("array", tab.transport.sent.single { it.method == "Runtime.getProperties" }.param("objectId"))
         assertEquals("true", tab.transport.sent.single { it.method == "Runtime.getProperties" }.param("ownProperties"))
         assertEquals(100, testScheduler.currentTime, "the descriptions are sent together, one round trip for all")
+        val group = tab.transport.sent.single { it.method == "Runtime.evaluate" }.param("objectGroup")!!
+        assertTrue(group.startsWith("kdriver-lookup-"), group)
         assertEquals(
-            "array", tab.transport.sent.single { it.method == "Runtime.releaseObject" }.param("objectId"),
-            "the array is released while the matches are described"
+            listOf("DOM.describeNode", "DOM.describeNode", "DOM.describeNode", "Runtime.releaseObjectGroup"),
+            tab.sent.dropWhile { it != "DOM.describeNode" },
+            "the objects of the lookup are released in the same round trip, after the descriptions",
         )
+        val released = tab.transport.sent.single { it.method == "Runtime.releaseObjectGroup" }
+        assertEquals(group, released.param("objectGroup"))
+        assertEquals(listOf(null, null, null), found.map { it.objectId }, "no object of the page is kept")
         assertTrue("DOM.getDocument" !in tab.sent)
         tab.close()
     }
@@ -324,13 +332,13 @@ class LookupsInPageTest {
                 "DOM.describeNode" ->
                     if (it.param("objectId") == "li-0") Reply.error("Could not find object with given id")
                     else Reply.ok(item(20, "Beta"))
-                "Runtime.releaseObject" -> Reply.error("Could not find object with given id")
+                "Runtime.releaseObjectGroup" -> Reply.error("Could not find object with given id")
                 else -> Reply.ok()
             }
         }
 
         assertEquals(emptyList(), tab.querySelectorAll(".item"), "the page navigated: none of its old matches")
-        assertTrue("Runtime.releaseObject" in tab.sent)
+        assertTrue("Runtime.releaseObjectGroup" in tab.sent)
         tab.close()
     }
 
@@ -376,7 +384,7 @@ class LookupsInPageTest {
         }
 
         assertEquals(emptyList(), tab.querySelectorAll(".item"))
-        assertEquals(listOf("Runtime.evaluate", "Runtime.getProperties"), tab.sent)
+        assertEquals(listOf("Runtime.evaluate", "Runtime.getProperties", "Runtime.releaseObjectGroup"), tab.sent)
         tab.close()
     }
 
@@ -427,7 +435,7 @@ class LookupsInPageTest {
     }
 
     @Test
-    fun aDescriptionThatFails_isThrown_stopsTheOthers_andTheArrayIsStillReleased() = runTest(StandardTestDispatcher()) {
+    fun aDescriptionThatFails_isThrown_onceEveryReplyIsRead() = runTest(StandardTestDispatcher()) {
         val tab = tab {
             when (it.method) {
                 "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
@@ -440,19 +448,19 @@ class LookupsInPageTest {
                 "DOM.describeNode" ->
                     if (it.param("objectId") == "li-0") Reply.error("Message is too large", latency = 10)
                     else Reply.ok(item(20, "Beta"), latency = 1_000)
-                "Runtime.releaseObject" -> Reply.ok(latency = 50)
+                "Runtime.releaseObjectGroup" -> Reply.ok(latency = 50)
                 else -> Reply.ok()
             }
         }
 
         assertFailsWith<CDPException> { tab.querySelectorAll(".item") }
-        assertEquals("array", tab.transport.sent.single { it.method == "Runtime.releaseObject" }.param("objectId"))
-        assertEquals(50, testScheduler.currentTime, "the release was awaited, the other description was not")
+        assertTrue("Runtime.releaseObjectGroup" in tab.sent)
+        assertEquals(1_000, testScheduler.currentTime, "every reply was read before the error was thrown")
         tab.close()
     }
 
     @Test
-    fun aLookupCancelledWhileTheArrayIsRead_stillReleasesIt() = runTest(StandardTestDispatcher()) {
+    fun aLookupCancelledWhileTheArrayIsRead_stillReleasesItsObjects() = runTest(StandardTestDispatcher()) {
         val tab = tab {
             when (it.method) {
                 "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
@@ -467,7 +475,10 @@ class LookupsInPageTest {
         advanceUntilIdle()
 
         assertTrue(lookup.isCancelled)
-        assertEquals("array", tab.transport.sent.single { it.method == "Runtime.releaseObject" }.param("objectId"))
+        assertEquals(
+            tab.transport.sent.single { it.method == "Runtime.evaluate" }.param("objectGroup"),
+            tab.transport.sent.single { it.method == "Runtime.releaseObjectGroup" }.param("objectGroup"),
+        )
         tab.close()
     }
 
@@ -497,10 +508,7 @@ class LookupsInPageTest {
             "Message is too large",
             assertFailsWith<CDPException> { listing.querySelectorAll(".item") }.originalMessage
         )
-        assertEquals(
-            "array", listing.transport.sent.single { it.method == "Runtime.releaseObject" }.param("objectId"),
-            "the array is released before the error is thrown"
-        )
+        assertTrue("Runtime.releaseObjectGroup" in listing.sent, "the objects are released before the error is thrown")
         listing.close()
 
         val evaluating = tab {
@@ -520,7 +528,7 @@ class LookupsInPageTest {
                 "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
                 "Runtime.getProperties" -> Reply.ok(arrayOfOne)
                 "DOM.describeNode" -> Reply.ok(item(10, "Alpha"))
-                "Runtime.releaseObject" -> Reply.error("Session closed")
+                "Runtime.releaseObjectGroup" -> Reply.error("Session closed")
                 else -> Reply.ok()
             }
         }
@@ -730,6 +738,72 @@ class LookupsInPageTest {
 
         assertEquals(7, wrapper.node.nodeId)
         assertTrue("DOM.resolveNode" in tab.sent, "Element.update resolves the object, as it always did")
+        tab.close()
+    }
+
+    @Test
+    fun querySelectorAll_readsTheDocument_whenTheMatchesOutweighIt() = runTest(StandardTestDispatcher()) {
+        val tab = tab {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok("""{"result":{"type":"string","value":"document"}}""")
+                "DOM.getDocument" -> Reply.ok(list)
+                "DOM.querySelectorAll" -> Reply.ok("""{"nodeIds":[5,7]}""")
+                else -> Reply.ok()
+            }
+        }
+
+        val found = tab.querySelectorAll("ul, li")
+
+        assertEquals(listOf(5, 7), found.map { it.node.nodeId }, "read from the document, as before")
+        assertEquals(listOf(1, 1), found.map { it.tree?.nodeId })
+        assertEquals(listOf("Runtime.evaluate", "DOM.getDocument", "DOM.querySelectorAll"), tab.sent)
+        tab.close()
+    }
+
+    @Test
+    fun anElementOfQuerySelectorAll_resolvesItsNodeAtItsFirstCall() = runTest(StandardTestDispatcher()) {
+        val tab = tab {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
+                "Runtime.getProperties" -> Reply.ok(arrayOfOne)
+                "DOM.describeNode" -> Reply.ok(item(10, "Alpha"))
+                "DOM.resolveNode" -> Reply.ok("""{"object":{"type":"object","subtype":"node","objectId":"obj-2"}}""")
+                "Runtime.callFunctionOn" -> Reply.ok(valueReply("null"))
+                else -> Reply.ok()
+            }
+        }
+
+        tab.querySelectorAll(".item").single().click()
+
+        assertEquals("10", tab.transport.sent.single { it.method == "DOM.resolveNode" }.param("backendNodeId"))
+        assertEquals(listOf("obj-2"), tab.transport.objectIdsOf())
+        tab.close()
+    }
+
+    @Test
+    fun aSyntaxErrorThrownByAScriptOfThePage_isAnEvaluateException() = runTest(StandardTestDispatcher()) {
+        val tab = tab {
+            when (it.method) {
+                "Runtime.evaluate" -> Reply.ok(
+                    """{"result":{"type":"object","subtype":"error","objectId":"err"},"exceptionDetails":""" +
+                        """{"exceptionId":1,"text":"Uncaught","lineNumber":0,"columnNumber":9,"exception":""" +
+                        """{"type":"object","subtype":"error","className":"SyntaxError",""" +
+                        """"description":"SyntaxError: thrown by the page"}}}"""
+                )
+                else -> Reply.ok()
+            }
+        }
+
+        assertFailsWith<EvaluateException> { tab.querySelector("#go") }
+        tab.close()
+    }
+
+    @Test
+    fun aStringAnsweredForQuerySelector_isNoMatch() = runTest(StandardTestDispatcher()) {
+        val tab = tab { Reply.ok("""{"result":{"type":"string","value":"document"}}""") }
+
+        assertNull(tab.querySelector("#go"))
+        assertEquals(listOf("Runtime.evaluate"), tab.sent)
         tab.close()
     }
 

@@ -17,6 +17,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * On a real page, the lookups the page runs (`select`, `selectAll`, `querySelector`, `querySelectorAll` without a
@@ -108,6 +109,27 @@ class LookupsInPageBehaviourTest {
         select("#panel", timeout = 5_000).click()
 
         assertEquals("open", select("#panel", timeout = 5_000)["data-state"])
+    }
+
+    @Test
+    fun anElementOfSelectAll_keepsNoObject_andCanBeClicked() = onPage {
+        rawEvaluate("document.getElementById('label').onclick = (e) => e.target.textContent = 'Hit'")
+        val label = selectAll("#label", timeout = 5_000).single()
+
+        assertNull(label.objectId, "the objects of the lookup were released")
+        label.click()
+
+        assertEquals("Hit", select("#label", timeout = 5_000).text)
+    }
+
+    @Test
+    fun selectAll_readsTheDocument_whenTheMatchesOutweighIt() = onPage {
+        val before = allOnTheDocument("html, body").map { it.seen() }
+
+        val outer = selectAll("html, body", timeout = 5_000)
+
+        assertEquals(before, outer.map { it.seen() })
+        assertTrue(outer.all { it.node.nodeId != 0 && it.tree != null }, "read from the document, as before")
     }
 
     @Test

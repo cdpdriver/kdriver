@@ -1,11 +1,13 @@
 package dev.kdriver.core.tab
 
 import dev.kdriver.cdp.CDPException
+import dev.kdriver.cdp.CommandMode
 import dev.kdriver.cdp.Serialization
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.cdp.domain.Input
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.connection.DefaultConnection
+import dev.kdriver.core.connection.PendingCommand
 import dev.kdriver.core.dom.DefaultElement
 import dev.kdriver.core.dom.Element
 import dev.kdriver.core.dom.NodeOrElement
@@ -19,7 +21,6 @@ import io.ktor.util.logging.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -32,10 +33,12 @@ import kotlinx.io.files.SystemFileSystem
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.concurrent.Volatile
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.abs
+import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
@@ -460,55 +463,81 @@ open class DefaultTab(
 
     /**
      * `document.querySelectorAll(selector)` run by the page, each match then described with its subtree: see
-     * [Tab.querySelector]. One round trip when nothing matches (the page answers `null`), otherwise three: the
-     * evaluation, the array's own properties, and the descriptions, sent together.
+     * [Tab.querySelectorAll]. One round trip when nothing matches (the page answers `null`), otherwise three: the
+     * evaluation, the array's own properties, then every description and the release of the objects, sent together.
+     *
+     * The array and the matches live in an object group of their own, released once the matches are described, so a
+     * lookup leaves no object behind in the page: an element found here resolves its node at its first call, as an
+     * element read from the document does. When the matches' subtrees hold more elements than the whole document
+     * (nested matches, a selector matching most of the page), the page answers `"document"` instead, and the lookup
+     * reads the document, which is then the smaller transfer.
      */
     private suspend fun querySelectorAllInPage(selector: String): List<Element> {
-        val array = evaluateLookup(
+        val group = "kdriver-lookup-${Random.nextLong().toULong().toString(16)}"
+        val found = evaluateLookup(
             "(() => { const all = Array.from(document.querySelectorAll(${jsStringLiteral(selector)}));" +
-                " return all.length ? all : null; })()",
+                " if (!all.length) return null;" +
+                " const described = all.reduce((sum, e) => sum + 1 + e.getElementsByTagName('*').length, 0);" +
+                " return described > document.getElementsByTagName('*').length ? 'document' : all; })()",
             protocolMethod = "DOM.querySelectorAll",
+            objectGroup = group,
         ) ?: return emptyList()
-        val arrayId = array.objectId!!
-        // The array is a cleanup to release on every path, cancellation included (NonCancellable); while the matches
-        // are described, in parallel with them, at no extra wait. Gone with the page, it needs no release.
-        var release: Deferred<Unit>? = null
-        var gone = false
+        val arrayId = found.objectId ?: return querySelectorAllInDocument(selector)
+        // From here the group holds objects: it is released on every path, cancellation included (NonCancellable),
+        // and on the main path in the same round trip as the descriptions, sent after them.
+        var release: PendingCommand? = null
         try {
-            val properties = unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true).result }
-            if (properties == null) {
-                gone = true
-                return emptyList()
-            }
-            val matches = properties
+            val properties = unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true) }
+                ?: return emptyList()
+            val matches = properties.result
                 .mapNotNull { property -> property.name.toIntOrNull()?.let { index -> index to property.value } }
                 .sortedBy { it.first }
-                .mapNotNull { (_, value) -> value?.takeIf { it.objectId != null } }
-            return coroutineScope {
-                release = async(NonCancellable) { releaseQuietly(arrayId) }
-                val described = matches.map { match -> async { describeMatch(match) } }.awaitAll()
-                // A match gone before it was described means the page navigated during the lookup: no match at all,
-                // as for one lookup, rather than a part of the old page's matches.
-                if (null in described) emptyList() else described.filterNotNull()
+                .mapNotNull { (_, value) -> value?.objectId }
+            val describing = matches.map { objectId ->
+                sendCommand("DOM.describeNode", describeParameter(objectId), CommandMode.DEFAULT)
             }
+            release = sendCommand("Runtime.releaseObjectGroup", releaseParameter(group), CommandMode.DEFAULT)
+            val described = describing.map { pending -> awaitDescription(pending) }
+            // A match gone before it was described means the page navigated during the lookup: no match at all, as
+            // for one lookup, rather than a part of the old page's matches. Any other error is thrown, once every
+            // reply has been read.
+            described.firstNotNullOfOrNull { it.exceptionOrNull() }?.let { throw it }
+            val nodes = described.map { it.getOrNull() }
+            return if (null in nodes) emptyList() else nodes.filterNotNull().map { DefaultElement(this, it) }
         } finally {
-            val pending = release
+            val sent = release
             withContext(NonCancellable) {
-                if (pending != null) pending.await() else if (!gone) releaseQuietly(arrayId)
+                try {
+                    if (sent != null) sent.await() else runtime.releaseObjectGroup(group)
+                } catch (_: Exception) {
+                    // A cleanup: already gone with the page, timed out, or the connection is closing. Under
+                    // NonCancellable, a CancellationException here is the command's own timeout, never the caller's.
+                }
             }
         }
     }
 
-    // Releases a remote object the lookup no longer needs. A cleanup, always run under NonCancellable, so a
-    // CancellationException here is the command's own timeout, never the caller's cancellation: no failure of it ever
-    // fails the lookup (the page drops the object at its next navigation anyway).
-    private suspend fun releaseQuietly(objectId: String) {
+    // The node of a description sent by querySelectorAllInPage: a success holding null when the match is gone, a
+    // failure holding any other error, so that every reply is read before one is thrown.
+    private suspend fun awaitDescription(pending: PendingCommand): Result<DOM.Node?> =
         try {
-            runtime.releaseObject(objectId)
-        } catch (_: Exception) {
-            // Already gone, timed out, or the connection is closing: nothing to clean up.
+            Result.success(
+                unlessGone { pending.await() }
+                    ?.let { Serialization.json.decodeFromJsonElement<DOM.DescribeNodeReturn>(it).node }
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-    }
+
+    private fun describeParameter(objectId: String): JsonElement =
+        Serialization.json.encodeToJsonElement(
+            DOM.DescribeNodeParameter(objectId = objectId, depth = -1, pierce = true)
+        )
+
+    private fun releaseParameter(group: String): JsonElement =
+        Serialization.json.encodeToJsonElement(Runtime.ReleaseObjectGroupParameter(objectGroup = group))
 
     /**
      * `document.querySelector(selector)` run by the page, the match then described with its subtree: see
@@ -518,12 +547,13 @@ open class DefaultTab(
         val match = evaluateLookup(
             "document.querySelector(${jsStringLiteral(selector)})",
             protocolMethod = "DOM.querySelector",
-        ) ?: return null
+        )?.takeIf { it.objectId != null } ?: return null
         return describeMatch(match)
     }
 
     /**
-     * Evaluates [expression] in the page and returns the object it yields, or null when it yields no object (`null`).
+     * Evaluates [expression] in the page and returns the object or string it yields, or null when it yields neither
+     * (`null`). The objects it creates go to [objectGroup] when given.
      *
      * An invalid selector makes the page throw a `SyntaxError`: it is thrown as the error the browser gives
      * [protocolMethod] (`DOM.querySelector` or `DOM.querySelectorAll`) for that selector, a [CDPException] with code
@@ -531,8 +561,13 @@ open class DefaultTab(
      * did. Any other exception of the page (a page that replaced `document.querySelector`) is thrown as an
      * [EvaluateException].
      */
-    private suspend fun evaluateLookup(expression: String, protocolMethod: String): Runtime.RemoteObject? {
-        val evaluated = unlessGone { runtime.evaluate(expression = expression) } ?: return null
+    private suspend fun evaluateLookup(
+        expression: String,
+        protocolMethod: String,
+        objectGroup: String? = null,
+    ): Runtime.RemoteObject? {
+        val evaluated = unlessGone { runtime.evaluate(expression = expression, objectGroup = objectGroup) }
+            ?: return null
         evaluated.exceptionDetails?.let { details ->
             if (details.isSyntaxError()) {
                 disableDomAgent()
@@ -540,12 +575,12 @@ open class DefaultTab(
             }
             throw EvaluateException(details)
         }
-        return evaluated.result.takeIf { it.objectId != null }
+        return evaluated.result.takeIf { it.objectId != null || it.type == "string" }
     }
 
-    // The `SyntaxError` (a DOMException) the page throws for a selector it cannot parse.
+    // The `SyntaxError` the page throws for a selector it cannot parse: a DOMException, not an error a script threw.
     private fun Runtime.ExceptionDetails.isSyntaxError(): Boolean =
-        exception?.description?.startsWith("SyntaxError") == true
+        exception?.className == "DOMException" && exception?.description?.startsWith("SyntaxError") == true
 
     /**
      * The element of [match], a remote object the page returned: its node and subtree (`DOM.describeNode`, depth -1,
