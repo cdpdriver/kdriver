@@ -6,6 +6,7 @@ import dev.kdriver.cdp.CDPException
 import dev.kdriver.core.ScriptedTab
 import dev.kdriver.core.ScriptedTransport
 import dev.kdriver.core.ScriptedTransport.Reply
+import dev.kdriver.core.dom.DefaultElement
 import dev.kdriver.core.dom.Element
 import dev.kdriver.core.dom.NodeOrElement
 import dev.kdriver.core.exceptions.EvaluateException
@@ -759,7 +760,7 @@ class LookupsInPageTest {
         assertEquals(0, gone.node.nodeId)
         assertNull(gone.tree)
         assertEquals("Gone", gone.text)
-        gone.node = gone.node.copy(nodeName = "P")
+        (gone as DefaultElement).node = gone.node.copy(nodeName = "P")
         assertEquals("p", gone.tag, "a node set by hand is kept")
         tab.close()
     }
