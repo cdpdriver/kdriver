@@ -385,8 +385,7 @@ interface Tab : Connection {
      * Without [node], the page runs `document.querySelectorAll` and the matches are described together, in document
      * order: one round trip when nothing matches, three otherwise (the evaluation, the list of matches, then every
      * description at once, with the release of the objects the lookup created). The elements are as for
-     * [querySelector], except that they keep no object of the page: each resolves its node at its first call, as an
-     * element read from the document does. When the matches' subtrees would hold more elements than the whole
+     * [querySelector]. When the matches' subtrees would hold more elements than the whole
      * document (nested matches, a selector matching most of the page), the document is read instead, as before, and
      * the elements then have their node ids and tree.
      *
@@ -407,14 +406,14 @@ interface Tab : Connection {
      *
      * Without [node] (and in [select], [selectAll] and [querySelectorAll] without it), the page runs the selector:
      * `document.querySelector` is evaluated (`Runtime.evaluate`, the selector entering the script only as a JSON string
-     * literal), then only the match is described, with its subtree (`DOM.describeNode`, depth -1, piercing). The
-     * whole document is never read: two small round trips when something matches, one otherwise, whatever the size of
-     * the page.
+     * literal), then only the match is described, with its subtree (`DOM.describeNode`, depth -1, piercing), and the
+     * object the page returned is released in the same round trip. The whole document is never read: two small round
+     * trips when something matches, one otherwise, whatever the size of the page.
      *
      * The element found:
      * - has its node and subtree: [Element.tag], [Element.text], [Element.textAll], attributes,
      *   [Element.children] and [Element.backendNodeId] read as from a document;
-     * - keeps the object the page returned, so its first call (`click`, `apply`, …) needs no `DOM.resolveNode`;
+     * - keeps no object of the page: its first call (`click`, `apply`, …) resolves its node, as before;
      * - has no node id yet: `node.nodeId` and the node ids of its subtree are 0, [Element.parentId] and
      *   [Element.tree] are null and [Element.parent] throws, until [Element.update] reads the document, which also
      *   binds it. A lookup under the element ([Element.querySelector], or a [NodeOrElement] passed back here) binds it
@@ -422,8 +421,6 @@ interface Tab : Connection {
      *
      * What else differs from reading the document:
      * - the page's own `document.querySelector` runs: a page that replaces it changes the result;
-     * - the element found by [select] or [querySelector] holds the remote object of its match until the page
-     *   navigates (an element read from the document held one only after its first call);
      * - until something reads the document (a lookup under an element, [find], [Element.update]…), the browser sends
      *   no `DOM.*` mutation events for the page, so on a busy page the connection may count as idle sooner; the DOM
      *   agent is not enabled either, so a `DOM.disable` sent by hand then fails, as on a tab that never read it.

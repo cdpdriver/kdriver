@@ -63,7 +63,10 @@ class SettledLookupTest {
         assertEquals("https://example.test/", tab.targetInfo!!.url, "the target info is still refreshed")
         val sentAtStart = transport.methodsSentAt(0)
         assertEquals(setOf("Runtime.evaluate", "Target.getTargetInfo"), sentAtStart)
-        assertEquals(listOf("DOM.describeNode"), transport.sent.filter { it.atMillis > 0 }.map { it.method })
+        assertEquals(
+            listOf("DOM.describeNode", "Runtime.releaseObjectGroup"),
+            transport.sent.filter { it.atMillis > 0 }.map { it.method },
+        )
         assertEquals(200, testScheduler.currentTime, "two round trips (refresh ∥ evaluation, then describe), not three")
         tab.close()
     }

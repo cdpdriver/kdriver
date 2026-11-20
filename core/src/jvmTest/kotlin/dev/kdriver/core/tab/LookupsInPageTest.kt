@@ -82,9 +82,21 @@ class LookupsInPageTest {
         assertEquals("go", element["id"])
         assertEquals(0, element.node.nodeId, "no node id: no document was requested")
         assertNull(element.tree)
-        assertEquals(listOf("Runtime.evaluate", "DOM.describeNode"), tab.sent.filter { it != "Target.getTargetInfo" })
+        assertEquals(
+            listOf("Runtime.evaluate", "DOM.describeNode", "Runtime.releaseObjectGroup"),
+            tab.sent.filter { it != "Target.getTargetInfo" },
+        )
         val evaluate = tab.transport.sent.first { it.method == "Runtime.evaluate" }
         assertEquals("document.querySelector(\"#go\")", evaluate.param("expression"))
+        val group = evaluate.param("objectGroup")!!
+        assertTrue(group.startsWith("kdriver-lookup-"), group)
+        val release = tab.transport.sent.single { it.method == "Runtime.releaseObjectGroup" }
+        assertEquals(group, release.param("objectGroup"))
+        assertEquals(
+            tab.transport.sent.single { it.method == "DOM.describeNode" }.atMillis,
+            tab.transport.sent.single { it.method == "Runtime.releaseObjectGroup" }.atMillis,
+            "the release goes with the description, after it",
+        )
         val describe = tab.transport.sent.first { it.method == "DOM.describeNode" }
         assertEquals("obj-1", describe.param("objectId"))
         assertEquals("-1", describe.param("depth"))
@@ -93,44 +105,41 @@ class LookupsInPageTest {
     }
 
     @Test
-    fun select_firstCallUsesTheObjectOfTheLookup_withoutResolvingTheNode() = runTest(StandardTestDispatcher()) {
+    fun select_leavesNoObject_andTheFirstCallResolvesTheNode_asBefore() = runTest(StandardTestDispatcher()) {
         val tab = tab {
             when (it.method) {
                 "Runtime.evaluate" -> Reply.ok(found("obj-1"))
                 "DOM.describeNode" -> Reply.ok(button)
+                "DOM.resolveNode" -> Reply.ok("""{"object":{"type":"object","objectId":"obj-2"}}""")
                 "Runtime.callFunctionOn" -> Reply.ok(valueReply("null"))
                 "Target.getTargetInfo" -> Reply.ok(ScriptedTab.TARGET_INFO)
                 else -> Reply.ok()
             }
         }
 
-        tab.select("#go", timeout = 1_000).click()
+        val element = tab.select("#go", timeout = 1_000)
+        assertNull(element.objectId)
+        element.click()
 
-        assertEquals(listOf("obj-1"), tab.transport.objectIdsOf())
-        assertTrue("DOM.resolveNode" !in tab.sent)
+        assertEquals(listOf("obj-2"), tab.transport.objectIdsOf())
+        assertEquals("70", tab.transport.sent.single { it.method == "DOM.resolveNode" }.param("backendNodeId"))
         tab.close()
     }
 
     @Test
-    fun select_resolvesTheNodeAgain_whenTheObjectOfTheLookupIsStale() = runTest(StandardTestDispatcher()) {
-        var calls = 0
+    fun theReleaseOfTheObjects_holdsTheLookupTwoSecondsAtMost() = runTest(StandardTestDispatcher()) {
         val tab = tab {
             when (it.method) {
                 "Runtime.evaluate" -> Reply.ok(found("obj-1"))
                 "DOM.describeNode" -> Reply.ok(button)
-                "Runtime.callFunctionOn" ->
-                    if (calls++ == 0) Reply.error("Could not find object with given id")
-                    else Reply.ok(valueReply("null"))
-                "DOM.resolveNode" -> Reply.ok("""{"object":{"type":"object","objectId":"obj-2"}}""")
-                "Target.getTargetInfo" -> Reply.ok(ScriptedTab.TARGET_INFO)
+                "Runtime.releaseObjectGroup" -> Reply.ok(latency = 60_000)
                 else -> Reply.ok()
             }
         }
 
-        tab.select("#go", timeout = 1_000).click()
+        assertEquals("button", tab.querySelector("#go")?.tag)
 
-        assertEquals(listOf("obj-1", "obj-2"), tab.transport.objectIdsOf())
-        assertEquals("70", tab.transport.sent.single { it.method == "DOM.resolveNode" }.param("backendNodeId"))
+        assertEquals(2_000, testScheduler.currentTime)
         tab.close()
     }
 
@@ -263,10 +272,13 @@ class LookupsInPageTest {
 
         assertEquals(listOf("Runtime.evaluate"), tab.sent)
         assertEquals(
-            "(() => { const all = Array.from(document.querySelectorAll(\".item\"));" +
+            "(() => { const all = document.querySelectorAll(\".item\");" +
                 " if (!all.length) return null;" +
-                " const described = all.reduce((sum, e) => sum + 1 + e.getElementsByTagName('*').length, 0);" +
-                " return described > document.getElementsByTagName('*').length ? 'document' : all; })()",
+                " const most = document.getElementsByTagName('*').length; const matches = []; let described = 0;" +
+                " for (let i = 0; i < all.length; i++) {" +
+                " described += 1 + all[i].getElementsByTagName('*').length;" +
+                " if (described > most) return 'document'; matches[i] = all[i]; }" +
+                " return matches; })()",
             tab.transport.sent.single().param("expression"),
         )
         tab.close()
@@ -616,7 +628,7 @@ class LookupsInPageTest {
         assertEquals(1, button.tree?.nodeId)
         assertEquals("7", tab.transport.sent.single { it.method == "DOM.querySelector" }.param("nodeId"))
         assertEquals(8, text!!.node.nodeId)
-        assertEquals("obj-1", button.objectId, "the object of the lookup is kept, not resolved again")
+        assertNull(button.objectId, "bound without resolving its object")
         tab.querySelector("*", NodeOrElement.WrappedElement(button))
         assertEquals(1, tab.sent.count { it == "DOM.getDocument" }, "a bound element is not bound again")
         assertEquals(2, tab.sent.count { it == "DOM.querySelector" })

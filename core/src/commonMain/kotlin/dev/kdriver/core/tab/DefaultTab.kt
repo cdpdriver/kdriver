@@ -27,6 +27,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -466,59 +467,104 @@ open class DefaultTab(
      * [Tab.querySelectorAll]. One round trip when nothing matches (the page answers `null`), otherwise three: the
      * evaluation, the array's own properties, then every description and the release of the objects, sent together.
      *
-     * The array and the matches live in an object group of their own, released once the matches are described, so a
-     * lookup leaves no object behind in the page: an element found here resolves its node at its first call, as an
-     * element read from the document does. When the matches' subtrees hold more elements than the whole document
-     * (nested matches, a selector matching most of the page), the page answers `"document"` instead, and the lookup
-     * reads the document, which is then the smaller transfer.
+     * When the matches' subtrees hold more elements than the whole document (nested matches, a selector matching most
+     * of the page), the page answers `"document"` instead, and the lookup reads the document, which is then the smaller
+     * transfer. The count stops as soon as it passes the document's, so the page never walks much more than once its
+     * own size. The script uses no global of the page but `document.querySelectorAll` and `getElementsByTagName`.
      */
-    private suspend fun querySelectorAllInPage(selector: String): List<Element> {
-        val group = "kdriver-lookup-${Random.nextLong().toULong().toString(16)}"
+    private suspend fun querySelectorAllInPage(selector: String): List<Element> = inLookupGroup { group ->
         val found = evaluateLookup(
-            "(() => { const all = Array.from(document.querySelectorAll(${jsStringLiteral(selector)}));" +
+            "(() => { const all = document.querySelectorAll(${jsStringLiteral(selector)});" +
                 " if (!all.length) return null;" +
-                " const described = all.reduce((sum, e) => sum + 1 + e.getElementsByTagName('*').length, 0);" +
-                " return described > document.getElementsByTagName('*').length ? 'document' : all; })()",
+                " const most = document.getElementsByTagName('*').length; const matches = []; let described = 0;" +
+                " for (let i = 0; i < all.length; i++) {" +
+                " described += 1 + all[i].getElementsByTagName('*').length;" +
+                " if (described > most) return 'document'; matches[i] = all[i]; }" +
+                " return matches; })()",
             protocolMethod = "DOM.querySelectorAll",
-            objectGroup = group,
-        ) ?: return emptyList()
-        val arrayId = found.objectId ?: return querySelectorAllInDocument(selector)
-        // From here the group holds objects: it is released on every path, cancellation included (NonCancellable),
-        // and on the main path in the same round trip as the descriptions, sent after them.
+            objectGroup = group.name,
+        ) ?: return@inLookupGroup emptyList()
+        val arrayId = found.objectId ?: return@inLookupGroup querySelectorAllInDocument(selector)
+        group.holdsObjects = true
+        val properties = unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true) }
+            ?: return@inLookupGroup emptyList()
+        val matches = properties.result
+            .mapNotNull { property -> property.name.toIntOrNull()?.let { index -> index to property.value } }
+            .sortedBy { it.first }
+            .mapNotNull { (_, value) -> value?.objectId }
+        describeAndRelease(group, matches)?.map { DefaultElement(this, it) } ?: emptyList()
+    }
+
+    /**
+     * `document.querySelector(selector)` run by the page, the match then described with its subtree: see
+     * [Tab.querySelector]. Two round trips when something matches (the evaluation, then the description and the
+     * release of the object, sent together), one otherwise.
+     */
+    private suspend fun querySelectorInPage(selector: String): Element? = inLookupGroup { group ->
+        val match = evaluateLookup(
+            "document.querySelector(${jsStringLiteral(selector)})",
+            protocolMethod = "DOM.querySelector",
+            objectGroup = group.name,
+        )?.objectId ?: return@inLookupGroup null
+        group.holdsObjects = true
+        describeAndRelease(group, listOf(match))?.single()?.let { DefaultElement(this, it) }
+    }
+
+    /**
+     * The objects an in-page lookup creates in the page (the match, or the array and its matches), all in one group
+     * named after the lookup, and the release of that group once it is sent.
+     */
+    private class LookupGroup(val name: String) {
+        var holdsObjects = false
         var release: PendingCommand? = null
+    }
+
+    /**
+     * Runs [lookup] with a [LookupGroup] of its own, then releases the group, so that a lookup leaves no object behind
+     * in the page, on every path, cancellation included: an element found in the page resolves its node at its first
+     * call, as an element read from the document does. The release is a cleanup: it runs under NonCancellable, waits
+     * [LOOKUP_RELEASE_WAIT] at most, and none of its failures fails the lookup (the page drops the objects at its next
+     * navigation anyway).
+     */
+    private suspend fun <T> inLookupGroup(lookup: suspend (LookupGroup) -> T): T {
+        val group = LookupGroup("kdriver-lookup-${Random.nextLong().toULong().toString(16)}")
         try {
-            val properties = unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true) }
-                ?: return emptyList()
-            val matches = properties.result
-                .mapNotNull { property -> property.name.toIntOrNull()?.let { index -> index to property.value } }
-                .sortedBy { it.first }
-                .mapNotNull { (_, value) -> value?.objectId }
-            val describing = matches.map { objectId ->
-                sendCommand("DOM.describeNode", describeParameter(objectId), CommandMode.DEFAULT)
-            }
-            release = sendCommand("Runtime.releaseObjectGroup", releaseParameter(group), CommandMode.DEFAULT)
-            val described = describing.map { pending -> awaitDescription(pending) }
-            // A match gone before it was described means the page navigated during the lookup: no match at all, as
-            // for one lookup, rather than a part of the old page's matches. Any other error is thrown, once every
-            // reply has been read.
-            described.firstNotNullOfOrNull { it.exceptionOrNull() }?.let { throw it }
-            val nodes = described.map { it.getOrNull() }
-            return if (null in nodes) emptyList() else nodes.filterNotNull().map { DefaultElement(this, it) }
+            return lookup(group)
         } finally {
-            val sent = release
-            withContext(NonCancellable) {
-                try {
-                    if (sent != null) sent.await() else runtime.releaseObjectGroup(group)
-                } catch (_: Exception) {
-                    // A cleanup: already gone with the page, timed out, or the connection is closing. Under
-                    // NonCancellable, a CancellationException here is the command's own timeout, never the caller's.
+            if (group.holdsObjects) withContext(NonCancellable) {
+                withTimeoutOrNull(LOOKUP_RELEASE_WAIT) {
+                    try {
+                        val sent = group.release
+                        if (sent != null) sent.await() else runtime.releaseObjectGroup(group.name)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        // Already gone with the page, or the connection is closing: nothing left to release.
+                    }
                 }
             }
         }
     }
 
-    // The node of a description sent by querySelectorAllInPage: a success holding null when the match is gone, a
-    // failure holding any other error, so that every reply is read before one is thrown.
+    /**
+     * Describes [objectIds] with their subtrees (`DOM.describeNode`, depth -1, piercing), then releases [group]: the
+     * descriptions and the release are sent one after the other, so the browser runs them in that order, in one round
+     * trip. Null when a match is gone before it was described (the page navigated during the lookup: no match at all,
+     * rather than a part of the old page's); any other error is thrown, once every reply has been read.
+     */
+    private suspend fun describeAndRelease(group: LookupGroup, objectIds: List<String>): List<DOM.Node>? {
+        val describing = objectIds.map { objectId ->
+            sendCommand("DOM.describeNode", describeParameter(objectId), CommandMode.DEFAULT)
+        }
+        group.release = sendCommand("Runtime.releaseObjectGroup", releaseParameter(group.name), CommandMode.DEFAULT)
+        val described = describing.map { pending -> awaitDescription(pending) }
+        described.firstNotNullOfOrNull { it.exceptionOrNull() }?.let { throw it }
+        val nodes = described.map { it.getOrNull() }
+        return if (null in nodes) null else nodes.filterNotNull()
+    }
+
+    // The node of a description sent by describeAndRelease: a success holding null when the match is gone, a failure
+    // holding any other error, so that every reply is read before one is thrown.
     private suspend fun awaitDescription(pending: PendingCommand): Result<DOM.Node?> =
         try {
             Result.success(
@@ -538,18 +584,6 @@ open class DefaultTab(
 
     private fun releaseParameter(group: String): JsonElement =
         Serialization.json.encodeToJsonElement(Runtime.ReleaseObjectGroupParameter(objectGroup = group))
-
-    /**
-     * `document.querySelector(selector)` run by the page, the match then described with its subtree: see
-     * [Tab.querySelector]. Two round trips when something matches, one otherwise.
-     */
-    private suspend fun querySelectorInPage(selector: String): Element? {
-        val match = evaluateLookup(
-            "document.querySelector(${jsStringLiteral(selector)})",
-            protocolMethod = "DOM.querySelector",
-        )?.takeIf { it.objectId != null } ?: return null
-        return describeMatch(match)
-    }
 
     /**
      * Evaluates [expression] in the page and returns the object or string it yields, or null when it yields neither
@@ -581,17 +615,6 @@ open class DefaultTab(
     // The `SyntaxError` the page throws for a selector it cannot parse: a DOMException, not an error a script threw.
     private fun Runtime.ExceptionDetails.isSyntaxError(): Boolean =
         exception?.className == "DOMException" && exception?.description?.startsWith("SyntaxError") == true
-
-    /**
-     * The element of [match], a remote object the page returned: its node and subtree (`DOM.describeNode`, depth -1,
-     * piercing), with [match] kept so its first call needs no `DOM.resolveNode`. Null when the browser no longer knows
-     * the object (the page navigated in between): the match is gone, and `select` tries again as for no match.
-     */
-    private suspend fun describeMatch(match: Runtime.RemoteObject): Element? {
-        val node = unlessGone { dom.describeNode(objectId = match.objectId, depth = -1, pierce = true).node }
-            ?: return null
-        return DefaultElement(this, node).also { it.keepRemoteObject(match) }
-    }
 
     /**
      * Runs [command] of an in-page lookup, or returns null when the browser no longer knows what it refers to: the
@@ -1032,6 +1055,9 @@ private val GONE = listOf(
     "cannot find context",
     "context was destroyed",
 )
+
+/** How long the release of the objects of an in-page lookup may hold the lookup, at most, in milliseconds. */
+private const val LOOKUP_RELEASE_WAIT = 2_000L
 
 /** The code and message Chrome answers `DOM.querySelector(All)` with for a selector it cannot parse. */
 private const val INVALID_SELECTOR_CODE = -32000

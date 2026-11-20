@@ -199,10 +199,10 @@ the page is large or keeps changing.
 
 | What | How |
 | --- | --- |
-| Commands for `select` / `querySelector` | `Runtime.evaluate`, then `DOM.describeNode` of the match (one round trip when nothing matches) |
+| Commands for `select` / `querySelector` | `Runtime.evaluate`, then `DOM.describeNode` of the match with the release of the object the lookup created (one round trip when nothing matches) |
 | Commands for `selectAll` / `querySelectorAll` | one `Runtime.evaluate` when nothing matches; otherwise also `Runtime.getProperties`, then every `DOM.describeNode` sent together, with the release of the objects the lookup created |
 | Data received | the matches and their subtrees; when they would hold more elements than the whole document (nested matches, a selector matching most of the page), the document is read instead, as before |
-| First call on a found element (`click`, `apply`, …) | `select` / `querySelector`: uses the object the page returned, no `DOM.resolveNode`; `selectAll` / `querySelectorAll`: resolves the node first, as before |
+| First call on a found element (`click`, `apply`, …) | resolves the node first (`DOM.resolveNode`), as before: a lookup leaves no object behind in the page |
 | Text, attributes, children, `backendNodeId` | read from the match and its subtree, as before |
 | `element.node.nodeId`, `element.parentId`, `element.tree`, `element.parent` | 0, `null`, `null`, and `parent` throws, until `element.update()` reads the document; a lookup under the element does it by itself |
 | Shadow roots, iframes | not searched (`selectAll(includeFrames = true)` reads the document to search inside each iframe, as before) |
@@ -213,7 +213,7 @@ the page is large or keeps changing.
 ```kotlin
 val item = tab.select("li.item")
 item.text            // read from the match
-item.click()         // no extra command to resolve the element
+item.click()         // resolves the element, then clicks it
 item.tree            // null: no document was read
 item.update()        // reads the document (one DOM.getDocument)
 item.parent?.tag     // "ul"
@@ -222,8 +222,6 @@ item.parent?.tag     // "ul"
 What still differs from reading the whole document:
 
 - the page's own `document.querySelector` runs, so a page that replaces it changes the result;
-- the element found by `select` or `querySelector` holds the remote object of its match until the
-  page navigates (an element read from the document held one only after its first call);
 - until something reads the document (`find`, `update`, a lookup under an element…), the browser
   sends no `DOM.*` mutation events for the page, so a busy page may count as idle sooner, and the DOM
   agent is not enabled: a `tab.dom.disable()` sent by hand then fails, as on a tab that never read it;

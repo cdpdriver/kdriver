@@ -54,7 +54,7 @@ class LookupsInPageBehaviourTest {
 
         assertEquals(before.seen(), item.seen())
         assertEquals(listOf("li", "Beta", "Beta", "class, data-rank"), item.seen().take(4))
-        assertNotNull(item.objectId, "the element keeps the object the page returned")
+        assertNull(item.objectId, "the lookup left no object in the page")
     }
 
     @Test

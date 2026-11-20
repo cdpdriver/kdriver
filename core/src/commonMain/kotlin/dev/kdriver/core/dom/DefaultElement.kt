@@ -91,15 +91,6 @@ open class DefaultElement(
         get() = node.attributes?.chunked(2)?.map { it.first() } ?: emptyList()
 
     /**
-     * Keeps [found], the remote object a lookup in the page already returned for [node], so that the first call on this
-     * element needs no `DOM.resolveNode`. Calls fall back on resolving the node again when the browser rejects it.
-     */
-    internal fun keepRemoteObject(found: Runtime.RemoteObject) {
-        remoteObject = found
-        remoteObjectBackendNodeId = node.backendNodeId
-    }
-
-    /**
      * Binds an element found in the page (no node id, no [tree]) to the whole document, as [update] does, without
      * resolving its object again: [node] becomes the document's node of the same backend node id, with its node ids,
      * and [tree] the document. Used before a lookup under this element, which queries it by node id.
