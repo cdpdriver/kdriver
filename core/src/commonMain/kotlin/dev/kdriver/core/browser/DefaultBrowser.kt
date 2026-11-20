@@ -148,14 +148,13 @@ open class DefaultBrowser(
             val instance = factory(browserScope, config)
             // start() registers the browser with StartedBrowsers, whose shutdown hook stops it and
             // deletes its temporary profile if the host process exits without calling stop().
-            var started = false
             try {
                 instance.start()
-                started = true
-            } finally {
+            } catch (e: Throwable) {
                 // On failure the caller never gets this instance, so it could never stop the browser
                 // it launched.
-                if (!started) withContext(NonCancellable) { instance.stop() }
+                withContext(NonCancellable) { instance.stop() }
+                throw e
             }
             return instance
         }
@@ -312,11 +311,11 @@ open class DefaultBrowser(
             if (!config.usesCustomDataDir && config.createdTemporaryProfile) {
                 temporaryProfile = config.userDataDir
             }
-            var launched: Process? = null
-            try {
-                launched = startProcess(exe, params)
-            } finally {
-                if (launched == null) withContext(NonCancellable) { cleanupTemporaryProfile() }
+            val launched = try {
+                startProcess(exe, params)
+            } catch (e: Throwable) {
+                withContext(NonCancellable) { cleanupTemporaryProfile() }
+                throw e
             }
             process = launched
             temporaryProfileUser = launched
@@ -398,20 +397,18 @@ open class DefaultBrowser(
         temporaryProfile = null
         temporaryProfileUser = null
         StartedBrowsers.unregister(this)
-        var restarted: DefaultBrowser? = null
-        try {
-            restarted = relaunch(config.copy().apply {
+        val restarted = try {
+            relaunch(config.copy().apply {
                 // The host and port start() assigned to the dead process: the new browser gets its own.
                 // Kept, they would make it connect to that dead port instead of launching a browser.
                 host = null
                 port = null
             })
-        } finally {
-            if (restarted == null) {
-                // Nothing runs on the profile anymore: this browser's process is dead and the new one failed.
-                temporaryProfile = inherited
-                withContext(NonCancellable) { cleanupTemporaryProfile() }
-            }
+        } catch (e: Throwable) {
+            // Nothing runs on the profile anymore: this browser's process is dead and the new one failed.
+            temporaryProfile = inherited
+            withContext(NonCancellable) { cleanupTemporaryProfile() }
+            throw e
         }
         if (inherited != null) restarted.adoptTemporaryProfile(inherited)
         return restarted

@@ -12,6 +12,7 @@ import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.currentTime
@@ -195,6 +196,39 @@ class TemporaryProfileTest {
             browser.stop()
         }
         assertFalse(profile.exists(), "the new browser deletes it when it stops")
+    }
+
+    @Test
+    fun start_afterTheProcessDied_keepsACustomUserDataDirOnRelaunch() = runBlocking {
+        val custom = createTempDirectory(prefix = "kdriver_custom_test_")
+        try {
+            val browser = createBrowser(this, userDataDir = Path(custom.toString()), headless = true, sandbox = false)
+            killFromOutside(browser)
+
+            val restarted = browser.start()
+            try {
+                assertNotSame(browser, restarted)
+                assertEquals(browser.config.userDataDir, restarted.config.userDataDir)
+            } finally {
+                restarted.stop()
+                browser.stop()
+            }
+            assertTrue(custom.exists(), "a userDataDir given by the caller must never be deleted")
+        } finally {
+            deleteTemporaryProfile(Path(custom.toString()))
+        }
+    }
+
+    @Test
+    fun stop_onABrowserThatNeverStartedDoesNothing() = runBlocking {
+        val scope = CoroutineScope(coroutineContext + SupervisorJob())
+        val browser = DefaultBrowser(scope, Config(headless = true, sandbox = false))
+
+        browser.stop()
+        browser.cleanupTemporaryProfile()
+
+        assertTrue(browser.stopped)
+        assertFalse(browser in StartedBrowsers)
     }
 
     @Test
