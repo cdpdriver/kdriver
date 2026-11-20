@@ -418,7 +418,8 @@ open class DefaultBrowser(
     }
 
     /** Launches the browser that replaces this one in [restart]; overridden by tests to make it fail. */
-    internal open suspend fun relaunch(config: Config): DefaultBrowser = create(coroutineScope, config, ::DefaultBrowser)
+    internal open suspend fun relaunch(config: Config): DefaultBrowser =
+        create(coroutineScope, config, ::DefaultBrowser)
 
     private suspend fun adoptTemporaryProfile(profile: Path) = temporaryProfileMutex.withLock {
         temporaryProfile = profile

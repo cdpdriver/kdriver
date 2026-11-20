@@ -407,7 +407,7 @@ class TemporaryProfileTest {
         val unused = Config(browserExecutablePath = Path("unused"))
         val failing = object : DefaultBrowser(scope, unused) {
             override suspend fun stop() {
-                throw IllegalStateException("cannot stop")
+                error("cannot stop")
             }
         }
         val stopped = mutableListOf<Browser>()
