@@ -21,15 +21,17 @@ internal expect fun deleteRecursively(path: Path): Boolean
  * (on Windows by a child process that is still winding down, or by an antivirus scanning it), so a
  * single attempt is not enough.
  *
+ * @param delete one attempt, [deleteRecursively] outside of tests.
  * @return true if the profile is gone.
  */
 internal suspend fun deleteTemporaryProfile(
     path: Path,
     attempts: Int = PROFILE_DELETE_ATTEMPTS,
     retryDelayMillis: Long = PROFILE_DELETE_RETRY_DELAY_MILLIS,
+    delete: (Path) -> Boolean = ::deleteRecursively,
 ): Boolean {
     repeat(attempts) { attempt ->
-        if (deleteRecursively(path)) return true
+        if (delete(path)) return true
         if (attempt < attempts - 1) delay(retryDelayMillis)
     }
     return false

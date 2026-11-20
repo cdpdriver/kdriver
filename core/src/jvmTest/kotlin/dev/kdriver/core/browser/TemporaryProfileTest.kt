@@ -1,18 +1,35 @@
 package dev.kdriver.core.browser
 
+import dev.kdriver.cdp.domain.browser
+import io.ktor.util.logging.Logger
+import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.currentTime
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.files.Path
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 import kotlin.io.path.createTempDirectory
+import kotlin.io.path.createTempFile
 import kotlin.io.path.deleteRecursively
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.measureTime
 
 /**
  * The temporary profile kdriver creates when no `userDataDir` is given must be deleted once the
@@ -69,16 +86,167 @@ class TemporaryProfileTest {
 
     @Test
     fun cleanup_keepsTheProfileWhileTheBrowserStillRuns() = runBlocking {
-        val browser = createBrowser(this, headless = true, sandbox = false)
+        val browser = createBrowser(this, headless = true, sandbox = false) as DefaultBrowser
         val profile = File(browser.config.userDataDir.toString())
+        val logger = mockk<Logger>(relaxed = true)
+        browser.logger = logger
+        browser.profileReleaseTimeoutMillis = 300
         try {
             // Not stopped: the browser keeps writing to its profile, which must not be deleted under it.
-            browser.cleanupTemporaryProfile()
+            val waited = measureTime { browser.cleanupTemporaryProfile() }
+
             assertTrue(profile.isDirectory, "a running browser's profile must be kept")
+            assertTrue(waited >= 300.milliseconds, "it waits for the process to exit first, waited $waited")
+            verify { logger.warn(match<String> { "is still running" in it && profile.path in it }) }
         } finally {
             browser.stop()
         }
         assertFalse(profile.exists(), "stop() deletes it once the browser is gone")
+    }
+
+    @Test
+    fun stop_keepsATemporaryProfileInheritedThroughCopy() = runBlocking {
+        val config = Config(headless = true, sandbox = false)
+        // Reading it creates the temporary profile on this config: the browser's own copy inherits it.
+        val profile = File(config.userDataDir.toString())
+        try {
+            val browser = createBrowser(this, config)
+            assertEquals(config.userDataDir, browser.config.userDataDir, "the browser runs on the inherited profile")
+            assertFalse(browser.config.createdTemporaryProfile)
+
+            browser.stop()
+
+            assertTrue(profile.isDirectory, "a profile the browser did not create must not be deleted")
+            assertFalse(browser in StartedBrowsers)
+        } finally {
+            deleteTemporaryProfile(Path(profile.path))
+        }
+    }
+
+    @Test
+    fun start_deletesTheProfileWhenTheProcessCannotBeLaunched() = runBlocking {
+        // An existing file that is not an executable: launching it fails on every platform.
+        val notABrowser = createTempFile(prefix = "kdriver_not_a_browser_", suffix = ".txt")
+        notABrowser.writeText("not a browser")
+        try {
+            val browser = DefaultBrowser(this, Config(browserExecutablePath = Path(notABrowser.toString())))
+
+            assertFailsWith<IOException> { browser.start() }
+
+            val profile = File(browser.config.userDataDir.toString())
+            assertTrue(profile.name.startsWith("kdriver_"), "the start created a temporary profile")
+            assertFalse(profile.exists(), "a profile no browser ever ran on is deleted at once")
+            assertFalse(browser in StartedBrowsers)
+        } finally {
+            Files.deleteIfExists(notABrowser)
+        }
+    }
+
+    @Test
+    fun create_stopsTheBrowserItLaunchedWhenTheStartFailsAfterTheLaunch() = runBlocking {
+        var launched: DefaultBrowser? = null
+        val failure = assertFailsWith<IllegalStateException> {
+            DefaultBrowser.create(this, Config(headless = true, sandbox = false)) { scope, config ->
+                object : DefaultBrowser(scope, config) {
+                    override suspend fun start(): Browser {
+                        super.start()
+                        error("target discovery failed")
+                    }
+                }.also { launched = it }
+            }
+        }
+        assertEquals("target discovery failed", failure.message)
+
+        // The caller never got this instance, so create() had to stop it.
+        val browser = assertNotNull(launched)
+        assertTrue(browser.stopped, "the browser process must be stopped")
+        assertFalse(File(browser.config.userDataDir.toString()).exists(), "and its profile deleted")
+        assertFalse(browser in StartedBrowsers)
+    }
+
+    @Test
+    fun start_afterTheProcessDied_relaunchesOnTheSameProfileAndHandsItsDeletionOver() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val profile = File(browser.config.userDataDir.toString())
+        killFromOutside(browser)
+
+        val restarted = browser.start()
+        try {
+            assertNotSame(browser, restarted)
+            assertFalse(restarted.stopped, "a new browser process runs")
+            assertEquals(browser.config.userDataDir, restarted.config.userDataDir, "on the same profile")
+            assertNotNull(restarted.pid, "it launched a process, rather than connecting to the dead one's port")
+            assertFalse(browser in StartedBrowsers, "the dead browser is no longer stopped on exit")
+            assertTrue(restarted in StartedBrowsers)
+
+            browser.cleanupTemporaryProfile()
+            assertTrue(profile.isDirectory, "the dead browser no longer deletes the profile the new one runs on")
+        } finally {
+            restarted.stop()
+            browser.stop()
+        }
+        assertFalse(profile.exists(), "the new browser deletes it when it stops")
+    }
+
+    @Test
+    fun stop_afterTheProcessDied_stillDeletesTheProfile() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val profile = File(browser.config.userDataDir.toString())
+        killFromOutside(browser)
+
+        // Nothing answers the graceful close anymore: that must not keep stop() from cleaning up.
+        browser.stop()
+
+        assertFalse(profile.exists(), "a crashed browser's profile is deleted by stop() too")
+        assertFalse(browser in StartedBrowsers)
+    }
+
+    @Test
+    fun start_afterTheProcessDied_deletesTheProfileWhenTheRelaunchFails() = runBlocking {
+        val browser = DefaultBrowser.create(this, Config(headless = true, sandbox = false)) { scope, config ->
+            object : DefaultBrowser(scope, config) {
+                override suspend fun relaunch(config: Config): DefaultBrowser = throw IOException("no browser")
+            }
+        }
+        val profile = File(browser.config.userDataDir.toString())
+        try {
+            killFromOutside(browser)
+
+            assertFailsWith<IOException> { browser.start() }
+
+            assertFalse(profile.exists(), "nothing runs on the profile anymore: it is deleted")
+            assertFalse(browser in StartedBrowsers)
+        } finally {
+            browser.stop()
+        }
+    }
+
+    @Test
+    fun stop_whenTheProfileCannotBeDeleted_keepsTheBrowserForTheExitHook() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false) as DefaultBrowser
+        val profile = File(browser.config.userDataDir.toString())
+        val logger = mockk<Logger>(relaxed = true)
+        browser.logger = logger
+        var attempts = 0
+        browser.deleteProfile = {
+            attempts++
+            false
+        }
+
+        browser.stop()
+
+        assertTrue(browser.stopped)
+        assertEquals(1, attempts)
+        assertTrue(profile.isDirectory, "a profile that could not be deleted stays on disk")
+        verify { logger.warn(match<String> { "Could not delete temporary profile" in it && profile.path in it }) }
+        assertTrue(browser in StartedBrowsers, "the exit hook must try again")
+
+        // The lock is gone by the time the host process exits.
+        browser.deleteProfile = { deleteTemporaryProfile(it) }
+        StartedBrowsers.stopAll()
+
+        assertFalse(profile.exists(), "the exit hook deletes it")
+        assertFalse(browser in StartedBrowsers)
     }
 
     @Test
@@ -161,6 +329,85 @@ class TemporaryProfileTest {
         val missing = createTempDirectory(prefix = "kdriver_missing_test_").also { Files.delete(it) }
 
         assertTrue(deleteRecursively(Path(missing.toString())))
+    }
+
+    @Test
+    fun deleteTemporaryProfile_retriesUntilTheProfileIsGone() = runTest {
+        val profile = Path("kdriver_profile")
+        val seen = mutableListOf<Path>()
+
+        val gone = deleteTemporaryProfile(profile, attempts = 5, retryDelayMillis = 200) {
+            seen += it
+            seen.size == 3
+        }
+
+        assertTrue(gone)
+        assertEquals(listOf(profile, profile, profile), seen, "stops at the first attempt that succeeds")
+        assertEquals(400, currentTime, "waits between two attempts")
+    }
+
+    @Test
+    fun deleteTemporaryProfile_givesUpAfterItsLastAttempt() = runTest {
+        var attempts = 0
+
+        val gone = deleteTemporaryProfile(Path("kdriver_profile"), attempts = 4, retryDelayMillis = 200) {
+            attempts++
+            false
+        }
+
+        assertFalse(gone)
+        assertEquals(4, attempts)
+        assertEquals(600, currentTime, "no wait after the last attempt")
+    }
+
+    @Test
+    fun deleteTemporaryProfile_triesTenTimesOverAboutTwoSecondsByDefault() = runTest {
+        var attempts = 0
+
+        assertFalse(deleteTemporaryProfile(Path("kdriver_profile")) { attempts++; false })
+
+        assertEquals(10, attempts)
+        assertEquals(1_800, currentTime)
+    }
+
+    @Test
+    fun exitHook_stopsTheOtherBrowsersWhenOneFailsToStop() = runBlocking {
+        val scope = this
+        val unused = Config(browserExecutablePath = Path("unused"))
+        val failing = object : DefaultBrowser(scope, unused) {
+            override suspend fun stop() {
+                throw IllegalStateException("cannot stop")
+            }
+        }
+        val stopped = mutableListOf<Browser>()
+        val others = List(2) {
+            object : DefaultBrowser(scope, unused) {
+                override suspend fun stop() {
+                    stopped += this
+                }
+            }
+        }
+        val all = listOf(failing) + others
+        all.forEach { StartedBrowsers.register(it) }
+        try {
+            StartedBrowsers.stopAll()
+
+            assertEquals(others.toSet(), stopped.toSet(), "a failure must not keep the other browsers running")
+        } finally {
+            all.forEach { StartedBrowsers.unregister(it) }
+        }
+    }
+
+    /** Ends the browser process behind kdriver's back, as a crash would, and waits until it is gone. */
+    private suspend fun killFromOutside(browser: Browser) {
+        try {
+            withTimeoutOrNull(5.seconds) { browser.connection?.browser?.close() }
+        } catch (_: IOException) {
+            // The browser may drop the connection before it answers: its exit is what is awaited below.
+        }
+        withTimeout(10.seconds) {
+            while (!browser.stopped) delay(50)
+        }
     }
 
 }
