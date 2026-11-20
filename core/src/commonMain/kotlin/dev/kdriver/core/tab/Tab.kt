@@ -419,8 +419,9 @@ interface Tab : Connection {
      *   element, [Element.update]…) while the page has not changed since, with no command; a lookup under the element
      *   ([Element.querySelector], or a [NodeOrElement] passed back here) binds it first by itself. These are plain
      *   properties, so their read cannot fetch the document on its own: without such a document, `node.nodeId` and
-     *   the node ids of its subtree are 0, [Element.parentId] and [Element.tree] are null and [Element.parent] throws,
-     *   until [Element.update] reads the document.
+     *   the node ids of its subtree may be 0, [Element.parentId] and [Element.tree] are null and [Element.parent]
+     *   throws, until [Element.update] reads the document. The document's node is taken only when it holds the same
+     *   subtree as the one found, so a read elsewhere never changes what the element shows.
      *
      * What else differs from reading the document:
      * - the page's own `document.querySelector` runs: a page that replaces it changes the result;
