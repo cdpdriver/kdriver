@@ -28,6 +28,11 @@ class SettledLookupTest {
             """"localName":"button","nodeValue":"","attributes":["id","go"],"childNodeCount":1,"children":[""" +
             """{"nodeId":8,"backendNodeId":80,"nodeType":3,"nodeName":"#text","localName":"","nodeValue":"Send"}]}]}}"""
 
+    private val button =
+        """{"node":{"nodeId":0,"backendNodeId":70,"nodeType":1,"nodeName":"BUTTON","localName":"button",""" +
+            """"nodeValue":"","attributes":["id","go"],"childNodeCount":1,"children":[{"nodeId":0,""" +
+            """"backendNodeId":80,"nodeType":3,"nodeName":"#text","localName":"","nodeValue":"Send"}]}}"""
+
     /** A page with one `<button id="go">Send</button>`; [found] false makes every lookup come back empty. */
     private fun browser(found: Boolean = true, targetError: String? = null): (ScriptedTransport.Sent) -> Reply = {
         when (it.method) {
@@ -35,6 +40,10 @@ class SettledLookupTest {
                 if (targetError != null) Reply.error(targetError, latency = 100)
                 else Reply.ok(ScriptedTab.TARGET_INFO, latency = 100)
             "DOM.getDocument" -> Reply.ok(document, latency = 100)
+            "Runtime.evaluate" ->
+                if (found) Reply.ok("""{"result":{"type":"object","subtype":"node","objectId":"obj-1"}}""", latency = 100)
+                else Reply.ok("""{"result":{"type":"object","subtype":"null","value":null}}""", latency = 100)
+            "DOM.describeNode" -> Reply.ok(button, latency = 100)
             "DOM.querySelector" -> Reply.ok(if (found) """{"nodeId":7}""" else """{"nodeId":0}""", latency = 100)
             "DOM.performSearch" -> Reply.ok("""{"searchId":"s1","resultCount":${if (found) 1 else 0}}""", latency = 100)
             "DOM.getSearchResults" -> Reply.ok("""{"nodeIds":[7]}""", latency = 100)
@@ -53,9 +62,9 @@ class SettledLookupTest {
         assertEquals("Send", button.text)
         assertEquals("https://example.test/", tab.targetInfo!!.url, "the target info is still refreshed")
         val sentAtStart = transport.methodsSentAt(0)
-        assertEquals(setOf("DOM.getDocument", "Target.getTargetInfo"), sentAtStart)
-        assertEquals(listOf("DOM.querySelector"), transport.sent.filter { it.atMillis > 0 }.map { it.method })
-        assertEquals(200, testScheduler.currentTime, "two round trips (refresh ∥ document, then query), not three")
+        assertEquals(setOf("Runtime.evaluate", "Target.getTargetInfo"), sentAtStart)
+        assertEquals(listOf("DOM.describeNode"), transport.sent.filter { it.atMillis > 0 }.map { it.method })
+        assertEquals(200, testScheduler.currentTime, "two round trips (refresh ∥ evaluation, then description), not three")
         tab.close()
     }
 
@@ -67,7 +76,7 @@ class SettledLookupTest {
         val error = assertFailsWith<TimeoutWaitingForElementException> { tab.select("#missing", timeout = 50) }
 
         assertTrue(error.message!!.contains("#missing"))
-        val attempts = transport.methods.count { it == "DOM.querySelector" }
+        val attempts = transport.methods.count { it == "Runtime.evaluate" }
         assertTrue(attempts >= 1, "polled ($attempts)")
         assertEquals(attempts, transport.methods.count { it == "Target.getTargetInfo" }, "one refresh per attempt")
         tab.close()

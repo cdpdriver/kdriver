@@ -25,11 +25,10 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
- * A lookup on the whole document ([DefaultTab.select], [DefaultTab.selectAll], [DefaultTab.find],
- * [DefaultTab.findAll], [DefaultTab.querySelector], [DefaultTab.querySelectorAll], `Element.update`) reads the document
- * again only when the page may have changed since the last read: a `DOM.*` event, a command that makes the browser
- * forget its node ids, or a reconnect. Otherwise a new read would return the same tree, and the round trip (the whole
- * tree, often a megabyte) is saved.
+ * A lookup that reads the whole document ([DefaultTab.selectAll] with frames, [DefaultTab.find], [DefaultTab.findAll],
+ * `Element.update`, a lookup under an element found in the page) reads it again only when the page may have changed
+ * since the last read: a `DOM.*` event, a command that makes the browser forget its node ids, or a reconnect.
+ * Otherwise a new read would return the same tree, and the round trip (the whole tree, often a megabyte) is saved.
  */
 class DocumentReuseTest {
 
@@ -53,7 +52,9 @@ class DocumentReuseTest {
             "Target.getTargetInfo" -> Reply.ok(ScriptedTab.TARGET_INFO, latency = 10)
             "DOM.getDocument" -> Reply.ok(document, latency = 10)
             "DOM.querySelector" -> Reply.ok("""{"nodeId":7}""", latency = 10)
-            "DOM.querySelectorAll" -> Reply.ok("""{"nodeIds":[7,9]}""", latency = 10)
+            "DOM.querySelectorAll" ->
+                if (it.params.toString().contains("iframe")) Reply.ok("""{"nodeIds":[]}""", latency = 10)
+                else Reply.ok("""{"nodeIds":[7,9]}""", latency = 10)
             "DOM.performSearch" -> Reply.ok("""{"searchId":"s1","resultCount":1}""", latency = 10)
             "DOM.getSearchResults" -> Reply.ok("""{"nodeIds":[8]}""", latency = 10)
             "DOM.resolveNode" -> Reply.ok(objectReply("obj-${it.id}"), latency = 10)
@@ -70,15 +71,18 @@ class DocumentReuseTest {
 
     private val ScriptedTransport.documentReads get() = methods.count { it == "DOM.getDocument" }
 
+    // A selector lookup that reads the document: selectAll with frames (no frame on this page), then the page's matches.
+    private suspend fun ScriptedTab.lookUp() = selectAll("#go", timeout = 1_000, includeFrames = true).first()
+
     @Test
-    fun select_onAnUnchangedPage_readsTheDocumentOnce() = runTest(StandardTestDispatcher()) {
+    fun aLookup_onAnUnchangedPage_readsTheDocumentOnce() = runTest(StandardTestDispatcher()) {
         val (tab, transport) = scripted()
 
-        val first = tab.select("#go", timeout = 1_000)
-        val second = tab.select("#go", timeout = 1_000)
+        val first = tab.lookUp()
+        val second = tab.lookUp()
 
         assertEquals(1, transport.documentReads)
-        assertEquals(2, transport.methods.count { it == "DOM.querySelector" })
+        assertEquals(4, transport.methods.count { it == "DOM.querySelectorAll" }, "frames, then the page, twice")
         assertEquals("Send", second.text)
         assertEquals(first.backendNodeId, second.backendNodeId)
         assertSame(first.tree, second.tree, "both elements sit in the same, unchanged tree")
@@ -89,7 +93,7 @@ class DocumentReuseTest {
     fun selectAll_findAll_andUpdate_shareTheDocumentOfAnUnchangedPage() = runTest(StandardTestDispatcher()) {
         val (tab, transport) = scripted()
 
-        val all = tab.selectAll("button, li", timeout = 1_000)
+        val all = tab.selectAll("button, li", timeout = 1_000, includeFrames = true)
         val found = tab.findAll("Send", timeout = 1_000)
         all.first().update()
 
@@ -103,10 +107,10 @@ class DocumentReuseTest {
     fun aDomEventBetweenLookups_makesTheNextOneReadTheDocumentAgain() = runTest(StandardTestDispatcher()) {
         val (tab, transport) = scripted()
 
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
         transport.event("DOM.attributeModified", """{"nodeId":7,"name":"class","value":"busy"}""")
         runCurrent()
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
 
         assertEquals(2, transport.documentReads)
         tab.close()
@@ -116,10 +120,10 @@ class DocumentReuseTest {
     fun otherEvents_doNotMakeTheDocumentStale() = runTest(StandardTestDispatcher()) {
         val (tab, transport) = scripted()
 
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
         transport.event("Network.dataReceived", """{"requestId":"r","timestamp":1,"dataLength":1}""")
         runCurrent()
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
 
         assertEquals(1, transport.documentReads)
         tab.close()
@@ -129,11 +133,11 @@ class DocumentReuseTest {
     fun disablingTheDomAgent_makesTheNextLookupReadTheDocumentAgain() = runTest(StandardTestDispatcher()) {
         val (tab, transport) = scripted()
 
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
         tab.dom.disable()
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
         tab.find("Send", timeout = 1_000) // disables the agent when it is done
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
 
         assertEquals(3, transport.documentReads, "the find used the document kept since the second select")
         tab.close()
@@ -143,9 +147,9 @@ class DocumentReuseTest {
     fun aDocumentReadByHand_makesTheNextLookupReadItAgain() = runTest(StandardTestDispatcher()) {
         val (tab, transport) = scripted()
 
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
         tab.dom.getDocument(depth = 1)
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
 
         assertEquals(3, transport.documentReads)
         tab.close()
@@ -162,9 +166,9 @@ class DocumentReuseTest {
         }
         transport = t
 
-        assertEquals("Send", tab.select("#go", timeout = 1_000).text)
-        tab.select("#go", timeout = 1_000)
-        tab.select("#go", timeout = 1_000)
+        assertEquals("Send", tab.lookUp().text)
+        tab.lookUp()
+        tab.lookUp()
 
         assertEquals(2, transport.documentReads, "read again once, then kept")
         tab.close()
@@ -175,7 +179,7 @@ class DocumentReuseTest {
         var queries = 0
         lateinit var transport: ScriptedTransport
         val (tab, t) = scripted {
-            if (it.method == "DOM.querySelector" && ++queries == 2) {
+            if (it.method == "DOM.querySelectorAll" && ++queries == 3) {
                 transport.event(
                     "DOM.childNodeInserted",
                     """{"parentNodeId":1,"previousNodeId":7,"node":{"nodeId":11,"backendNodeId":110,"nodeType":1,""" +
@@ -185,12 +189,15 @@ class DocumentReuseTest {
         }
         transport = t
 
-        tab.select("#go", timeout = 1_000)
-        val again = tab.select("#go", timeout = 1_000)
+        tab.lookUp()
+        val again = tab.lookUp()
 
         assertEquals("Send", again.text)
         assertEquals(
-            listOf("DOM.getDocument", "DOM.querySelector", "DOM.querySelector", "DOM.getDocument", "DOM.querySelector"),
+            listOf(
+                "DOM.getDocument", "DOM.querySelectorAll", "DOM.querySelectorAll",
+                "DOM.querySelectorAll", "DOM.getDocument", "DOM.querySelectorAll", "DOM.querySelectorAll",
+            ),
             transport.methods.filter { it.startsWith("DOM.") },
         )
         tab.close()
@@ -199,16 +206,21 @@ class DocumentReuseTest {
     @Test
     fun aChangeReportedDuringALookupOnAFreshRead_doesNotRepeatIt() = runTest(StandardTestDispatcher()) {
         lateinit var transport: ScriptedTransport
+        var queries = 0
         val (tab, t) = scripted {
-            if (it.method == "DOM.querySelector") {
+            if (it.method == "DOM.querySelectorAll" && ++queries == 1) {
                 transport.event("DOM.attributeModified", """{"nodeId":7,"name":"a","value":"b"}""")
             }
         }
         transport = t
 
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
 
-        assertEquals(listOf("DOM.getDocument", "DOM.querySelector"), transport.methods.filter { it.startsWith("DOM.") })
+        assertEquals(
+            listOf("DOM.getDocument", "DOM.querySelectorAll", "DOM.getDocument", "DOM.querySelectorAll"),
+            transport.methods.filter { it.startsWith("DOM.") },
+            "the query of the frames, on a fresh read, is not repeated; the next query reads the changed page",
+        )
         tab.close()
     }
 
@@ -226,10 +238,10 @@ class DocumentReuseTest {
             override fun createTransport(): WebSocketTransport = if (opened++ == 0) transports[0] else next()
         }
 
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
         transports[0].close()
         runCurrent()
-        tab.select("#go", timeout = 1_000)
+        tab.lookUp()
 
         assertEquals(2, transports.size, "the second lookup ran on a new session")
         assertEquals(1, transports[1].documentReads)
@@ -240,14 +252,14 @@ class DocumentReuseTest {
     fun anInvalidSelector_onAKeptDocument_stillThrowsTheBrowserError() = runTest(StandardTestDispatcher()) {
         val normal = page()
         val transport = ScriptedTransport(this) {
-            if (it.method == "DOM.querySelector" && it.params.toString().contains("li[")) {
+            if (it.method == "DOM.querySelectorAll" && it.params.toString().contains("li[")) {
                 Reply.error("DOM Error while querying", latency = 10)
             } else normal(it)
         }
         val tab = ScriptedTab(this, transport)
 
-        tab.select("#go", timeout = 1_000)
-        assertFailsWith<CDPException> { tab.select("li[", timeout = 0) }
+        tab.lookUp()
+        assertFailsWith<CDPException> { tab.selectAll("li[", timeout = 0, includeFrames = true) }
 
         assertEquals(1, transport.documentReads, "the failing lookup used the kept document")
         assertTrue(transport.methods.contains("DOM.disable"), "and the agent is disabled on the error, as before")

@@ -409,7 +409,7 @@ open class DefaultTab(
             val items = mutableListOf<Element>()
             if (includeFrames) {
                 // Searching inside the frames reads the document (Element.querySelectorAll), so the whole lookup goes
-                // through it, Config.lookupsInPage or not: the frames and the page's own matches come from one read.
+                // through it: the frames and the page's own matches come from one read.
                 for (fr in querySelectorAllInDocument("iframe")) items.addAll(fr.querySelectorAll(trimmedSelector))
                 items.addAll(querySelectorAllInDocument(trimmedSelector))
             } else {
@@ -450,27 +450,24 @@ open class DefaultTab(
         selector: String,
         node: NodeOrElement?,
     ): List<Element> =
-        if (node == null && lookupsInPage) querySelectorAllInPage(selector)
-        else if (node == null) querySelectorAllInDocument(selector)
-        else querySelectorAllInternal(selector, node, retried = false, boundRootOf(node))
+        if (node == null) querySelectorAllInPage(selector)
+        else bound(node).let { querySelectorAllInternal(selector, it, retried = false, rootOf(it)) }
 
-    // querySelectorAll on the whole document read (kept while the page has not changed), whatever Config.lookupsInPage.
+    // querySelectorAll on the whole document read (kept while the page has not changed): the frames of
+    // selectAll(includeFrames = true), which need the document to be searched.
     private suspend fun querySelectorAllInDocument(selector: String): List<Element> =
         onDocument { doc -> querySelectorAllInternal(selector, null, retried = false, doc) }
 
-    // Config.lookupsInPage of the browser this tab belongs to; off for a tab without one.
-    private val lookupsInPage: Boolean
-        get() = owner?.let { browser -> browser.config.lookupsInPage } == true
-
     /**
      * `document.querySelectorAll(selector)` run by the page, each match then described with its subtree: see
-     * [dev.kdriver.core.browser.Config.lookupsInPage]. One round trip when nothing matches (the page answers `null`),
-     * otherwise three: the evaluation, the array's own properties, and the descriptions, sent together.
+     * [Tab.querySelector]. One round trip when nothing matches (the page answers `null`), otherwise three: the
+     * evaluation, the array's own properties, and the descriptions, sent together.
      */
     private suspend fun querySelectorAllInPage(selector: String): List<Element> {
         val array = evaluateLookup(
             "(() => { const all = Array.from(document.querySelectorAll(${jsStringLiteral(selector)}));" +
-                " return all.length ? all : null; })()"
+                " return all.length ? all : null; })()",
+            protocolMethod = "DOM.querySelectorAll",
         ) ?: return emptyList()
         val arrayId = array.objectId!!
         // The array is a cleanup to release on every path, cancellation included (NonCancellable); while the matches
@@ -515,22 +512,40 @@ open class DefaultTab(
 
     /**
      * `document.querySelector(selector)` run by the page, the match then described with its subtree: see
-     * [dev.kdriver.core.browser.Config.lookupsInPage]. Two round trips when something matches, one otherwise.
+     * [Tab.querySelector]. Two round trips when something matches, one otherwise.
      */
     private suspend fun querySelectorInPage(selector: String): Element? {
-        val match = evaluateLookup("document.querySelector(${jsStringLiteral(selector)})") ?: return null
+        val match = evaluateLookup(
+            "document.querySelector(${jsStringLiteral(selector)})",
+            protocolMethod = "DOM.querySelector",
+        ) ?: return null
         return describeMatch(match)
     }
 
     /**
      * Evaluates [expression] in the page and returns the object it yields, or null when it yields no object (`null`).
-     * An exception thrown by the page (an invalid selector) is thrown as an [EvaluateException].
+     *
+     * An invalid selector makes the page throw a `SyntaxError`: it is thrown as the error the browser gives
+     * [protocolMethod] (`DOM.querySelector` or `DOM.querySelectorAll`) for that selector, a [CDPException] with code
+     * -32000 and the message "DOM Error while querying", after disabling the DOM agent, as a lookup on the document
+     * did. Any other exception of the page (a page that replaced `document.querySelector`) is thrown as an
+     * [EvaluateException].
      */
-    private suspend fun evaluateLookup(expression: String): Runtime.RemoteObject? {
+    private suspend fun evaluateLookup(expression: String, protocolMethod: String): Runtime.RemoteObject? {
         val evaluated = unlessGone { runtime.evaluate(expression = expression) } ?: return null
-        evaluated.exceptionDetails?.let { throw EvaluateException(it) }
+        evaluated.exceptionDetails?.let { details ->
+            if (details.isSyntaxError()) {
+                disableDomAgent()
+                throw CDPException(protocolMethod, INVALID_SELECTOR_CODE, INVALID_SELECTOR_MESSAGE, null)
+            }
+            throw EvaluateException(details)
+        }
         return evaluated.result.takeIf { it.objectId != null }
     }
+
+    // The `SyntaxError` (a DOMException) the page throws for a selector it cannot parse.
+    private fun Runtime.ExceptionDetails.isSyntaxError(): Boolean =
+        exception?.description?.startsWith("SyntaxError") == true
 
     /**
      * The element of [match], a remote object the page returned: its node and subtree (`DOM.describeNode`, depth -1,
@@ -600,43 +615,53 @@ open class DefaultTab(
         node: NodeOrElement?,
     ): Element? {
         val trimmedSelector = selector.trim()
-        return if (node == null && lookupsInPage) {
+        return if (node == null) {
             querySelectorInPage(trimmedSelector)
-        } else if (node == null) {
-            onDocument { doc -> querySelectorInternal(trimmedSelector, null, retried = false, doc) }
         } else {
-            querySelectorInternal(trimmedSelector, node, retried = false, boundRootOf(node))
+            bound(node).let { querySelectorInternal(trimmedSelector, it, retried = false, rootOf(it)) }
         }
     }
 
-    // rootOf for a lookup under [node], once an element found with Config.lookupsInPage (no node id yet) has been
-    // updated from the document.
-    private suspend fun boundRootOf(node: NodeOrElement): DOM.Node {
-        if (node is NodeOrElement.WrappedElement && node.node.nodeId == 0) node.element.update()
-        return rootOf(node)
+    /**
+     * [node] ready for a lookup under it, which queries it by node id. A node found in the page has none yet (see
+     * [Tab.querySelector]): it is first bound to the document, an element filled from it
+     * ([DefaultElement.bindToDocument], [Element.update] for another implementation), a bare node replaced by the
+     * document's node of the same backend node id.
+     */
+    private suspend fun bound(node: NodeOrElement): NodeOrElement {
+        if (node.node.nodeId != 0) return node
+        return when (node) {
+            is NodeOrElement.WrappedElement -> {
+                val element = node.element
+                if (element is DefaultElement) element.bindToDocument() else element.update()
+                node
+            }
+
+            is NodeOrElement.WrappedNode -> currentDocument().first
+                .filterRecurse { it.backendNodeId == node.node.backendNodeId }
+                ?.let { NodeOrElement.WrappedNode(it) } ?: node
+        }
     }
 
     // The node a lookup under [node] queries: the document of a frame, the node itself otherwise.
     private fun rootOf(node: NodeOrElement): DOM.Node =
         if (node.node.nodeName == "IFRAME") node.node.contentDocument ?: node.node else node.node
 
-    // See querySelectorAllInternal: `retried` must be a parameter so the retry-once guard survives
-    // the recursive call (ISSUE-7).
+    // A lookup under [node] (the page runs the lookups on the whole document). See querySelectorAllInternal:
+    // `retried` must be a parameter so the retry-once guard survives the recursive call (ISSUE-7).
     private suspend fun querySelectorInternal(
         selector: String,
-        node: NodeOrElement?,
+        node: NodeOrElement,
         retried: Boolean,
         doc: DOM.Node,
     ): Element? {
         val nodeId = try {
             dom.querySelector(doc.nodeId, selector)
         } catch (e: Exception) {
-            if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
+            if (e.message?.contains("could not find node", ignoreCase = true) == true) {
                 if (retried) return null
                 if (node is NodeOrElement.WrappedElement) node.element.update()
                 return querySelectorInternal(selector, node, retried = true, rootOf(node))
-            } else if (e.message?.contains("could not find node", ignoreCase = true) == true) {
-                return null
             } else {
                 disableDomAgent()
                 throw e
@@ -972,3 +997,8 @@ private val GONE = listOf(
     "cannot find context",
     "context was destroyed",
 )
+
+/** The code and message Chrome answers `DOM.querySelector(All)` with for a selector it cannot parse. */
+private const val INVALID_SELECTOR_CODE = -32000
+private const val INVALID_SELECTOR_MESSAGE = "DOM Error while querying"
+

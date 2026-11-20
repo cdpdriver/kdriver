@@ -99,6 +99,17 @@ open class DefaultElement(
         remoteObjectBackendNodeId = node.backendNodeId
     }
 
+    /**
+     * Binds an element found in the page (no node id, no [tree]) to the whole document, as [update] does, without
+     * resolving its object again: [node] becomes the document's node of the same backend node id, with its node ids,
+     * and [tree] the document. Used before a lookup under this element, which queries it by node id.
+     */
+    internal suspend fun bindToDocument() {
+        val doc = currentDocument()
+        doc.filterRecurse { it.backendNodeId == node.backendNodeId }?.let { node = it }
+        tree = doc
+    }
+
     override suspend fun updateRemoteObject(): Runtime.RemoteObject? {
         val resolvedFor = backendNodeId
         remoteObject = tab.dom.resolveNode(backendNodeId = resolvedFor).`object`
