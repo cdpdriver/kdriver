@@ -175,6 +175,55 @@ class TemporaryProfileTest {
     }
 
     @Test
+    fun create_keepsTheOriginalFailureWhenTheCleanupFailsToo() = runBlocking {
+        val failure = assertFailsWith<IllegalStateException> {
+            DefaultBrowser.create(this, Config(headless = true, sandbox = false)) { scope, config ->
+                object : DefaultBrowser(scope, config) {
+                    override suspend fun start(): Browser {
+                        super.start()
+                        error("target discovery failed")
+                    }
+
+                    override suspend fun stop() {
+                        try {
+                            error("stop failed")
+                        } finally {
+                            super.stop()
+                        }
+                    }
+                }
+            }
+        }
+        assertEquals("target discovery failed", failure.message)
+        assertEquals(listOf("stop failed"), failure.suppressed.map { it.message })
+    }
+
+    @Test
+    fun create_doesNotStopABrowserItOnlyConnectedTo() = runBlocking {
+        var stopped = false
+        var detached = false
+        val failure = assertFailsWith<IllegalStateException> {
+            DefaultBrowser.create(this, Config(headless = true, sandbox = false)) { scope, config ->
+                object : DefaultBrowser(scope, config) {
+                    // Fails without having launched a process, as a connect-existing start would.
+                    override suspend fun start(): Browser = error("no such browser")
+
+                    override suspend fun stop() {
+                        stopped = true
+                    }
+
+                    override suspend fun detach() {
+                        detached = true
+                    }
+                }
+            }
+        }
+        assertEquals("no such browser", failure.message)
+        assertFalse(stopped, "Browser.close must not reach a browser kdriver did not launch")
+        assertTrue(detached)
+    }
+
+    @Test
     fun start_afterTheProcessDied_relaunchesOnTheSameProfileAndHandsItsDeletionOver() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val profile = File(browser.config.userDataDir.toString())

@@ -138,6 +138,19 @@ open class DefaultBrowser(
         suspend fun create(coroutineScope: CoroutineScope, config: Config): Browser =
             create(coroutineScope, config, ::DefaultBrowser)
 
+        /**
+         * Runs [cleanup] after [cause] made an operation fail, without being cancelled. A failure of
+         * the cleanup itself is attached to [cause] as suppressed, so it never replaces the root cause.
+         */
+        @Suppress("TooGenericExceptionCaught")
+        private suspend fun cleanUpAfter(cause: Throwable, cleanup: suspend () -> Unit) {
+            try {
+                withContext(NonCancellable) { cleanup() }
+            } catch (e: Throwable) {
+                cause.addSuppressed(e)
+            }
+        }
+
         /** [create], with the instance built by [factory]: tests use it to make the start fail. */
         @Suppress("TooGenericExceptionCaught") // cleans up whatever made the start fail, then rethrows it
         internal suspend fun create(
@@ -153,8 +166,9 @@ open class DefaultBrowser(
                 instance.start()
             } catch (e: Throwable) {
                 // On failure the caller never gets this instance, so it could never stop the browser
-                // it launched.
-                withContext(NonCancellable) { instance.stop() }
+                // it launched. A browser it only connected to (connect-existing) is not ours to close:
+                // it may be shared, so only the client side is torn down.
+                cleanUpAfter(e) { if (instance.pid != null) instance.stop() else instance.detach() }
                 throw e
             }
             return instance
@@ -316,7 +330,7 @@ open class DefaultBrowser(
             val launched = try {
                 startProcess(exe, params)
             } catch (e: Throwable) {
-                withContext(NonCancellable) { cleanupTemporaryProfile() }
+                cleanUpAfter(e) { cleanupTemporaryProfile() }
                 throw e
             }
             process = launched
@@ -410,7 +424,7 @@ open class DefaultBrowser(
         } catch (e: Throwable) {
             // Nothing runs on the profile anymore: this browser's process is dead and the new one failed.
             temporaryProfile = inherited
-            withContext(NonCancellable) { cleanupTemporaryProfile() }
+            cleanUpAfter(e) { cleanupTemporaryProfile() }
             throw e
         }
         if (inherited != null) restarted.adoptTemporaryProfile(inherited)
