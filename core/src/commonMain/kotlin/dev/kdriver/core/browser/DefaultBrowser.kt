@@ -139,6 +139,7 @@ open class DefaultBrowser(
             create(coroutineScope, config, ::DefaultBrowser)
 
         /** [create], with the instance built by [factory]: tests use it to make the start fail. */
+        @Suppress("TooGenericExceptionCaught") // cleans up whatever made the start fail, then rethrows it
         internal suspend fun create(
             coroutineScope: CoroutineScope,
             config: Config,
@@ -311,6 +312,7 @@ open class DefaultBrowser(
             if (!config.usesCustomDataDir && config.createdTemporaryProfile) {
                 temporaryProfile = config.userDataDir
             }
+            @Suppress("TooGenericExceptionCaught") // cleans up whatever made the launch fail, then rethrows it
             val launched = try {
                 startProcess(exe, params)
             } catch (e: Throwable) {
@@ -392,6 +394,7 @@ open class DefaultBrowser(
      * The new browser runs on the same profile, so it takes over deleting it: this one must no longer
      * delete it, nor be stopped on exit.
      */
+    @Suppress("TooGenericExceptionCaught") // cleans up whatever made the relaunch fail, then rethrows it
     private suspend fun restart(): Browser {
         val inherited = temporaryProfile
         temporaryProfile = null
