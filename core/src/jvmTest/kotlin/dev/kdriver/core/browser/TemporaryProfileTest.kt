@@ -1,9 +1,16 @@
 package dev.kdriver.core.browser
 
 import dev.kdriver.cdp.domain.browser
+import dev.kdriver.core.connection.Connection
+import dev.kdriver.core.exceptions.ConnectionClosedException
 import io.ktor.util.logging.Logger
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.currentTime
@@ -199,6 +206,30 @@ class TemporaryProfileTest {
 
         assertFalse(profile.exists(), "a crashed browser's profile is deleted by stop() too")
         assertFalse(browser in StartedBrowsers)
+    }
+
+    @Test
+    fun stop_goesOnWhenTheGracefulCloseFindsTheConnectionClosed() = runBlocking {
+        assertStopGoesOnAfterAFailedClose(ConnectionClosedException())
+    }
+
+    @Test
+    fun stop_goesOnWhenTheGracefulCloseCannotReachTheBrowser() = runBlocking {
+        assertStopGoesOnAfterAFailedClose(IOException("Connection refused"))
+    }
+
+    private suspend fun assertStopGoesOnAfterAFailedClose(failure: Exception) {
+        val connection = mockk<Connection>(relaxed = true)
+        every { connection.generatedDomains } returns mutableMapOf()
+        coEvery { connection.callCommand("Browser.close", any(), any()) } throws failure
+        // A scope of its own: stop() cancels it.
+        val browser = DefaultBrowser(CoroutineScope(Job()), Config(browserExecutablePath = Path("unused")))
+        browser.connection = connection
+
+        browser.stop()
+
+        coVerify { connection.close() }
+        assertEquals(null, browser.connection, "stop() went on past the failed close")
     }
 
     @Test

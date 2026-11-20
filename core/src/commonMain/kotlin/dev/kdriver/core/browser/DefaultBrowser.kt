@@ -8,6 +8,7 @@ import dev.kdriver.core.connection.Connection
 import dev.kdriver.core.connection.DefaultConnection
 import dev.kdriver.core.connection.OwnedConnection
 import dev.kdriver.core.exceptions.BrowserExecutableNotFoundException
+import dev.kdriver.core.exceptions.ConnectionClosedException
 import dev.kdriver.core.exceptions.FailedToConnectToBrowserException
 import dev.kdriver.core.tab.DefaultTab
 import dev.kdriver.core.tab.Tab
@@ -472,6 +473,9 @@ open class DefaultBrowser(
         } catch (e: IOException) {
             // Nothing answers: the browser already died (crashed, or killed from outside). Its process
             // and its profile are still dealt with below.
+            logger.debug("Could not close the browser gracefully: ${e.message}")
+        } catch (e: ConnectionClosedException) {
+            // The same, once the connection has given up on every send attempt.
             logger.debug("Could not close the browser gracefully: ${e.message}")
         }
         logger.debug("Killing browser process...")
