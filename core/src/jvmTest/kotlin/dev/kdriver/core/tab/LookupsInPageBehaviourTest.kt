@@ -95,12 +95,15 @@ class LookupsInPageBehaviourTest {
     fun frames_areNotSearched_butSelectAllWithFramesSearchesThem() = onPage {
         assertNull(oneOnTheDocument("p.inner"))
         assertNull(querySelector("p.inner"))
-        assertEquals(listOf("Inside the frame"), selectAll("p.inner", timeout = 5_000, includeFrames = true).map { it.text })
+        val inFrames = selectAll("p.inner", timeout = 5_000, includeFrames = true)
+        assertEquals(listOf("Inside the frame"), inFrames.map { it.text })
     }
 
     @Test
     fun aFoundElementCanBeClickedAndRead() = onPage {
-        rawEvaluate("document.getElementById('panel').onclick = () => document.getElementById('panel').dataset.state = 'open'")
+        rawEvaluate(
+            "document.getElementById('panel').onclick = () => document.getElementById('panel').dataset.state = 'open'"
+        )
 
         select("#panel", timeout = 5_000).click()
 
@@ -134,6 +137,7 @@ class LookupsInPageBehaviourTest {
 
     @Test
     fun update_givesTheNodeIdsTreeAndParent_theDocumentLookupGives() = onPage {
+        selectAll("p.inner", timeout = 5_000, includeFrames = true) // the frame loaded: both reads see the same page
         // The same lookup on the whole document, read first: a later read gives every node a new id, so ids are
         // compared below on the document the update read, and everything else on this earlier read.
         val before = oneOnTheDocument("li[data-rank='3']")!!
@@ -170,12 +174,10 @@ class LookupsInPageBehaviourTest {
             val one = assertFailsWith<CDPException> { dom.querySelector(document.nodeId, selector) }
             val all = assertFailsWith<CDPException> { dom.querySelectorAll(document.nodeId, selector) }
 
-            for (lookup in listOf<suspend () -> Unit>({ select(selector, timeout = 0) }, { querySelector(selector) })) {
-                assertSameError(one, assertFailsWith<CDPException> { lookup() })
-            }
-            for (lookup in listOf<suspend () -> Unit>({ selectAll(selector, timeout = 0) }, { querySelectorAll(selector) })) {
-                assertSameError(all, assertFailsWith<CDPException> { lookup() })
-            }
+            val ones = listOf<suspend () -> Unit>({ select(selector, timeout = 0) }, { querySelector(selector) })
+            for (lookup in ones) assertSameError(one, assertFailsWith<CDPException> { lookup() })
+            val alls = listOf<suspend () -> Unit>({ selectAll(selector, timeout = 0) }, { querySelectorAll(selector) })
+            for (lookup in alls) assertSameError(all, assertFailsWith<CDPException> { lookup() })
         }
     }
 

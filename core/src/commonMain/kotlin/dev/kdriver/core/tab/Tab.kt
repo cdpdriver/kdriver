@@ -424,10 +424,11 @@ interface Tab : Connection {
      * - until something reads the document (a lookup under an element, [find], [Element.update]…), the browser sends
      *   no `DOM.*` mutation events for the page, so on a busy page the connection may count as idle sooner.
      *
-     * Unchanged: shadow roots and iframes are not searched; an invalid selector throws the [dev.kdriver.cdp.CDPException]
-     * the browser gives `DOM.querySelector` (code -32000, "DOM Error while querying"), `DOM.querySelectorAll` for the
-     * other methods; a node or execution context dropped by a navigation during the lookup counts as no match, so
-     * [select] tries again (for [querySelectorAll], none of the old page's matches is returned).
+     * Unchanged: shadow roots and iframes are not searched; an invalid selector throws the
+     * [dev.kdriver.cdp.CDPException] the browser gives `DOM.querySelector` (code -32000, "DOM Error while querying"),
+     * `DOM.querySelectorAll` for the other methods; a node or execution context dropped by a navigation during the
+     * lookup counts as no match, so [select] tries again (for [querySelectorAll], none of the old page's matches is
+     * returned).
      *
      * Lookups under a node or an element, [find], [findAll] and [xpath] read the document, as before.
      *

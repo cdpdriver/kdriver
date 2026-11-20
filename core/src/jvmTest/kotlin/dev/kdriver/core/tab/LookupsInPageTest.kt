@@ -43,6 +43,11 @@ class LookupsInPageTest {
             """"nodeValue":"","childNodeCount":1,"children":[{"nodeId":0,"backendNodeId":${backendNodeId + 1},""" +
             """"nodeType":3,"nodeName":"#text","localName":"","nodeValue":"$text"}]}}"""
 
+    // An own property of the array of `querySelectorAll`: the match at [index], as Runtime.getProperties lists it.
+    private fun match(index: Int, objectId: String) =
+        """{"name":"$index","configurable":true,"enumerable":true,""" +
+            """"value":{"type":"object","subtype":"node","objectId":"$objectId"}}"""
+
     private val nothing = """{"result":{"type":"object","subtype":"null","value":null}}"""
 
     private fun found(objectId: String, subtype: String = "node") =
@@ -114,7 +119,8 @@ class LookupsInPageTest {
                 "Runtime.evaluate" -> Reply.ok(found("obj-1"))
                 "DOM.describeNode" -> Reply.ok(button)
                 "Runtime.callFunctionOn" ->
-                    if (calls++ == 0) Reply.error("Could not find object with given id") else Reply.ok(valueReply("null"))
+                    if (calls++ == 0) Reply.error("Could not find object with given id")
+                    else Reply.ok(valueReply("null"))
                 "DOM.resolveNode" -> Reply.ok("""{"object":{"type":"object","objectId":"obj-2"}}""")
                 "Target.getTargetInfo" -> Reply.ok(ScriptedTab.TARGET_INFO)
                 else -> Reply.ok()
@@ -172,7 +178,7 @@ class LookupsInPageTest {
             """execute '$method' on 'Document': '$selector' is not a valid selector.\\n    at <anonymous>:1:10"}}}"""
 
     @Test
-    fun anInvalidSelector_throwsTheBrowserErrorOfDomQuerySelector_andDisablesTheDomAgent() = runTest(StandardTestDispatcher()) {
+    fun anInvalidSelector_throwsTheErrorOfDomQuerySelector_andDisablesDom() = runTest(StandardTestDispatcher()) {
         val tab = tab {
             when (it.method) {
                 "Runtime.evaluate" -> Reply.ok(syntaxError("li[", "querySelector"))
@@ -187,13 +193,16 @@ class LookupsInPageTest {
         assertEquals(-32000, error.code)
         assertEquals("DOM Error while querying", error.originalMessage)
         assertNull(error.data)
-        assertEquals("Error while calling command DOM.querySelector: DOM Error while querying (code: -32000)", error.message)
+        assertEquals(
+            "Error while calling command DOM.querySelector: DOM Error while querying (code: -32000)",
+            error.message,
+        )
         assertTrue("DOM.disable" in tab.sent, "the DOM agent is disabled on the error, as before")
         tab.close()
     }
 
     @Test
-    fun anInvalidSelector_throwsTheBrowserErrorOfDomQuerySelectorAll_forTheListMethods() = runTest(StandardTestDispatcher()) {
+    fun anInvalidSelector_throwsTheErrorOfDomQuerySelectorAll_forTheListMethods() = runTest(StandardTestDispatcher()) {
         val tab = tab {
             when (it.method) {
                 "Runtime.evaluate" -> Reply.ok(syntaxError("li[", "querySelectorAll"))
@@ -201,7 +210,8 @@ class LookupsInPageTest {
             }
         }
 
-        for (lookup in listOf<suspend () -> Unit>({ tab.querySelectorAll("li[") }, { tab.selectAll("li[", timeout = 0) })) {
+        val lookups = listOf<suspend () -> Unit>({ tab.querySelectorAll("li[") }, { tab.selectAll("li[", timeout = 0) })
+        for (lookup in lookups) {
             val error = assertFailsWith<CDPException> { lookup() }
             assertEquals("DOM.querySelectorAll", error.method)
             assertEquals(-32000, error.code)
@@ -253,7 +263,8 @@ class LookupsInPageTest {
 
         assertEquals(listOf("Runtime.evaluate"), tab.sent)
         assertEquals(
-            "(() => { const all = Array.from(document.querySelectorAll(\".item\")); return all.length ? all : null; })()",
+            "(() => { const all = Array.from(document.querySelectorAll(\".item\"));" +
+                " return all.length ? all : null; })()",
             tab.transport.sent.single().param("expression"),
         )
         tab.close()
@@ -267,13 +278,16 @@ class LookupsInPageTest {
                 "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
                 "Runtime.getProperties" -> Reply.ok(
                     """{"result":[""" +
-                        """{"name":"2","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-2"}},""" +
-                        """{"name":"0","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-0"}},""" +
-                        """{"name":"1","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-1"}},""" +
-                        """{"name":"3","configurable":true,"enumerable":true,"get":{"type":"function","objectId":"getter"}},""" +
+                        """${match(2, "li-2")},""" +
+                        """${match(0, "li-0")},""" +
+                        """${match(1, "li-1")},""" +
+                        """{"name":"3","configurable":true,"enumerable":true,""" +
+                        """"get":{"type":"function","objectId":"getter"}},""" +
                         """{"name":"4","configurable":true,"enumerable":true,"value":{"type":"number","value":4}},""" +
-                        """{"name":"length","configurable":false,"enumerable":false,"value":{"type":"number","value":3}},""" +
-                        """{"name":"__proto__","configurable":true,"enumerable":false,"value":{"type":"object","objectId":"proto"}}""" +
+                        """{"name":"length","configurable":false,"enumerable":false,""" +
+                        """"value":{"type":"number","value":3}},""" +
+                        """{"name":"__proto__","configurable":true,"enumerable":false,""" +
+                        """"value":{"type":"object","objectId":"proto"}}""" +
                         """]}"""
                 )
                 "DOM.describeNode" -> Reply.ok(items.getValue(it.param("objectId")!!), latency = 100)
@@ -303,8 +317,8 @@ class LookupsInPageTest {
                 "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
                 "Runtime.getProperties" -> Reply.ok(
                     """{"result":[""" +
-                        """{"name":"0","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-0"}},""" +
-                        """{"name":"1","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-1"}}""" +
+                        """${match(0, "li-0")},""" +
+                        """${match(1, "li-1")}""" +
                         """]}"""
                 )
                 "DOM.describeNode" ->
@@ -348,7 +362,7 @@ class LookupsInPageTest {
     }
 
     private val arrayOfOne = """{"result":[""" +
-        """{"name":"0","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-0"}}""" +
+        """${match(0, "li-0")}""" +
         """]}"""
 
     @Test
@@ -419,8 +433,8 @@ class LookupsInPageTest {
                 "Runtime.evaluate" -> Reply.ok(found("array", subtype = "array"))
                 "Runtime.getProperties" -> Reply.ok(
                     """{"result":[""" +
-                        """{"name":"0","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-0"}},""" +
-                        """{"name":"1","configurable":true,"enumerable":true,"value":{"type":"object","subtype":"node","objectId":"li-1"}}""" +
+                        """${match(0, "li-0")},""" +
+                        """${match(1, "li-1")}""" +
                         """]}"""
                 )
                 "DOM.describeNode" ->
@@ -519,7 +533,8 @@ class LookupsInPageTest {
         """{"root":{"nodeId":1,"backendNodeId":1,"nodeType":9,"nodeName":"#document","localName":"","nodeValue":"",""" +
             """"childNodeCount":2,"children":[{"nodeId":7,"backendNodeId":70,"nodeType":1,"nodeName":"P",""" +
             """"localName":"p","nodeValue":"","childNodeCount":1,"children":[""" +
-            """{"nodeId":8,"backendNodeId":80,"nodeType":3,"nodeName":"#text","localName":"","nodeValue":"Outer"}]},""" +
+            """{"nodeId":8,"backendNodeId":80,"nodeType":3,"nodeName":"#text","localName":"",""" +
+            """"nodeValue":"Outer"}]},""" +
             """{"nodeId":9,"backendNodeId":90,"nodeType":1,"nodeName":"IFRAME","localName":"iframe","nodeValue":"",""" +
             """"childNodeCount":0,"contentDocument":{"nodeId":10,"backendNodeId":100,"nodeType":9,""" +
             """"nodeName":"#document","localName":"","nodeValue":"","childNodeCount":1,"children":[""" +
@@ -533,7 +548,9 @@ class LookupsInPageTest {
             when (it.method) {
                 "DOM.getDocument" -> Reply.ok(documentWithAFrame)
                 "DOM.querySelectorAll" -> when (it.param("nodeId")) {
-                    "1" -> if (it.param("selector") == "iframe") Reply.ok("""{"nodeIds":[9]}""") else Reply.ok("""{"nodeIds":[7]}""")
+                    "1" ->
+                        if (it.param("selector") == "iframe") Reply.ok("""{"nodeIds":[9]}""")
+                        else Reply.ok("""{"nodeIds":[7]}""")
                     "10" -> Reply.ok("""{"nodeIds":[11]}""")
                     else -> Reply.error("Could not find node with given id")
                 }
@@ -542,7 +559,9 @@ class LookupsInPageTest {
             }
         }
 
-        assertEquals(listOf("Inner", "Outer"), tab.selectAll("p", timeout = 1_000, includeFrames = true).map { it.text })
+        val found = tab.selectAll("p", timeout = 1_000, includeFrames = true)
+
+        assertEquals(listOf("Inner", "Outer"), found.map { it.text })
         assertEquals(1, tab.sent.count { it == "DOM.getDocument" }, "one read for the frame and the page")
         assertTrue("Runtime.evaluate" !in tab.sent)
         tab.close()
@@ -554,7 +573,8 @@ class LookupsInPageTest {
             when (it.method) {
                 "DOM.getDocument" -> Reply.ok(document)
                 "DOM.querySelectorAll" ->
-                    if (it.param("selector") == "iframe") Reply.ok("""{"nodeIds":[]}""") else Reply.ok("""{"nodeIds":[7]}""")
+                    if (it.param("selector") == "iframe") Reply.ok("""{"nodeIds":[]}""")
+                    else Reply.ok("""{"nodeIds":[7]}""")
                 else -> Reply.ok()
             }
         }
@@ -666,7 +686,7 @@ class LookupsInPageTest {
     }
 
     @Test
-    fun aBareNodeFoundInThePage_isReplacedByTheNodeOfTheDocument_forALookupUnderIt() = runTest(StandardTestDispatcher()) {
+    fun aBareNodeFoundInThePage_isReplacedByTheDocumentNode_forALookupUnderIt() = runTest(StandardTestDispatcher()) {
         val tab = listTab()
         val item = tab.querySelector("li.item")!!
 
@@ -695,7 +715,8 @@ class LookupsInPageTest {
 
         assertEquals(0, gone.node.nodeId, "no node of the document to take")
         assertEquals(1, gone.tree?.nodeId, "the element is bound to the document all the same, as update() does")
-        assertEquals(listOf("0", "0"), tab.transport.sent.filter { it.method == "DOM.querySelector" }.take(2).map { it.param("nodeId") })
+        val queried = tab.transport.sent.filter { it.method == "DOM.querySelector" }.map { it.param("nodeId") }
+        assertEquals(listOf("0", "0"), queried.take(2))
         tab.close()
     }
 

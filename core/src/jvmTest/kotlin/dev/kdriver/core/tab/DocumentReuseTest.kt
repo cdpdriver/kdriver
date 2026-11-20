@@ -71,7 +71,7 @@ class DocumentReuseTest {
 
     private val ScriptedTransport.documentReads get() = methods.count { it == "DOM.getDocument" }
 
-    // A selector lookup that reads the document: selectAll with frames (no frame on this page), then the page's matches.
+    // A selector lookup that reads the document: selectAll with frames (none on this page), then the page's matches.
     private suspend fun ScriptedTab.lookUp() = selectAll("#go", timeout = 1_000, includeFrames = true).first()
 
     @Test

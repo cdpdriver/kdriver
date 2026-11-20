@@ -203,6 +203,7 @@ class LookupBehaviourTest {
     fun lookupsKeepWorking_afterTheDomAgentWasDisabledByHand() = withPage {
         assertEquals("Alpha", select("li[data-rank='1']", timeout = 5_000).text)
 
+        dom.enable() // a lookup run by the page does not enable the DOM agent; a document read did
         dom.disable()
         rawEvaluate("document.querySelector(\"li[data-rank='1']\").textContent = 'Omega'")
 

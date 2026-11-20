@@ -41,7 +41,7 @@ class SettledLookupTest {
                 else Reply.ok(ScriptedTab.TARGET_INFO, latency = 100)
             "DOM.getDocument" -> Reply.ok(document, latency = 100)
             "Runtime.evaluate" ->
-                if (found) Reply.ok("""{"result":{"type":"object","subtype":"node","objectId":"obj-1"}}""", latency = 100)
+                if (found) Reply.ok("""{"result":{"type":"object","objectId":"obj-1"}}""", latency = 100)
                 else Reply.ok("""{"result":{"type":"object","subtype":"null","value":null}}""", latency = 100)
             "DOM.describeNode" -> Reply.ok(button, latency = 100)
             "DOM.querySelector" -> Reply.ok(if (found) """{"nodeId":7}""" else """{"nodeId":0}""", latency = 100)
@@ -64,7 +64,7 @@ class SettledLookupTest {
         val sentAtStart = transport.methodsSentAt(0)
         assertEquals(setOf("Runtime.evaluate", "Target.getTargetInfo"), sentAtStart)
         assertEquals(listOf("DOM.describeNode"), transport.sent.filter { it.atMillis > 0 }.map { it.method })
-        assertEquals(200, testScheduler.currentTime, "two round trips (refresh ∥ evaluation, then description), not three")
+        assertEquals(200, testScheduler.currentTime, "two round trips (refresh ∥ evaluation, then describe), not three")
         tab.close()
     }
 

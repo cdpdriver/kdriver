@@ -987,8 +987,8 @@ open class DefaultTab(
 /**
  * Error texts of the browser for an object, a node or an execution context it no longer knows (a navigation dropped
  * it): "Could not find object with given id", "No node with given id found", "Cannot find context with specified id",
- * "Execution context was destroyed". Not "Inspected target navigated or closed", also sent for a closed tab, which is an
- * error and not a lookup to try again.
+ * "Execution context was destroyed". Not "Inspected target navigated or closed", also sent for a closed tab, which is
+ * an error and not a lookup to try again.
  */
 private val GONE = listOf(
     "could not find object",
