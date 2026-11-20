@@ -31,7 +31,10 @@ class LookupsInPageBehaviourTest {
     private fun onPage(block: suspend Tab.() -> Unit) = runBlocking {
         val browser: Browser = createBrowser(this as CoroutineScope, headless = true, sandbox = false)
         try {
-            browser.get(sampleFile("lookup-test.html")).block()
+            browser.get(sampleFile("lookup-test.html")).apply {
+                // Both reads compared below must see the whole page: wait for it to be parsed and loaded first.
+                waitForReadyState(ReadyState.COMPLETE)
+            }.block()
         } finally {
             browser.stop()
         }
