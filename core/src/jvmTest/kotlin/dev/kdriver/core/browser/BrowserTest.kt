@@ -195,13 +195,11 @@ class BrowserTest {
         assertEquals("Example Domain", page1.targetInfo?.title)
 
         val page2 = browser2.get("https://example.com/two")
-        // Not a fixed wait: get() returns before the page has loaded, while the title is still its URL.
         page2.awaitTitle(browser2, "Example Domain")
         assertNotNull(page2.targetInfo)
         assertEquals("Example Domain", page2.targetInfo?.title)
 
         val page3 = browser3.get("https://example.com/three")
-        // Not a fixed wait: get() returns before the page has loaded, while the title is still its URL.
         page3.awaitTitle(browser3, "Example Domain")
         assertNotNull(page3.targetInfo)
         assertEquals("Example Domain", page3.targetInfo?.title)
