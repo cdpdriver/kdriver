@@ -91,3 +91,18 @@ val Input.MouseButton.buttonsMask: Int
         Input.MouseButton.FORWARD -> 16
         Input.MouseButton.NONE -> 0
     }
+
+/**
+ * This node and its subtree without their node ids and parent ids: two reads of the same unchanged nodes, one by
+ * `DOM.describeNode` and one by `DOM.getDocument`, are then equal.
+ */
+internal fun DOM.Node.withoutIds(): DOM.Node = copy(
+    nodeId = 0,
+    parentId = null,
+    children = children?.map { it.withoutIds() },
+    contentDocument = contentDocument?.withoutIds(),
+    shadowRoots = shadowRoots?.map { it.withoutIds() },
+    pseudoElements = pseudoElements?.map { it.withoutIds() },
+    templateContent = templateContent?.withoutIds(),
+    importedDocument = importedDocument?.withoutIds(),
+)

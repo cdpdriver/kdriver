@@ -188,3 +188,50 @@ fun main() = runBlocking {
 The browser advertises its own, internal, address in `webSocketDebuggerUrl`; when `browserUrl` is
 set, kdriver keeps only the path of that URL and connects to it on `browserUrl`. Without
 `browserUrl`, `host` and `port` keep working as before.
+
+## How lookups work
+
+`select`, `selectAll`, `querySelector` and `querySelectorAll` (without a node) let the page run the
+selector: kdriver evaluates `document.querySelector(…)` / `document.querySelectorAll(…)` in the page,
+then asks the browser to describe only the matching elements, each with its subtree. The whole
+document is never transferred, which matters most when the browser is far away (`browserUrl`) and
+the page is large or keeps changing.
+
+| What | How |
+| --- | --- |
+| Commands for `select` / `querySelector` | `Runtime.evaluate`, then `DOM.describeNode` of the match with the release of the object the lookup created (one round trip when nothing matches) |
+| Commands for `selectAll` / `querySelectorAll` | one `Runtime.evaluate` when nothing matches; otherwise also `Runtime.getProperties`, then every `DOM.describeNode` sent together, with the release of the objects the lookup created |
+| Data received | the matches and their subtrees; when they would hold more elements than the whole document (nested matches, a selector matching most of the page), the document is read instead, as before |
+| First call on a found element (`click`, `apply`, …) | resolves the node first (`DOM.resolveNode`), as before: a lookup leaves no object behind in the page |
+| Text, attributes, children, `backendNodeId` | read from the match and its subtree, as before |
+| `element.node.nodeId`, `element.parentId`, `element.tree`, `element.parent` | filled on their first read from the document kept by an earlier read (`find`, `xpath`, a lookup under an element, `update`…) while the page has not changed since; otherwise `nodeId` may be 0, `parentId` and `tree` are `null` and `parent` throws, until `element.update()` reads the document; a lookup under the element binds it by itself |
+| Shadow roots, iframes | not searched (`selectAll(includeFrames = true)` reads the document to search inside each iframe, as before) |
+| Waiting | `select` / `selectAll` retry every 500 ms until the timeout, as before |
+| A navigation during the lookup | an object or context dropped by the navigation counts as no match: `select` tries again |
+| Invalid selector | the same `CDPException` as before (`DOM.querySelector` or `DOM.querySelectorAll`, code -32000, "DOM Error while querying") |
+
+```kotlin
+val item = tab.select("li.item")
+item.text            // read from the match
+item.click()         // resolves the element, then clicks it
+item.tree            // null: no document was read yet
+item.update()        // reads the document (one DOM.getDocument)
+item.parent?.tag     // "ul"
+
+val other = tab.select("li.other")
+other.parent?.tag    // "ul": the document read above still matches the page, no command sent
+```
+
+What still differs from reading the whole document:
+
+- the page's own `document.querySelector` runs, so a page that replaces it changes the result;
+- until something reads the document (`find`, `update`, a lookup under an element…), the browser
+  sends no `DOM.*` mutation events for the page, so a busy page may count as idle sooner, and the DOM
+  agent is not enabled: a `tab.dom.disable()` sent by hand then fails, as on a tab that never read it;
+- `element.node.nodeId`, `element.parentId`, `element.tree` and `element.parent` are plain
+  properties, not suspend functions: their first read fills them from a document kept by an earlier
+  read, but cannot fetch one by itself. When no document was read since the page last changed, code
+  that reads them calls `element.update()` first.
+
+Lookups under an element (`element.querySelector`, `element.querySelectorAll`), `find`, `findAll`
+and `xpath` read the document, as before.

@@ -19,11 +19,27 @@ import kotlin.random.Random
  */
 open class DefaultElement(
     val tab: Tab,
-    override var node: DOM.Node,
-    override var tree: DOM.Node? = null,
+    node: DOM.Node,
+    tree: DOM.Node? = null,
 ) : Element {
 
     private val logger = KtorSimpleLogger("Element")
+
+    private val binding = ElementBinding(node, tree)
+
+    /**
+     * The node of this element. For an element found in the page (no [tree]), the first read after the document was
+     * read, while the page has not changed since, takes the document's node of the same backend node id, with its node
+     * ids and parent id, as a lookup on the document gave it, when it holds the same subtree (see [ElementBinding]).
+     */
+    override var node: DOM.Node
+        get() = binding.bindFrom((tab as? DefaultTab)?.keptDocument()).node
+        set(value) = binding.replaceNode(value)
+
+    /** The document this element was read from: for an element found in the page, filled as [node] is. */
+    override var tree: DOM.Node?
+        get() = binding.bindFrom((tab as? DefaultTab)?.keptDocument()).tree
+        set(value) = binding.replaceTree(value)
 
     private var remoteObject: Runtime.RemoteObject? = null
 
@@ -89,6 +105,17 @@ open class DefaultElement(
 
     override val attrs: List<String>
         get() = node.attributes?.chunked(2)?.map { it.first() } ?: emptyList()
+
+    /**
+     * Binds an element found in the page (no node id, no [tree]) to the whole document, as [update] does, without
+     * resolving its object again: [node] becomes the document's node of the same backend node id, with its node ids,
+     * and [tree] the document. Used before a lookup under this element, which queries it by node id.
+     */
+    internal suspend fun bindToDocument() {
+        val doc = currentDocument()
+        doc.filterRecurse { it.backendNodeId == node.backendNodeId }?.let { node = it }
+        tree = doc
+    }
 
     override suspend fun updateRemoteObject(): Runtime.RemoteObject? {
         val resolvedFor = backendNodeId
@@ -158,59 +185,7 @@ open class DefaultElement(
     private suspend fun getStableCoordinates(): CoordinateResult? {
         return try {
             apply<CoordinateResult?>(
-                jsFunction = """
-                    function() {
-                        if (!this || !this.isConnected) return null;
-
-                        return new Promise(resolve => {
-                            let lastTop = null;
-                            let lastLeft = null;
-                            let stableFrames = 0;
-                            const maxAttempts = 10;
-                            let attempts = 0;
-
-                            const checkStable = () => {
-                                attempts++;
-                                const rect = this.getBoundingClientRect();
-
-                                if (rect.width === 0 || rect.height === 0) {
-                                    resolve(null);
-                                    return;
-                                }
-
-                                if (lastTop !== null &&
-                                    Math.abs(rect.top - lastTop) < 1 &&
-                                    Math.abs(rect.left - lastLeft) < 1) {
-                                    stableFrames++;
-                                    if (stableFrames >= 2) {
-                                        resolve({
-                                            x: rect.left + rect.width / 2,
-                                            y: rect.top + rect.height / 2
-                                        });
-                                        return;
-                                    }
-                                } else {
-                                    stableFrames = 0;
-                                }
-
-                                lastTop = rect.top;
-                                lastLeft = rect.left;
-
-                                if (attempts < maxAttempts) {
-                                    requestAnimationFrame(checkStable);
-                                } else {
-                                    // Timeout: use current position
-                                    resolve({
-                                        x: rect.left + rect.width / 2,
-                                        y: rect.top + rect.height / 2
-                                    });
-                                }
-                            };
-
-                            requestAnimationFrame(checkStable);
-                        });
-                    }
-                """.trimIndent(),
+                jsFunction = STABLE_COORDINATES_JS,
                 awaitPromise = true
             )
         } catch (e: EvaluateException) {

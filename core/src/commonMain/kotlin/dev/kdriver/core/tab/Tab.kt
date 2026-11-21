@@ -294,6 +294,9 @@ interface Tab : Connection {
      *
      * This method waits for the element to appear in the DOM, retrying every 500 milliseconds until the timeout is reached.
      *
+     * The page runs the selector, and the element's node ids and tree are filled on demand: see
+     * [querySelector] for how lookups work.
+     *
      * @param selector The CSS selector of the element to select.
      * @param timeout The maximum time in milliseconds to wait for the element to appear. Defaults to 10 seconds.
      *
@@ -328,6 +331,10 @@ interface Tab : Connection {
      * Finds multiple elements by CSS selector, optionally waiting for them to appear.
      *
      * Can also be used to wait for such elements to appear. Optionally includes results from iframes.
+     *
+     * The page runs the selector, and the elements' node ids and tree are filled on demand: see
+     * [querySelector] for how lookups work. With [includeFrames], `selectAll` reads the whole document instead
+     * (searching inside the frames needs it), for the page's own matches too: they then have a node id and a tree.
      *
      * @param selector CSS selector, e\.g\., `a[href]`, `button[class*=close]`, `a > img[src]`
      * @param timeout Raise timeout exception when after this many milliseconds nothing is found.
@@ -375,6 +382,13 @@ interface Tab : Connection {
      *
      * It returns all matching [Element] objects.
      *
+     * Without [node], the page runs `document.querySelectorAll` and the matches are described together, in document
+     * order: one round trip when nothing matches, three otherwise (the evaluation, the list of matches, then every
+     * description at once, with the release of the objects the lookup created). The elements are as for
+     * [querySelector]. When the matches' subtrees would hold more elements than the whole
+     * document (nested matches, a selector matching most of the page), the document is read instead, as before, and
+     * the elements then have their node ids and tree.
+     *
      * @param selector CSS selector. (first time? See https://www.w3schools.com/cssref/css_selectors.php)
      * @param node For internal use. The node to start the search from. Defaults to the document root.
      *
@@ -387,6 +401,41 @@ interface Tab : Connection {
 
     /**
      * Finds a single element based on a CSS selector string.
+     *
+     * ## How lookups work
+     *
+     * Without [node] (and in [select], [selectAll] and [querySelectorAll] without it), the page runs the selector:
+     * `document.querySelector` is evaluated (`Runtime.evaluate`, the selector entering the script only as a JSON string
+     * literal), then only the match is described, with its subtree (`DOM.describeNode`, depth -1, piercing), and the
+     * object the page returned is released in the same round trip. The whole document is never read: two small round
+     * trips when something matches, one otherwise, whatever the size of the page.
+     *
+     * The element found:
+     * - has its node and subtree: [Element.tag], [Element.text], [Element.textAll], attributes,
+     *   [Element.children] and [Element.backendNodeId] read as from a document;
+     * - keeps no object of the page: its first call (`click`, `apply`, …) resolves its node, as before;
+     * - gets its node ids and tree on demand: the first read of `node`, [Element.tree], [Element.parentId] or
+     *   [Element.parent] takes them from the document kept by an earlier read ([find], [xpath], a lookup under an
+     *   element, [Element.update]…) while the page has not changed since, with no command; a lookup under the element
+     *   ([Element.querySelector], or a [NodeOrElement] passed back here) binds it first by itself. These are plain
+     *   properties, so their read cannot fetch the document on its own: without such a document, `node.nodeId` and
+     *   the node ids of its subtree may be 0, [Element.parentId] and [Element.tree] are null and [Element.parent]
+     *   throws, until [Element.update] reads the document. The document's node is taken only when it holds the same
+     *   subtree as the one found, so a read elsewhere never changes what the element shows.
+     *
+     * What else differs from reading the document:
+     * - the page's own `document.querySelector` runs: a page that replaces it changes the result;
+     * - until something reads the document (a lookup under an element, [find], [Element.update]…), the browser sends
+     *   no `DOM.*` mutation events for the page, so on a busy page the connection may count as idle sooner; the DOM
+     *   agent is not enabled either, so a `DOM.disable` sent by hand then fails, as on a tab that never read it.
+     *
+     * Unchanged: shadow roots and iframes are not searched; an invalid selector throws the
+     * [dev.kdriver.cdp.CDPException] the browser gives `DOM.querySelector` (code -32000, "DOM Error while querying"),
+     * `DOM.querySelectorAll` for the other methods; a node or execution context dropped by a navigation during the
+     * lookup counts as no match, so [select] tries again (for [querySelectorAll], none of the old page's matches is
+     * returned).
+     *
+     * Lookups under a node or an element, [find], [findAll] and [xpath] read the document, as before.
      *
      * @param selector CSS selector(s).
      * @param node For internal use. The node to start the search from. Defaults to the document root.

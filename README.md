@@ -30,6 +30,8 @@ to heavy tools like Selenium or Puppeteer — all without relying on WebDriver.
 * **No external dependencies** – kdriver interacts directly with the browser using WebSockets and JSON — no need for
   Chromium wrappers or native libraries.
 * **Session and cookie management** – Start with a clean profile every time or load/save cookies between runs.
+* **Remote browsers** – Attach to a browser behind a reverse proxy; CSS lookups run in the page and never transfer the
+  whole document (see [how lookups work](docs/home/quickstart.md#how-lookups-work)).
 * **Element utilities** – Coming soon: intuitive APIs to query, interact with, and wait for DOM elements.
 
 ## Motivation

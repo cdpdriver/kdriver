@@ -1,11 +1,13 @@
 package dev.kdriver.core.tab
 
 import dev.kdriver.cdp.CDPException
+import dev.kdriver.cdp.CommandMode
 import dev.kdriver.cdp.Serialization
 import dev.kdriver.cdp.domain.*
 import dev.kdriver.cdp.domain.Input
 import dev.kdriver.core.browser.Browser
 import dev.kdriver.core.connection.DefaultConnection
+import dev.kdriver.core.connection.PendingCommand
 import dev.kdriver.core.dom.DefaultElement
 import dev.kdriver.core.dom.Element
 import dev.kdriver.core.dom.NodeOrElement
@@ -19,19 +21,25 @@ import io.ktor.util.logging.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlin.concurrent.Volatile
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.math.abs
+import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
@@ -404,10 +412,14 @@ open class DefaultTab(
         while (true) {
             val items = mutableListOf<Element>()
             if (includeFrames) {
-                val frames = querySelectorAll("iframe")
-                for (fr in frames) items.addAll(fr.querySelectorAll(trimmedSelector))
+                // Searching inside the frames reads the document (Element.querySelectorAll), so the whole lookup goes
+                // through it, as before: the frames and the page's own matches share the kept read while the page
+                // does not change.
+                for (fr in querySelectorAllInDocument("iframe")) items.addAll(fr.querySelectorAll(trimmedSelector))
+                items.addAll(querySelectorAllInDocument(trimmedSelector))
+            } else {
+                items.addAll(querySelectorAll(trimmedSelector))
             }
-            items.addAll(querySelectorAll(trimmedSelector))
             items.takeIf { it.isNotEmpty() }?.let { return it }
 
             val elapsed = Clock.System.now().toEpochMilliseconds() - startTime
@@ -443,8 +455,212 @@ open class DefaultTab(
         selector: String,
         node: NodeOrElement?,
     ): List<Element> =
-        if (node == null) onDocument { doc -> querySelectorAllInternal(selector, null, retried = false, doc) }
-        else querySelectorAllInternal(selector, node, retried = false, rootOf(node))
+        if (node == null) querySelectorAllInPage(selector)
+        else bound(node).let { querySelectorAllInternal(selector, it, retried = false, rootOf(it)) }
+
+    // querySelectorAll on the whole document read (kept while the page has not changed): the frames of
+    // selectAll(includeFrames = true), which need the document to be searched.
+    private suspend fun querySelectorAllInDocument(selector: String): List<Element> =
+        onDocument { doc -> querySelectorAllInternal(selector, null, retried = false, doc) }
+
+    /**
+     * `document.querySelectorAll(selector)` run by the page, each match then described with its subtree: see
+     * [Tab.querySelectorAll]. One round trip when nothing matches (the page answers `null`), otherwise three: the
+     * evaluation, the array's own properties, then every description and the release of the objects, sent together.
+     *
+     * When the matches' subtrees hold more elements than the whole document (nested matches, a selector matching most
+     * of the page), the page answers `"document"` instead, and the lookup reads the document, which is then the smaller
+     * transfer. The count stops as soon as it passes the document's, so the page never walks much more than once its
+     * own size. The script uses no global of the page but `document.querySelectorAll` and `getElementsByTagName`.
+     */
+    private suspend fun querySelectorAllInPage(selector: String): List<Element> = inLookupGroup { group ->
+        val found = evaluateInGroup(
+            group,
+            "(() => { const all = document.querySelectorAll(${jsStringLiteral(selector)});" +
+                " if (!all.length) return null;" +
+                " const most = document.getElementsByTagName('*').length; const matches = []; let described = 0;" +
+                " for (let i = 0; i < all.length; i++) {" +
+                " described += 1 + all[i].getElementsByTagName('*').length;" +
+                " if (described > most) return 'document'; matches[i] = all[i]; }" +
+                " return matches; })()",
+            protocolMethod = "DOM.querySelectorAll",
+        ) ?: return@inLookupGroup emptyList()
+        val arrayId = found.objectId ?: return@inLookupGroup querySelectorAllInDocument(selector)
+        val properties = unlessGone { runtime.getProperties(objectId = arrayId, ownProperties = true) }
+            ?: return@inLookupGroup emptyList()
+        val matches = properties.result
+            .mapNotNull { property -> property.name.toIntOrNull()?.let { index -> index to property.value } }
+            .sortedBy { it.first }
+            .mapNotNull { (_, value) -> value?.objectId }
+        describeAndRelease(group, matches)?.map { DefaultElement(this, it) } ?: emptyList()
+    }
+
+    /**
+     * `document.querySelector(selector)` run by the page, the match then described with its subtree: see
+     * [Tab.querySelector]. Two round trips when something matches (the evaluation, then the description and the
+     * release of the object, sent together), one otherwise.
+     */
+    private suspend fun querySelectorInPage(selector: String): Element? = inLookupGroup { group ->
+        val match = evaluateInGroup(
+            group,
+            "document.querySelector(${jsStringLiteral(selector)})",
+            protocolMethod = "DOM.querySelector",
+        )?.objectId ?: return@inLookupGroup null
+        describeAndRelease(group, listOf(match))?.single()?.let { DefaultElement(this, it) }
+    }
+
+    /**
+     * The objects an in-page lookup creates in the page (the match, or the array and its matches), all in one group
+     * named after the lookup, and the release of that group once it is sent.
+     */
+    private class LookupGroup(val name: String) {
+        var holdsObjects = false
+        var release: PendingCommand? = null
+    }
+
+    /**
+     * Runs [lookup] with a [LookupGroup] of its own, then releases the group, so that a lookup leaves no object behind
+     * in the page, on every path, cancellation included: an element found in the page resolves its node at its first
+     * call, as an element read from the document does. The release is a cleanup: it runs under NonCancellable, waits
+     * [LOOKUP_RELEASE_WAIT] at most, and none of its failures fails the lookup (the page drops the objects at its next
+     * navigation anyway).
+     */
+    private suspend fun <T> inLookupGroup(lookup: suspend (LookupGroup) -> T): T {
+        val group = LookupGroup("kdriver-lookup-${Random.nextLong().toULong().toString(LOOKUP_GROUP_RADIX)}")
+        try {
+            return lookup(group)
+        } finally {
+            if (group.holdsObjects) releaseLookupGroup(group)
+        }
+    }
+
+    // The cleanup of [inLookupGroup], a function of its own: a cancellation of the wait goes on from here.
+    private suspend fun releaseLookupGroup(group: LookupGroup) {
+        withContext(NonCancellable) {
+            withTimeoutOrNull(LOOKUP_RELEASE_WAIT) {
+                try {
+                    val sent = group.release
+                    if (sent != null) sent.await() else runtime.releaseObjectGroup(group.name)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Already gone with the page, or the connection is closing: nothing left to release.
+                }
+            }
+        }
+    }
+
+    /**
+     * [evaluateLookup] with the objects it creates in [group]. The group counts as holding objects from the moment the
+     * evaluation is sent, so that one cut while in flight (cancelled, timed out, connection lost), which the page may
+     * still run, is released all the same; once the page answered, only when it returned an object.
+     */
+    private suspend fun evaluateInGroup(
+        group: LookupGroup,
+        expression: String,
+        protocolMethod: String,
+    ): Runtime.RemoteObject? {
+        group.holdsObjects = true
+        val found = try {
+            evaluateLookup(expression, protocolMethod, objectGroup = group.name)
+        } catch (e: CDPException) {
+            group.holdsObjects = false // answered with an error: nothing was created
+            throw e
+        } catch (e: EvaluateException) {
+            group.holdsObjects = false // the script threw: nothing was returned
+            throw e
+        }
+        group.holdsObjects = found?.objectId != null
+        return found
+    }
+
+    /**
+     * Describes [objectIds] with their subtrees (`DOM.describeNode`, depth -1, piercing), then releases [group]: the
+     * descriptions and the release are sent one after the other, so the browser runs them in that order, in one round
+     * trip. Null when a match is gone before it was described (the page navigated during the lookup: no match at all,
+     * rather than a part of the old page's); any other error is thrown, once every reply has been read.
+     */
+    private suspend fun describeAndRelease(group: LookupGroup, objectIds: List<String>): List<DOM.Node>? {
+        val describing = objectIds.map { objectId ->
+            sendCommand("DOM.describeNode", describeParameter(objectId), CommandMode.DEFAULT)
+        }
+        group.release = sendCommand("Runtime.releaseObjectGroup", releaseParameter(group.name), CommandMode.DEFAULT)
+        val described = describing.map { pending -> awaitDescription(pending) }
+        described.firstNotNullOfOrNull { it.exceptionOrNull() }?.let { throw it }
+        val nodes = described.map { it.getOrNull() }
+        return if (null in nodes) null else nodes.filterNotNull()
+    }
+
+    // The node of a description sent by describeAndRelease: a success holding null when the match is gone, a failure
+    // holding any other error, so that every reply is read before one is thrown.
+    private suspend fun awaitDescription(pending: PendingCommand): Result<DOM.Node?> =
+        try {
+            Result.success(
+                unlessGone { pending.await() }
+                    ?.let { Serialization.json.decodeFromJsonElement<DOM.DescribeNodeReturn>(it).node }
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (expected: Exception) {
+            // Not swallowed: handed back as the failure, so that every reply is read before one is thrown.
+            Result.failure(expected)
+        }
+
+    private fun describeParameter(objectId: String): JsonElement =
+        Serialization.json.encodeToJsonElement(
+            DOM.DescribeNodeParameter(objectId = objectId, depth = -1, pierce = true)
+        )
+
+    private fun releaseParameter(group: String): JsonElement =
+        Serialization.json.encodeToJsonElement(Runtime.ReleaseObjectGroupParameter(objectGroup = group))
+
+    /**
+     * Evaluates [expression] in the page and returns the object or string it yields, or null when it yields neither
+     * (`null`). The objects it creates go to [objectGroup] when given.
+     *
+     * An invalid selector makes the page throw a `SyntaxError`: it is thrown as the error the browser gives
+     * [protocolMethod] (`DOM.querySelector` or `DOM.querySelectorAll`) for that selector, a [CDPException] with code
+     * -32000 and the message "DOM Error while querying", after disabling the DOM agent, as a lookup on the document
+     * did. Any other exception of the page (a page that replaced `document.querySelector`) is thrown as an
+     * [EvaluateException].
+     */
+    private suspend fun evaluateLookup(
+        expression: String,
+        protocolMethod: String,
+        objectGroup: String? = null,
+    ): Runtime.RemoteObject? {
+        val evaluated = unlessGone { runtime.evaluate(expression = expression, objectGroup = objectGroup) }
+            ?: return null
+        evaluated.exceptionDetails?.let { details ->
+            if (details.isSyntaxError()) {
+                disableDomAgent()
+                throw CDPException(protocolMethod, INVALID_SELECTOR_CODE, INVALID_SELECTOR_MESSAGE, null)
+            }
+            throw EvaluateException(details)
+        }
+        return evaluated.result.takeIf { it.objectId != null || it.type == "string" }
+    }
+
+    // The `SyntaxError` the page throws for a selector it cannot parse: a DOMException, not an error a script threw.
+    private fun Runtime.ExceptionDetails.isSyntaxError(): Boolean =
+        exception?.className == "DOMException" && exception?.description?.startsWith("SyntaxError") == true
+
+    /**
+     * Runs [command] of an in-page lookup, or returns null when the browser no longer knows what it refers to: the
+     * object or the execution context was dropped by a navigation in between, so the lookup found nothing and `select`
+     * tries again. Any other protocol error is thrown.
+     */
+    private suspend fun <T> unlessGone(command: suspend () -> T): T? =
+        try {
+            command()
+        } catch (e: CDPException) {
+            if (GONE.any { e.originalMessage.contains(it, ignoreCase = true) }) null else throw e
+        }
+
+    // A JavaScript string literal for [value]: its JSON encoding, which escapes quotes, backslashes and control
+    // characters, so the value can only ever be read as one string.
+    private fun jsStringLiteral(value: String): String =
+        Serialization.json.encodeToString(String.serializer(), value)
 
     // `retried` carries the "already retried once" state across the recursive call. It must be a
     // parameter, not a local: a local would be reset on every recursion and the guard would never
@@ -487,9 +703,30 @@ open class DefaultTab(
     ): Element? {
         val trimmedSelector = selector.trim()
         return if (node == null) {
-            onDocument { doc -> querySelectorInternal(trimmedSelector, null, retried = false, doc) }
+            querySelectorInPage(trimmedSelector)
         } else {
-            querySelectorInternal(trimmedSelector, node, retried = false, rootOf(node))
+            bound(node).let { querySelectorInternal(trimmedSelector, it, retried = false, rootOf(it)) }
+        }
+    }
+
+    /**
+     * [node] ready for a lookup under it, which queries it by node id. A node found in the page has none yet (see
+     * [Tab.querySelector]): it is first bound to the document, an element filled from it
+     * ([DefaultElement.bindToDocument], [Element.update] for another implementation), a bare node replaced by the
+     * document's node of the same backend node id.
+     */
+    private suspend fun bound(node: NodeOrElement): NodeOrElement {
+        if (node.node.nodeId != 0) return node
+        return when (node) {
+            is NodeOrElement.WrappedElement -> {
+                val element = node.element
+                if (element is DefaultElement) element.bindToDocument() else element.update()
+                node
+            }
+
+            is NodeOrElement.WrappedNode -> currentDocument().first
+                .filterRecurse { it.backendNodeId == node.node.backendNodeId }
+                ?.let { NodeOrElement.WrappedNode(it) } ?: node
         }
     }
 
@@ -497,23 +734,21 @@ open class DefaultTab(
     private fun rootOf(node: NodeOrElement): DOM.Node =
         if (node.node.nodeName == "IFRAME") node.node.contentDocument ?: node.node else node.node
 
-    // See querySelectorAllInternal: `retried` must be a parameter so the retry-once guard survives
-    // the recursive call (ISSUE-7).
+    // A lookup under [node] (the page runs the lookups on the whole document). See querySelectorAllInternal:
+    // `retried` must be a parameter so the retry-once guard survives the recursive call (ISSUE-7).
     private suspend fun querySelectorInternal(
         selector: String,
-        node: NodeOrElement?,
+        node: NodeOrElement,
         retried: Boolean,
         doc: DOM.Node,
     ): Element? {
         val nodeId = try {
             dom.querySelector(doc.nodeId, selector)
         } catch (e: Exception) {
-            if (node != null && e.message?.contains("could not find node", ignoreCase = true) == true) {
+            if (e.message?.contains("could not find node", ignoreCase = true) == true) {
                 if (retried) return null
                 if (node is NodeOrElement.WrappedElement) node.element.update()
                 return querySelectorInternal(selector, node, retried = true, rootOf(node))
-            } else if (e.message?.contains("could not find node", ignoreCase = true) == true) {
-                return null
             } else {
                 disableDomAgent()
                 throw e
@@ -530,7 +765,24 @@ open class DefaultTab(
      * The last whole document read for a lookup (`DOM.getDocument(depth = -1, pierce = true)`), and the
      * [documentEpoch] it still matches the page at.
      */
-    private class DocumentSnapshot(val root: DOM.Node, val epoch: Long)
+    internal class DocumentSnapshot(val root: DOM.Node, val epoch: Long) {
+
+        private val byBackendNodeId: Map<Int, DOM.Node> by lazy {
+            buildMap {
+                fun index(node: DOM.Node) {
+                    for (child in node.children.orEmpty()) {
+                        if (child.backendNodeId !in this) put(child.backendNodeId, child)
+                        child.shadowRoots?.firstOrNull()?.let { index(it) }
+                        index(child)
+                    }
+                }
+                index(root)
+            }
+        }
+
+        /** The node of [backendNodeId] in this document, as `root.filterRecurse` finds it, from an index built once. */
+        fun nodeOf(backendNodeId: Int): DOM.Node? = byBackendNodeId[backendNodeId]
+    }
 
     @Volatile
     private var documentSnapshot: DocumentSnapshot? = null
@@ -545,9 +797,16 @@ open class DefaultTab(
      * @return the root of the document, and whether it is the copy kept from an earlier read.
      */
     internal suspend fun currentDocument(): Pair<DOM.Node, Boolean> {
-        documentSnapshot?.takeIf { it.epoch == documentEpoch }?.let { return it.root to true }
+        keptDocument()?.let { return it.root to true }
         return readDocument() to false
     }
+
+    /**
+     * The document kept from an earlier read while it still matches the page, without reading anything: null when
+     * there is none. The properties of an element found in the page take their node ids and tree from it on their
+     * first read ([DefaultElement.node], [DefaultElement.tree]).
+     */
+    internal fun keptDocument(): DocumentSnapshot? = documentSnapshot?.takeIf { it.epoch == documentEpoch }
 
     private suspend fun readDocument(): DOM.Node {
         val before = documentEpoch
@@ -835,3 +1094,28 @@ open class DefaultTab(
     }
 
 }
+
+/**
+ * Error texts of the browser for an object, a node or an execution context it no longer knows (a navigation dropped
+ * it): "Could not find object with given id", "No node with given id found", "Cannot find context with specified id",
+ * "Execution context was destroyed". Not "Inspected target navigated or closed", also sent for a closed tab, which is
+ * an error and not a lookup to try again.
+ */
+private val GONE = listOf(
+    "could not find object",
+    "could not find node",
+    "no node with given id",
+    "cannot find context",
+    "context was destroyed",
+)
+
+/** How long the release of the objects of an in-page lookup may hold the lookup, at most, in milliseconds. */
+private const val LOOKUP_RELEASE_WAIT = 2_000L
+
+// The base of the random suffix of a lookup group's name (hexadecimal).
+private const val LOOKUP_GROUP_RADIX = 16
+
+/** The code and message Chrome answers `DOM.querySelector(All)` with for a selector it cannot parse. */
+private const val INVALID_SELECTOR_CODE = -32000
+private const val INVALID_SELECTOR_MESSAGE = "DOM Error while querying"
+

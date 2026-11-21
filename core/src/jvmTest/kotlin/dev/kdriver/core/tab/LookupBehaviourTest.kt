@@ -37,14 +37,16 @@ class LookupBehaviourTest {
     }
 
     @Test
-    fun select_returnsTheElementWithItsTextAttributesTreeAndParent() = withPage {
+    fun select_returnsTheElementWithItsTextAttributes_andTreeAndParentOnceUpdated() = withPage {
         val item = select("li[data-rank='2']", timeout = 5_000)
 
         assertEquals("li", item.tag)
         assertEquals("Beta", item.text)
         assertEquals("2", item["data-rank"])
         assertEquals(listOf("class", "data-rank"), item.attrs)
-        assertNotNull(item.tree, "a looked-up element knows the document it is in")
+        assertNull(item.tree, "the page ran the lookup: no document was read")
+        item.update()
+        assertNotNull(item.tree, "an updated element knows the document it is in")
         assertEquals("ul", item.parent?.tag)
         assertEquals("list", item.parent?.get("id"))
         assertEquals(listOf("Alpha", "Beta", "Gamma"), item.parent!!.children.filter { it.tag == "li" }.map { it.text })
@@ -205,6 +207,7 @@ class LookupBehaviourTest {
     fun lookupsKeepWorking_afterTheDomAgentWasDisabledByHand() = withPage {
         assertEquals("Alpha", select("li[data-rank='1']", timeout = 5_000).text)
 
+        dom.enable() // a lookup run by the page does not enable the DOM agent; a document read did
         dom.disable()
         rawEvaluate("document.querySelector(\"li[data-rank='1']\").textContent = 'Omega'")
 
@@ -219,6 +222,6 @@ class LookupBehaviourTest {
 
         val again = select("li[data-rank='1']", timeout = 5_000)
         assertEquals("Alpha", again.text)
-        assertTrue(again.tree != null)
+        assertTrue(again.update().tree != null)
     }
 }
