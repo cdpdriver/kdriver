@@ -8,6 +8,9 @@ import kotlinx.io.files.Path
 import platform.posix.getenv
 import platform.posix.memset
 import platform.windows.*
+import kotlin.concurrent.Volatile
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.ref.createCleaner
 import kotlin.random.Random
 
 @OptIn(ExperimentalForeignApi::class)
@@ -15,14 +18,21 @@ actual abstract class Process {
     abstract val processHandle: HANDLE?
     abstract val processId: DWORD
 
+    /** The exit code, once the process has been seen to exit. */
+    @Volatile
+    internal var exitCode: DWORD? = null
+        private set
+
     actual fun isAlive(): Boolean {
-        val handle = processHandle ?: return false
-        val exitCode = memScoped {
-            val code = alloc<DWORDVar>()
-            GetExitCodeProcess(handle, code.ptr)
-            code.value
-        }
-        return exitCode == STILL_ACTIVE
+        // Null once the exit was seen, without a handle, or if unreadable: not alive in all three cases.
+        val code = if (exitCode == null) processHandle?.let { readExitCode(it) } else null
+        if (code != null && code != STILL_ACTIVE) exitCode = code
+        return code == STILL_ACTIVE
+    }
+
+    private fun readExitCode(handle: HANDLE): DWORD? = memScoped {
+        val c = alloc<DWORDVar>()
+        if (GetExitCodeProcess(handle, c.ptr) == 0) null else c.value
     }
 
     actual fun pid(): Long {
@@ -32,18 +42,23 @@ actual abstract class Process {
     actual abstract fun destroy()
 }
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalNativeApi::class)
 private class WindowsProcess(
     override val processHandle: HANDLE?,
     override val processId: DWORD,
 ) : Process() {
+    /**
+     * Closes the process handle once this object is unreachable, and never before: [isAlive] reads
+     * the exit code through it (to know when the process is really gone, and its profile can be
+     * deleted) and [destroy] terminates through it, from any thread, for as long as the object is
+     * used. Closing it any earlier would race them onto a closed, or reused, handle.
+     */
+    @Suppress("unused")
+    private val handleCleaner = processHandle?.let { handle -> createCleaner(handle) { CloseHandle(it) } }
+
     override fun destroy() {
-        processHandle?.let {
-            if (isAlive()) {
-                TerminateProcess(it, 1u)
-            }
-            CloseHandle(it)
-        }
+        val handle = processHandle ?: return
+        if (isAlive()) TerminateProcess(handle, 1u)
     }
 }
 
@@ -62,19 +77,11 @@ actual suspend fun Process.readStderrSnapshot(maxBytes: Int, timeoutMillis: Long
  * the one running browsers in production, uses `ProcessHandle.descendants()` for that.
  */
 /**
- * Reads the exit status via `GetExitCodeProcess`, the same call [Process.isAlive] uses — null while
- * it still reports `STILL_ACTIVE`.
+ * Reads the exit status recorded by [Process.isAlive] through `GetExitCodeProcess` — null while the
+ * process still runs.
  */
 @OptIn(ExperimentalForeignApi::class)
-actual fun Process.exitCodeOrNull(): Int? {
-    val handle = processHandle ?: return null
-    val code = memScoped {
-        val c = alloc<DWORDVar>()
-        GetExitCodeProcess(handle, c.ptr)
-        c.value
-    }
-    return if (code == STILL_ACTIVE) null else code.toInt()
-}
+actual fun Process.exitCodeOrNull(): Int? = if (isAlive()) null else exitCode?.toInt()
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun Process.killTree() {
@@ -147,7 +154,8 @@ actual fun isRoot(): Boolean {
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun tempProfileDir(): Path {
-    val tempDir = getEnv("TEMP") ?: getEnv("TMP") ?: "C:\\Temp"
+    // Without a trailing separator, which would double the one added below.
+    val tempDir = (getEnv("TEMP") ?: getEnv("TMP") ?: "C:\\Temp").trimEnd('\\', '/')
     val uniqueName = "kdriver_${Random.nextLong().toString(16)}"
     val profilePath = "$tempDir\\$uniqueName"
 
