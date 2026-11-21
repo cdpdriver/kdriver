@@ -1,9 +1,9 @@
 package dev.kdriver.core.browser
 
 import dev.kdriver.cdp.domain.Network
-import dev.kdriver.core.awaitTitle
 import dev.kdriver.core.sampleFile
 import dev.kdriver.core.tab.ReadyState
+import dev.kdriver.core.tab.evaluate
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.files.Path
 import kotlin.io.path.deleteIfExists
@@ -189,21 +189,22 @@ class BrowserTest {
         assertEquals(3, userDataDirs.size)
 
         val page1 = browser1.get(sampleFile("groceries.html"))
-        // Local pages: the test is about the browsers, not about how fast a remote site answers. And not a
-        // fixed wait: get() returns before the page has loaded, while the title is still its URL.
-        page1.awaitTitle(browser1, "Grocery List")
+        // Local pages: the test is about the browsers, not about how fast a remote site answers. Read once
+        // loaded, from the document: get() returns once the navigation has started, and the target's title
+        // can still be its URL for a while after the load.
+        page1.waitForReadyState(ReadyState.COMPLETE)
         assertNotNull(page1.targetInfo)
-        assertEquals("Grocery List", page1.targetInfo?.title)
+        assertEquals("Grocery List", page1.evaluate<String>("document.title"))
 
         val page2 = browser2.get(sampleFile("lookup-test.html"))
-        page2.awaitTitle(browser2, "Lookup")
+        page2.waitForReadyState(ReadyState.COMPLETE)
         assertNotNull(page2.targetInfo)
-        assertEquals("Lookup", page2.targetInfo?.title)
+        assertEquals("Lookup", page2.evaluate<String>("document.title"))
 
         val page3 = browser3.get(sampleFile("profile.html"))
-        page3.awaitTitle(browser3, "Fetch Example")
+        page3.waitForReadyState(ReadyState.COMPLETE)
         assertNotNull(page3.targetInfo)
-        assertEquals("Fetch Example", page3.targetInfo?.title)
+        assertEquals("Fetch Example", page3.evaluate<String>("document.title"))
 
         browser1.stop()
         browser2.stop()
