@@ -26,7 +26,11 @@ class LookupBehaviourTest {
     private fun withPage(block: suspend Tab.() -> Unit) = runBlocking {
         val browser: Browser = createBrowser(this as CoroutineScope, headless = true, sandbox = false)
         try {
-            browser.get(sampleFile("lookup-test.html")).block()
+            // get() returns once the navigation has started: a lookup before the page has loaded would
+            // find nothing (and time out) rather than reach the document.
+            val tab = browser.get(sampleFile("lookup-test.html"))
+            tab.waitForReadyState(ReadyState.COMPLETE)
+            tab.block()
         } finally {
             browser.stop()
         }

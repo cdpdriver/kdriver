@@ -188,21 +188,22 @@ class BrowserTest {
         )
         assertEquals(3, userDataDirs.size)
 
-        val page1 = browser1.get("https://example.com/one")
-        // Not a fixed wait: get() returns before the page has loaded, while the title is still its URL.
-        page1.awaitTitle(browser1, "Example Domain")
+        val page1 = browser1.get(sampleFile("groceries.html"))
+        // Local pages: the test is about the browsers, not about how fast a remote site answers. And not a
+        // fixed wait: get() returns before the page has loaded, while the title is still its URL.
+        page1.awaitTitle(browser1, "Grocery List")
         assertNotNull(page1.targetInfo)
-        assertEquals("Example Domain", page1.targetInfo?.title)
+        assertEquals("Grocery List", page1.targetInfo?.title)
 
-        val page2 = browser2.get("https://example.com/two")
-        page2.awaitTitle(browser2, "Example Domain")
+        val page2 = browser2.get(sampleFile("lookup-test.html"))
+        page2.awaitTitle(browser2, "Lookup")
         assertNotNull(page2.targetInfo)
-        assertEquals("Example Domain", page2.targetInfo?.title)
+        assertEquals("Lookup", page2.targetInfo?.title)
 
-        val page3 = browser3.get("https://example.com/three")
-        page3.awaitTitle(browser3, "Example Domain")
+        val page3 = browser3.get(sampleFile("profile.html"))
+        page3.awaitTitle(browser3, "Fetch Example")
         assertNotNull(page3.targetInfo)
-        assertEquals("Example Domain", page3.targetInfo?.title)
+        assertEquals("Fetch Example", page3.targetInfo?.title)
 
         browser1.stop()
         browser2.stop()
