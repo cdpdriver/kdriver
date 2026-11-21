@@ -1,6 +1,7 @@
 package dev.kdriver.core.browser
 
 import dev.kdriver.cdp.domain.Network
+import dev.kdriver.core.awaitTitle
 import dev.kdriver.core.sampleFile
 import dev.kdriver.core.tab.ReadyState
 import kotlinx.coroutines.runBlocking
@@ -143,6 +144,8 @@ class BrowserTest {
     fun testGetContentGetsHtmlContent() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get("https://example.com")
+        // get() returns once the navigation has started: read the document once it has loaded.
+        tab.waitForReadyState(ReadyState.COMPLETE)
         val content = tab.getContent()
         assertTrue(content.lowercase().startsWith("<!doctype html>"))
         browser.stop()
@@ -186,17 +189,20 @@ class BrowserTest {
         assertEquals(3, userDataDirs.size)
 
         val page1 = browser1.get("https://example.com/one")
-        page1.wait()
+        // Not a fixed wait: get() returns before the page has loaded, while the title is still its URL.
+        page1.awaitTitle(browser1, "Example Domain")
         assertNotNull(page1.targetInfo)
         assertEquals("Example Domain", page1.targetInfo?.title)
 
         val page2 = browser2.get("https://example.com/two")
-        page2.wait()
+        // Not a fixed wait: get() returns before the page has loaded, while the title is still its URL.
+        page2.awaitTitle(browser2, "Example Domain")
         assertNotNull(page2.targetInfo)
         assertEquals("Example Domain", page2.targetInfo?.title)
 
         val page3 = browser3.get("https://example.com/three")
-        page3.wait()
+        // Not a fixed wait: get() returns before the page has loaded, while the title is still its URL.
+        page3.awaitTitle(browser3, "Example Domain")
         assertNotNull(page3.targetInfo)
         assertEquals("Example Domain", page3.targetInfo?.title)
 

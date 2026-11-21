@@ -121,6 +121,9 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(libs.tests.mockk)
                 implementation(libs.tests.coroutines)
+                // Prints what kdriver logs (warnings and errors only, see simplelogger.properties),
+                // such as why a browser failed to start, instead of dropping it.
+                runtimeOnly(libs.tests.slf4jSimple)
             }
         }
         val macosTest by getting {

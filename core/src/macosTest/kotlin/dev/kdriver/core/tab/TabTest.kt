@@ -11,6 +11,8 @@ class TabTest {
     fun testGetContentGetsHtmlContent() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get("https://example.com")
+        // get() returns once the navigation has started: read the document once it has loaded.
+        tab.waitForReadyState(ReadyState.COMPLETE)
         val content = tab.getContent()
         assertTrue(content.lowercase().startsWith("<!doctype html>"))
         browser.stop()
