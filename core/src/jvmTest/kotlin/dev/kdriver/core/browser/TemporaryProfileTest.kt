@@ -171,6 +171,35 @@ class TemporaryProfileTest {
     }
 
     @Test
+    fun create_keepsForTheExitHookABrowserItsFailedStartAlreadyStopped() = runBlocking {
+        var launched: DefaultBrowser? = null
+        assertFailsWith<IllegalStateException> {
+            DefaultBrowser.create(this, Config(headless = true, sandbox = false)) { scope, config ->
+                object : DefaultBrowser(scope, config) {
+                    // As start() does when the browser never answers: it stops the browser, then throws.
+                    override suspend fun start(): Browser {
+                        super.start()
+                        deleteProfile = { false }
+                        stop()
+                        error("failed to connect")
+                    }
+                }.also { launched = it }
+            }
+        }
+
+        val browser = assertNotNull(launched)
+        val profile = File(browser.config.userDataDir.toString())
+        try {
+            assertTrue(profile.isDirectory, "the profile could not be deleted…")
+            assertTrue(browser in StartedBrowsers, "…so the browser stays for the exit hook, not detached")
+        } finally {
+            browser.deleteProfile = { deleteTemporaryProfile(it) }
+            browser.stop()
+        }
+        assertFalse(profile.exists())
+    }
+
+    @Test
     fun create_keepsTheOriginalFailureWhenTheCleanupFailsToo() = runBlocking {
         val failure = assertFailsWith<IllegalStateException> {
             DefaultBrowser.create(this, Config(headless = true, sandbox = false)) { scope, config ->

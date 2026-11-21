@@ -57,6 +57,14 @@ open class DefaultBrowser(
      * [detach]: the profile may only be deleted once this process has exited.
      */
     private var temporaryProfileUser: Process? = null
+
+    /**
+     * Whether this instance launched a browser process (rather than connecting to one), even if it
+     * has been stopped since: a failed start may have stopped it already, and must not then be
+     * treated as a browser it only connected to.
+     */
+    internal var launchedProcess: Boolean = false
+        private set
     private val temporaryProfileMutex = Mutex()
 
     /** How long [cleanupTemporaryProfile] waits for the browser process to exit; shortened by tests. */
@@ -186,7 +194,7 @@ open class DefaultBrowser(
                 // On failure the caller never gets this instance, so it could never stop the browser
                 // it launched. A browser it only connected to (connect-existing) is not ours to close:
                 // it may be shared, so only the client side is torn down.
-                cleanUpAfter(e) { if (instance.pid != null) instance.stop() else instance.detach() }
+                cleanUpAfter(e) { if (instance.launchedProcess) instance.stop() else instance.detach() }
                 throw e
             }
             return instance
@@ -351,6 +359,7 @@ open class DefaultBrowser(
             }
             process = launched
             temporaryProfileUser = launched
+            launchedProcess = true
             // Only a browser kdriver launched: one it merely connected to (browserUrl, or host and
             // port) may be shared or owned by something else, so the exit hook must not close it.
             StartedBrowsers.register(this)
@@ -542,7 +551,12 @@ open class DefaultBrowser(
         // browser started on the same --user-data-dir right after would hang before opening its debug
         // port, and the start would time out for no visible reason.
         val process = process ?: return
-        if (!process.destroyAndAwaitExit()) logger.warn("Browser process ${process.pid()} still alive after kill")
+        if (!process.destroyAndAwaitExit()) {
+            // Kept, so that a later stop() (the exit hook's, since the browser stays registered with
+            // its profile) tries to kill it again.
+            logger.warn("Browser process ${process.pid()} still alive after kill")
+            return
+        }
         this.process = null
     }
 

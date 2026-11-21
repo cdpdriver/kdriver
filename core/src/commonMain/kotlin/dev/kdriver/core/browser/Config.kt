@@ -59,8 +59,8 @@ class Config(
      * True when [userDataDir] is a temporary profile kdriver created (no directory was given), and it
      * has been created already.
      *
-     * Carried over by [copy], like [userDataDir] itself: the browser that runs on such a profile
-     * deletes it when it stops, whichever copy of the configuration created it. Otherwise a profile
+     * Carried over by [copy], like [userDataDir] itself: the browser kdriver launches on such a
+     * profile deletes it when it stops, whichever copy of the configuration created it. Otherwise a profile
      * created before the browser copied its configuration (for instance by reading [userDataDir]
      * first) would never be deleted.
      */
@@ -92,7 +92,7 @@ class Config(
      * The browser profile directory.
      *
      * When none is given, the first read creates a temporary `kdriver_*` directory, which the browser
-     * running on it deletes when it stops. A directory given here is never deleted.
+     * kdriver launches on it deletes when it stops. A directory given here is never deleted.
      */
     var userDataDir: Path
         get() {
@@ -166,7 +166,7 @@ class Config(
      * mutating one config never affects the other.
      *
      * A temporary profile this config already created is shared with the copy, not duplicated: the
-     * browser that runs on it deletes it when it stops (see [Browser.cleanupTemporaryProfile]).
+     * browser kdriver launches on it deletes it when it stops (see [Browser.cleanupTemporaryProfile]).
      */
     fun copy(): Config = Config(
         // Pass the already-resolved executable so the copy does not re-run the disk search.
