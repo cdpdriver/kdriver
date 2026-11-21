@@ -444,6 +444,20 @@ class TemporaryProfileTest {
     }
 
     @Test
+    fun exitHook_leavesABrowserItOnlyConnectedTo() = runBlocking {
+        val owner = createBrowser(this, headless = true, sandbox = false)
+        val connected = createBrowser(this, Config(host = owner.config.host, port = owner.config.port))
+        try {
+            assertEquals(null, connected.pid, "it connected to the running browser, launched nothing")
+            assertFalse(connected in StartedBrowsers, "a browser kdriver did not launch is not closed on exit")
+            assertTrue(owner in StartedBrowsers)
+        } finally {
+            connected.detach()
+            owner.stop()
+        }
+    }
+
+    @Test
     fun detach_keepsTheProfileTheBrowserStillRunsOn() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val profile = File(browser.config.userDataDir.toString())

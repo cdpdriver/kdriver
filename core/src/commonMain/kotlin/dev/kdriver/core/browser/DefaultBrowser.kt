@@ -351,8 +351,10 @@ open class DefaultBrowser(
             }
             process = launched
             temporaryProfileUser = launched
+            // Only a browser kdriver launched: one it merely connected to (browserUrl, or host and
+            // port) may be shared or owned by something else, so the exit hook must not close it.
+            StartedBrowsers.register(this)
         }
-        StartedBrowsers.register(this)
 
         logger.info("Browser process started with PID: ${process?.pid()}")
         if (config.browserUrl == null && config.port == null) error("Port not set")

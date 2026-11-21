@@ -8,7 +8,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * The browsers this process started and has not stopped (nor detached) yet.
+ * The browsers this process launched and has not stopped (nor detached) yet. A browser it only
+ * connected to (through [Config.browserUrl], or a host and port) is never in it: it may be shared, or
+ * owned by something else, so it is not closed on exit.
  *
  * When the host process exits without calling [Browser.stop], they are stopped from a single
  * shutdown hook (see [addShutdownHook]), which also deletes their temporary profiles. Without it, a
