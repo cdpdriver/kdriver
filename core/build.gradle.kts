@@ -126,13 +126,18 @@ kotlin {
                 runtimeOnly(libs.tests.slf4jSimple)
             }
         }
+        val posixTest by creating {
+            dependsOn(commonTest.get())
+        }
         val macosTest by getting {
+            dependsOn(posixTest)
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.tests.coroutines)
             }
         }
         val linuxTest by getting {
+            dependsOn(posixTest)
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.tests.coroutines)

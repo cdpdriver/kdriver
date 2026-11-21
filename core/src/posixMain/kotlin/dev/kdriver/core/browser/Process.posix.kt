@@ -100,11 +100,15 @@ actual fun exists(path: Path): Boolean {
 
 @OptIn(ExperimentalForeignApi::class, UnsafeNumber::class)
 actual fun tempProfileDir(): Path {
-    val tempDir = getenv("TMPDIR")?.toKString() ?: "/tmp"
+    // Without a trailing separator ($TMPDIR has one on macOS), which would double the one added below
+    // ("/" becomes "", so the profile is created right under it).
+    val tempDir = (getenv("TMPDIR")?.toKString() ?: "/tmp").trimEnd('/')
     val uniqueName = "kdriver_${Random.nextLong().toString(16)}"
     val profilePath = "$tempDir/$uniqueName"
 
-    mkdir(profilePath, 0x1FFu) // 0777 permissions
+    // Owner only, like the profiles Chrome creates: nobody else may list it, nor add entries (such as
+    // a symbolic link) that its deletion would then have to deal with.
+    mkdir(profilePath, S_IRWXU.convert())
 
     return Path(profilePath)
 }
