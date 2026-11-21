@@ -5,8 +5,9 @@ detekt = "1.23.8"
 dokka = "2.2.0"
 ksp = "2.3.12"
 maven = "0.37.0"
-ktor = "3.4.0"
+ktor = "3.4.3"
 mockk = "1.13.12"
+slf4j = "2.0.17"
 jsoup = "1.16.2"
 kotlinx-coroutines = "1.10.2"
 kotlinx-serialization = "1.8.1"
@@ -34,6 +35,7 @@ ktor-clientDarwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor
 ktor-clientCurl = { module = "io.ktor:ktor-client-curl", version.ref = "ktor" }
 ktor-clientWinhttp = { module = "io.ktor:ktor-client-winhttp", version.ref = "ktor" }
 tests-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+tests-slf4jSimple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 tests-jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 tests-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }

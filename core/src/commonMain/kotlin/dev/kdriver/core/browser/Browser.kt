@@ -103,6 +103,10 @@ interface Browser {
 
     /**
      * Launches the actual browser
+     *
+     * If the browser process this instance launched has died, a new browser is started on the same
+     * configuration and profile and returned: use that instance from then on. It owns the process and
+     * the temporary profile, so [stop] it rather than this one.
      */
     suspend fun start(): Browser
 
@@ -134,10 +138,27 @@ interface Browser {
      * through [Config.browserUrl]; use [stop] to shut the browser down.
      *
      * A browser process launched by this instance is left running too; [stop] will no longer reach
-     * it. This instance cannot be used anymore afterwards.
+     * it, and the shutdown hook will not stop it either. This instance cannot be used anymore
+     * afterwards.
+     *
+     * Its temporary profile (when no [Config.userDataDir] was given) is kept on disk, since the
+     * browser still runs on it. It is deleted only if [cleanupTemporaryProfile] is called once that
+     * browser has exited; otherwise whoever shuts the browser down owns the directory, found in
+     * [Config.userDataDir].
      */
     suspend fun detach()
 
+    /**
+     * Deletes the temporary profile this browser created, when no [Config.userDataDir] was given.
+     *
+     * A profile passed as [Config.userDataDir] is never deleted. Nor is the temporary one while the
+     * browser process still runs: this waits a few seconds for it to exit, then gives up and leaves
+     * the profile in place. Calling it again, or after the profile is gone, does nothing.
+     *
+     * [stop] already calls it, and so does the shutdown hook that stops the browsers still running
+     * when the host process exits (on the JVM). There is usually no need to call it yourself, except
+     * after [detach], which keeps the profile.
+     */
     suspend fun cleanupTemporaryProfile()
 
     /**

@@ -3,6 +3,7 @@ package dev.kdriver.core.browser
 import dev.kdriver.cdp.domain.Network
 import dev.kdriver.core.sampleFile
 import dev.kdriver.core.tab.ReadyState
+import dev.kdriver.core.tab.evaluate
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.files.Path
 import kotlin.io.path.deleteIfExists
@@ -143,6 +144,8 @@ class BrowserTest {
     fun testGetContentGetsHtmlContent() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)
         val tab = browser.get("https://example.com")
+        // get() returns once the navigation has started: read the document once it has loaded.
+        tab.waitForReadyState(ReadyState.COMPLETE)
         val content = tab.getContent()
         assertTrue(content.lowercase().startsWith("<!doctype html>"))
         browser.stop()
@@ -185,20 +188,23 @@ class BrowserTest {
         )
         assertEquals(3, userDataDirs.size)
 
-        val page1 = browser1.get("https://example.com/one")
-        page1.wait()
+        val page1 = browser1.get(sampleFile("groceries.html"))
+        // Local pages: the test is about the browsers, not about how fast a remote site answers. Read once
+        // loaded, from the document: get() returns once the navigation has started, and the target's title
+        // can still be its URL for a while after the load.
+        page1.waitForReadyState(ReadyState.COMPLETE)
         assertNotNull(page1.targetInfo)
-        assertEquals("Example Domain", page1.targetInfo?.title)
+        assertEquals("Grocery List", page1.evaluate<String>("document.title"))
 
-        val page2 = browser2.get("https://example.com/two")
-        page2.wait()
+        val page2 = browser2.get(sampleFile("lookup-test.html"))
+        page2.waitForReadyState(ReadyState.COMPLETE)
         assertNotNull(page2.targetInfo)
-        assertEquals("Example Domain", page2.targetInfo?.title)
+        assertEquals("Lookup", page2.evaluate<String>("document.title"))
 
-        val page3 = browser3.get("https://example.com/three")
-        page3.wait()
+        val page3 = browser3.get(sampleFile("profile.html"))
+        page3.waitForReadyState(ReadyState.COMPLETE)
         assertNotNull(page3.targetInfo)
-        assertEquals("Example Domain", page3.targetInfo?.title)
+        assertEquals("Fetch Example", page3.evaluate<String>("document.title"))
 
         browser1.stop()
         browser2.stop()
