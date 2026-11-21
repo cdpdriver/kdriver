@@ -56,13 +56,16 @@ class Config(
     private var _customDataDir: Boolean = false
 
     /**
-     * True only when *this* instance created the temporary profile in [userDataDir].
+     * True when [userDataDir] is a temporary profile kdriver created (no directory was given), and it
+     * has been created already.
      *
-     * Deliberately not carried over by [copy]: a copy that inherits an already created temporary
-     * profile shares it with the original, so it must not delete it.
+     * Carried over by [copy], like [userDataDir] itself: the browser that runs on such a profile
+     * deletes it when it stops, whichever copy of the configuration created it. Otherwise a profile
+     * created before the browser copied its configuration (for instance by reading [userDataDir]
+     * first) would never be deleted.
      */
-    internal var createdTemporaryProfile: Boolean = false
-        private set
+    internal val createdTemporaryProfile: Boolean
+        get() = _userDataDir != null && !_customDataDir
 
     private val _browserArgs: MutableList<String> = browserArgs?.toMutableList() ?: mutableListOf()
     internal val _extensions: MutableList<Path> = mutableListOf()
@@ -85,19 +88,23 @@ class Config(
         }
     }
 
+    /**
+     * The browser profile directory.
+     *
+     * When none is given, the first read creates a temporary `kdriver_*` directory, which the browser
+     * running on it deletes when it stops. A directory given here is never deleted.
+     */
     var userDataDir: Path
         get() {
             if (_userDataDir == null) {
                 _userDataDir = tempProfileDir()
                 _customDataDir = false
-                createdTemporaryProfile = true
             }
             return _userDataDir!!
         }
         set(value) {
             _userDataDir = value
             _customDataDir = true
-            createdTemporaryProfile = false
         }
 
     val usesCustomDataDir: Boolean
@@ -157,6 +164,9 @@ class Config(
      *
      * The copy is deep where it matters: the argument and extension lists are duplicated, so
      * mutating one config never affects the other.
+     *
+     * A temporary profile this config already created is shared with the copy, not duplicated: the
+     * browser that runs on it deletes it when it stops (see [Browser.cleanupTemporaryProfile]).
      */
     fun copy(): Config = Config(
         // Pass the already-resolved executable so the copy does not re-run the disk search.

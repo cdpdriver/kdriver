@@ -114,22 +114,18 @@ class TemporaryProfileTest {
     }
 
     @Test
-    fun stop_keepsATemporaryProfileInheritedThroughCopy() = runBlocking {
+    fun stop_deletesATemporaryProfileCreatedBeforeTheBrowserCopiedItsConfig() = runBlocking {
         val config = Config(headless = true, sandbox = false)
-        // Reading it creates the temporary profile on this config: the browser's own copy inherits it.
+        // Reading it creates the temporary profile on this config, before the browser copies it.
         val profile = File(config.userDataDir.toString())
-        try {
-            val browser = createBrowser(this, config)
-            assertEquals(config.userDataDir, browser.config.userDataDir, "the browser runs on the inherited profile")
-            assertFalse(browser.config.createdTemporaryProfile)
+        val browser = createBrowser(this, config)
+        assertEquals(config.userDataDir, browser.config.userDataDir, "the browser runs on that profile")
+        assertTrue(browser.config.createdTemporaryProfile)
 
-            browser.stop()
+        browser.stop()
 
-            assertTrue(profile.isDirectory, "a profile the browser did not create must not be deleted")
-            assertFalse(browser in StartedBrowsers)
-        } finally {
-            deleteTemporaryProfile(Path(profile.path))
-        }
+        assertFalse(profile.exists(), "a temporary profile kdriver created must not leak, whichever copy created it")
+        assertFalse(browser in StartedBrowsers)
     }
 
     @Test
@@ -379,17 +375,93 @@ class TemporaryProfileTest {
     }
 
     @Test
-    fun copyOfAConfigDoesNotOwnItsTemporaryProfile() {
+    fun copyOfAConfigKeepsItsTemporaryProfileATemporaryOne() {
         val original = Config(browserExecutablePath = Path("/usr/bin/chromium"))
+        assertFalse(original.createdTemporaryProfile, "nothing is created before the profile is read")
+        assertFalse(original.copy().createdTemporaryProfile)
         val profile = original.userDataDir
         try {
             assertTrue(original.createdTemporaryProfile)
             val copy = original.copy()
             assertEquals(profile, copy.userDataDir, "the copy shares the profile…")
-            assertFalse(copy.createdTemporaryProfile, "…so it must not delete it")
+            assertTrue(copy.createdTemporaryProfile, "…and the browser that runs on it deletes it")
+            assertFalse(copy.usesCustomDataDir)
         } finally {
             deleteRecursively(profile)
         }
+    }
+
+    @Test
+    fun copyOfAConfigWithACustomUserDataDirNeverOwnsIt() {
+        val custom = Config(browserExecutablePath = Path("/usr/bin/chromium"), userDataDir = Path("/tmp/mine"))
+
+        assertFalse(custom.createdTemporaryProfile)
+        assertFalse(custom.copy().createdTemporaryProfile)
+        assertTrue(custom.copy().usesCustomDataDir)
+    }
+
+    @Test
+    fun stop_deletesTheProfileEvenWhenTheGracefulCloseFails() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false) as DefaultBrowser
+        val profile = File(browser.config.userDataDir.toString())
+        val real = assertNotNull(browser.connection)
+        val failing = mockk<Connection>(relaxed = true)
+        every { failing.generatedDomains } returns mutableMapOf()
+        coEvery { failing.callCommand("Browser.close", any(), any()) } throws IllegalStateException("close failed")
+        browser.connection = failing
+        try {
+            val failure = assertFailsWith<IllegalStateException> { browser.stop() }
+
+            assertEquals("close failed", failure.message, "the failure is still reported")
+            assertTrue(browser.stopped, "the process is killed all the same")
+            assertFalse(profile.exists(), "and its profile deleted")
+            assertFalse(browser in StartedBrowsers)
+            coVerify { failing.close() }
+        } finally {
+            real.close()
+        }
+    }
+
+    @Test
+    fun stop_deletesTheProfileEvenWhenClosingTheConnectionFails() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false) as DefaultBrowser
+        val profile = File(browser.config.userDataDir.toString())
+        val real = assertNotNull(browser.connection)
+        val failing = mockk<Connection>(relaxed = true)
+        every { failing.generatedDomains } returns mutableMapOf()
+        coEvery { failing.close() } throws IllegalStateException("connection close failed")
+        browser.connection = failing
+        try {
+            val failure = assertFailsWith<IllegalStateException> { browser.stop() }
+
+            assertEquals("connection close failed", failure.message)
+            assertTrue(browser.stopped)
+            assertFalse(profile.exists(), "the profile is deleted after a failed step")
+            assertEquals(null, browser.connection)
+        } finally {
+            real.close()
+        }
+    }
+
+    @Test
+    fun detach_keepsTheProfileTheBrowserStillRunsOn() = runBlocking {
+        val browser = createBrowser(this, headless = true, sandbox = false)
+        val profile = File(browser.config.userDataDir.toString())
+        val pid = assertNotNull(browser.pid)
+        val process = assertNotNull(ProcessHandle.of(pid).orElse(null))
+        try {
+            browser.detach()
+
+            assertTrue(process.isAlive, "detach leaves the browser running…")
+            assertTrue(profile.isDirectory, "…so its profile is kept")
+            assertFalse(browser in StartedBrowsers, "and the exit hook leaves both alone")
+        } finally {
+            // What the owner of a detached browser does: shut it down, then delete its profile.
+            (process.descendants().toList() + process).forEach { it.destroyForcibly() }
+            process.onExit().get()
+            browser.cleanupTemporaryProfile()
+        }
+        assertFalse(profile.exists(), "cleanupTemporaryProfile deletes it once the browser has exited")
     }
 
     @Test

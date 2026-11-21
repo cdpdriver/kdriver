@@ -151,6 +151,24 @@ open class DefaultBrowser(
             }
         }
 
+        /**
+         * Runs every one of [steps], even after one of them fails. The first failure is rethrown once
+         * they have all run, with the later ones attached to it as suppressed.
+         */
+        @Suppress("TooGenericExceptionCaught") // collects every failure, then rethrows the first one
+        private suspend fun runEach(vararg steps: suspend () -> Unit) {
+            var failure: Throwable? = null
+            for (step in steps) {
+                try {
+                    step()
+                } catch (e: Throwable) {
+                    val first = failure
+                    if (first == null) failure = e else first.addSuppressed(e)
+                }
+            }
+            failure?.let { throw it }
+        }
+
         /** [create], with the instance built by [factory]: tests use it to make the start fail. */
         @Suppress("TooGenericExceptionCaught") // cleans up whatever made the start fail, then rethrows it
         internal suspend fun create(
@@ -323,9 +341,7 @@ open class DefaultBrowser(
             logger.info("starting\n\texecutable :$exe\n\narguments:\n${params.joinToString("\n\t")}")
 
             // config() above created the temporary profile, if any: from here on it is ours to delete.
-            if (!config.usesCustomDataDir && config.createdTemporaryProfile) {
-                temporaryProfile = config.userDataDir
-            }
+            if (config.createdTemporaryProfile) temporaryProfile = config.userDataDir
             @Suppress("TooGenericExceptionCaught") // cleans up whatever made the launch fail, then rethrows it
             val launched = try {
                 startProcess(exe, params)
@@ -405,7 +421,8 @@ open class DefaultBrowser(
     /**
      * Starts a new browser on the same configuration, because this one's process has died.
      *
-     * The new browser runs on the same profile, so it takes over deleting it: this one must no longer
+     * The new browser runs on the same profile, so it takes over deleting it (its configuration, a
+     * copy of this one, says the profile is a temporary one kdriver created): this one must no longer
      * delete it, nor be stopped on exit.
      */
     @Suppress("TooGenericExceptionCaught") // cleans up whatever made the relaunch fail, then rethrows it
@@ -427,17 +444,12 @@ open class DefaultBrowser(
             cleanUpAfter(e) { cleanupTemporaryProfile() }
             throw e
         }
-        if (inherited != null) restarted.adoptTemporaryProfile(inherited)
         return restarted
     }
 
     /** Launches the browser that replaces this one in [restart]; overridden by tests to make it fail. */
     internal open suspend fun relaunch(config: Config): DefaultBrowser =
         create(coroutineScope, config, ::DefaultBrowser)
-
-    private suspend fun adoptTemporaryProfile(profile: Path) = temporaryProfileMutex.withLock {
-        temporaryProfile = profile
-    }
 
     private suspend fun handleTargetUpdate(event: Any) = updateTargetInfoMutex.withLock {
         when (event) {
@@ -482,43 +494,62 @@ open class DefaultBrowser(
 
     override suspend fun stop() {
         logger.info("Stopping browser process with PID: ${process?.pid()}")
+        // Each step runs even if an earlier one failed or was cancelled: a graceful close that throws
+        // must not leave the process running nor its profile on disk. The first failure is rethrown.
+        runEach(
+            { closeGracefully() },
+            {
+                // Not cancellable, so a stop() called from the `finally` of a cancelled coroutine still
+                // kills the process and deletes the profile.
+                withContext(NonCancellable) {
+                    runEach(
+                        { killProcess() },
+                        { connection?.also { connection = null }?.close() },
+                        { http?.also { http = null }?.close() },
+                        { deleteProfileOnStop() },
+                    )
+                }
+            },
+            {
+                // Last, since it may be the caller's own scope.
+                logger.debug("Canceling coroutine scope...")
+                coroutineScope.cancel()
+            },
+        )
+        logger.info("Browser process stopped")
+    }
+
+    private suspend fun closeGracefully() {
         logger.debug("Closing browser gracefully...")
         try {
             withTimeoutOrNull(5.seconds) { connection?.browser?.close() }
         } catch (e: IOException) {
             // Nothing answers: the browser already died (crashed, or killed from outside). Its process
-            // and its profile are still dealt with below.
+            // and its profile are still dealt with afterwards.
             logger.debug("Could not close the browser gracefully: ${e.message}")
         } catch (e: ConnectionClosedException) {
             // The same, once the connection has given up on every send attempt.
             logger.debug("Could not close the browser gracefully: ${e.message}")
         }
+    }
+
+    private suspend fun killProcess() {
         logger.debug("Killing browser process...")
         // Wait for it to actually be gone, don't just ask. destroy() returns immediately and does not
-        // reach the browser's child processes, which keep open handles on the profile directory —
-        // a browser started on the same --user-data-dir right after would hang before opening its
-        // debug port, and the start would time out for no visible reason.
-        process?.let {
-            if (!it.destroyAndAwaitExit()) logger.warn("Browser process ${it.pid()} still alive after kill")
-        }
-        process = null
-        logger.debug("Closing connection...")
-        connection?.close()
-        connection = null
-        logger.debug("Closing HTTP API client...")
-        http?.close()
-        http = null
-        // Before cancelling the scope, which may be the caller's own; and non-cancellable, so a stop()
-        // called from a `finally` of a cancelled coroutine still deletes the profile.
-        withContext(NonCancellable) {
-            // No further wait: the process has just been waited for, and killed if it lingered.
-            cleanupTemporaryProfile(releaseTimeoutMillis = 0)
-            // Still registered if the profile could not be deleted, so the exit hook tries again.
-            if (temporaryProfile == null) StartedBrowsers.unregister(this@DefaultBrowser)
-        }
-        logger.debug("Canceling coroutine scope...")
-        coroutineScope.cancel()
-        logger.info("Browser process stopped")
+        // reach the browser's child processes, which keep open handles on the profile directory — a
+        // browser started on the same --user-data-dir right after would hang before opening its debug
+        // port, and the start would time out for no visible reason.
+        val process = process ?: return
+        if (!process.destroyAndAwaitExit()) logger.warn("Browser process ${process.pid()} still alive after kill")
+        this.process = null
+    }
+
+    private suspend fun deleteProfileOnStop() {
+        // No further wait: the process has just been waited for, and killed if it lingered. If the
+        // kill failed, the profile is kept, since the process may still be writing to it.
+        cleanupTemporaryProfile(releaseTimeoutMillis = 0)
+        // Still registered if the profile could not be deleted, so the exit hook tries again.
+        if (temporaryProfile == null) StartedBrowsers.unregister(this)
     }
 
     override suspend fun detach() {
