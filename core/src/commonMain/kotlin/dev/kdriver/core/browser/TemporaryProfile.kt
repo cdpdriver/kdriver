@@ -1,6 +1,8 @@
 package dev.kdriver.core.browser
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.io.files.Path
 
 /**
@@ -13,6 +15,12 @@ import kotlinx.io.files.Path
  * @return true if [path] no longer exists afterwards (including when it never existed).
  */
 internal expect fun deleteRecursively(path: Path): Boolean
+
+/**
+ * Where the blocking file system calls of a profile deletion run, so that a [Browser.stop] called
+ * from a small dispatcher (a UI thread, a single-threaded loop) does not block it during the walk.
+ */
+internal expect val fileSystemDispatcher: CoroutineDispatcher
 
 /**
  * Deletes a temporary profile, retrying for a short while if it cannot be removed at once.
@@ -34,7 +42,7 @@ internal suspend fun deleteTemporaryProfile(
     delete: (Path) -> Boolean = ::deleteRecursively,
 ): Boolean {
     repeat(attempts) { attempt ->
-        if (delete(path)) return true
+        if (withContext(fileSystemDispatcher) { delete(path) }) return true
         if (attempt < attempts - 1) delay(retryDelayMillis)
     }
     return false
