@@ -8,8 +8,9 @@ import kotlinx.io.files.Path
 import platform.posix.getenv
 import platform.posix.memset
 import platform.windows.*
-import kotlin.concurrent.AtomicReference
 import kotlin.concurrent.Volatile
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.ref.createCleaner
 import kotlin.random.Random
 
 @OptIn(ExperimentalForeignApi::class)
@@ -17,32 +18,24 @@ actual abstract class Process {
     abstract val processHandle: HANDLE?
     abstract val processId: DWORD
 
-    /** The exit code, once the process has been seen to exit; its handle is closed from then on. */
+    /** The exit code, once the process has been seen to exit. */
     @Volatile
     internal var exitCode: DWORD? = null
         private set
 
     actual fun isAlive(): Boolean {
-        // Null once the exit was seen (the handle is closed then), without a handle, or if unreadable.
-        val code = if (exitCode == null) processHandle?.let { readExitCode(it) } else null
-        if (code != null && code != STILL_ACTIVE) {
-            exitCode = code
-            releaseHandle()
-        }
-        return code == STILL_ACTIVE
+        if (exitCode != null) return false
+        val handle = processHandle ?: return false
+        val code = readExitCode(handle) ?: return false
+        if (code == STILL_ACTIVE) return true
+        exitCode = code
+        return false
     }
 
     private fun readExitCode(handle: HANDLE): DWORD? = memScoped {
         val c = alloc<DWORDVar>()
         if (GetExitCodeProcess(handle, c.ptr) == 0) null else c.value
     }
-
-    /**
-     * Closes the process handle, once the process has exited and nothing needs it anymore. Kept open
-     * until then, `destroy` included: [isAlive] reads the exit code through it, to know when the
-     * process is really gone (and its profile can be deleted).
-     */
-    protected abstract fun releaseHandle()
 
     actual fun pid(): Long {
         return processId.toLong()
@@ -51,27 +44,23 @@ actual abstract class Process {
     actual abstract fun destroy()
 }
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalNativeApi::class)
 private class WindowsProcess(
-    processHandle: HANDLE?,
+    override val processHandle: HANDLE?,
     override val processId: DWORD,
 ) : Process() {
-    private val handle = AtomicReference(processHandle)
-
-    override val processHandle: HANDLE?
-        get() = handle.value
-
-    /** Atomic, so two threads seeing the exit at once do not close the same handle twice. */
-    override fun releaseHandle() {
-        handle.getAndSet(null)?.let { CloseHandle(it) }
-    }
+    /**
+     * Closes the process handle once this object is unreachable, and never before: [isAlive] reads
+     * the exit code through it (to know when the process is really gone, and its profile can be
+     * deleted) and [destroy] terminates through it, from any thread, for as long as the object is
+     * used. Closing it any earlier would race them onto a closed, or reused, handle.
+     */
+    @Suppress("unused")
+    private val handleCleaner = processHandle?.let { handle -> createCleaner(handle) { CloseHandle(it) } }
 
     override fun destroy() {
-        processHandle?.let {
-            if (isAlive()) {
-                TerminateProcess(it, 1u)
-            }
-        }
+        val handle = processHandle ?: return
+        if (isAlive()) TerminateProcess(handle, 1u)
     }
 }
 
@@ -167,7 +156,8 @@ actual fun isRoot(): Boolean {
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun tempProfileDir(): Path {
-    val tempDir = getEnv("TEMP") ?: getEnv("TMP") ?: "C:\\Temp"
+    // Without a trailing separator, which would double the one added below.
+    val tempDir = (getEnv("TEMP") ?: getEnv("TMP") ?: "C:\\Temp").trimEnd('\\', '/')
     val uniqueName = "kdriver_${Random.nextLong().toString(16)}"
     val profilePath = "$tempDir\\$uniqueName"
 
