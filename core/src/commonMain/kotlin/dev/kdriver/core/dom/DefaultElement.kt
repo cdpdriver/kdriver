@@ -25,56 +25,21 @@ open class DefaultElement(
 
     private val logger = KtorSimpleLogger("Element")
 
-    private var currentNode: DOM.Node = node
-    private var currentTree: DOM.Node? = tree
-
-    // The document epoch the last binding attempt looked at (see [bindFromKeptDocument]).
-    private var bindingCheckedAt: Long = NOT_CHECKED
+    private val binding = ElementBinding(node, tree)
 
     /**
      * The node of this element. For an element found in the page (no [tree]), the first read after the document was
      * read, while the page has not changed since, takes the document's node of the same backend node id, with its node
-     * ids and parent id, as a lookup on the document gave it, when it holds the same subtree.
+     * ids and parent id, as a lookup on the document gave it, when it holds the same subtree (see [ElementBinding]).
      */
     override var node: DOM.Node
-        get() {
-            bindFromKeptDocument()
-            return currentNode
-        }
-        set(value) {
-            currentNode = value
-            bindingCheckedAt = NOT_CHECKED
-        }
+        get() = binding.bindFrom((tab as? DefaultTab)?.keptDocument()).node
+        set(value) = binding.replaceNode(value)
 
     /** The document this element was read from: for an element found in the page, filled as [node] is. */
     override var tree: DOM.Node?
-        get() {
-            bindFromKeptDocument()
-            return currentTree
-        }
-        set(value) {
-            currentTree = value
-            bindingCheckedAt = NOT_CHECKED
-        }
-
-    /**
-     * Binds an element found in the page to the document [DefaultTab] keeps from its last read, when it still matches
-     * the page, without any command: node ids, [tree] and [parent] are then those a lookup on the document gave. The
-     * document's node is taken only when it holds the same subtree as the one found (ids aside), so a read never
-     * changes what the element shows. Each kept document is looked at once; without one, the element stays as found
-     * until [update] or a lookup under it.
-     */
-    private fun bindFromKeptDocument() {
-        if (currentTree != null) return
-        val kept = (tab as? DefaultTab)?.keptDocument() ?: return
-        if (kept.epoch == bindingCheckedAt) return
-        bindingCheckedAt = kept.epoch
-        val found = currentNode
-        val documentNode = kept.nodeOf(found.backendNodeId) ?: return
-        if (documentNode.withoutIds() != found.withoutIds()) return
-        currentTree = kept.root
-        currentNode = documentNode
-    }
+        get() = binding.bindFrom((tab as? DefaultTab)?.keptDocument()).tree
+        set(value) = binding.replaceTree(value)
 
     private var remoteObject: Runtime.RemoteObject? = null
 
@@ -220,59 +185,7 @@ open class DefaultElement(
     private suspend fun getStableCoordinates(): CoordinateResult? {
         return try {
             apply<CoordinateResult?>(
-                jsFunction = """
-                    function() {
-                        if (!this || !this.isConnected) return null;
-
-                        return new Promise(resolve => {
-                            let lastTop = null;
-                            let lastLeft = null;
-                            let stableFrames = 0;
-                            const maxAttempts = 10;
-                            let attempts = 0;
-
-                            const checkStable = () => {
-                                attempts++;
-                                const rect = this.getBoundingClientRect();
-
-                                if (rect.width === 0 || rect.height === 0) {
-                                    resolve(null);
-                                    return;
-                                }
-
-                                if (lastTop !== null &&
-                                    Math.abs(rect.top - lastTop) < 1 &&
-                                    Math.abs(rect.left - lastLeft) < 1) {
-                                    stableFrames++;
-                                    if (stableFrames >= 2) {
-                                        resolve({
-                                            x: rect.left + rect.width / 2,
-                                            y: rect.top + rect.height / 2
-                                        });
-                                        return;
-                                    }
-                                } else {
-                                    stableFrames = 0;
-                                }
-
-                                lastTop = rect.top;
-                                lastLeft = rect.left;
-
-                                if (attempts < maxAttempts) {
-                                    requestAnimationFrame(checkStable);
-                                } else {
-                                    // Timeout: use current position
-                                    resolve({
-                                        x: rect.left + rect.width / 2,
-                                        y: rect.top + rect.height / 2
-                                    });
-                                }
-                            };
-
-                            requestAnimationFrame(checkStable);
-                        });
-                    }
-                """.trimIndent(),
+                jsFunction = STABLE_COORDINATES_JS,
                 awaitPromise = true
             )
         } catch (e: EvaluateException) {
@@ -863,9 +776,6 @@ open class DefaultElement(
     private companion object {
         // No node resolved yet: backend node ids are positive.
         const val NO_NODE = Int.MIN_VALUE
-
-        // No kept document looked at yet: epochs are never negative.
-        const val NOT_CHECKED = -1L
 
         // Human-like pauses, in milliseconds (lower bound inclusive, upper bound exclusive).
         const val TRAJECTORY_STEP_DELAY_MIN = 8L

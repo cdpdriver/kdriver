@@ -526,20 +526,25 @@ open class DefaultTab(
      * navigation anyway).
      */
     private suspend fun <T> inLookupGroup(lookup: suspend (LookupGroup) -> T): T {
-        val group = LookupGroup("kdriver-lookup-${Random.nextLong().toULong().toString(16)}")
+        val group = LookupGroup("kdriver-lookup-${Random.nextLong().toULong().toString(LOOKUP_GROUP_RADIX)}")
         try {
             return lookup(group)
         } finally {
-            if (group.holdsObjects) withContext(NonCancellable) {
-                withTimeoutOrNull(LOOKUP_RELEASE_WAIT) {
-                    try {
-                        val sent = group.release
-                        if (sent != null) sent.await() else runtime.releaseObjectGroup(group.name)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (_: Exception) {
-                        // Already gone with the page, or the connection is closing: nothing left to release.
-                    }
+            if (group.holdsObjects) releaseLookupGroup(group)
+        }
+    }
+
+    // The cleanup of [inLookupGroup], a function of its own: a cancellation of the wait goes on from here.
+    private suspend fun releaseLookupGroup(group: LookupGroup) {
+        withContext(NonCancellable) {
+            withTimeoutOrNull(LOOKUP_RELEASE_WAIT) {
+                try {
+                    val sent = group.release
+                    if (sent != null) sent.await() else runtime.releaseObjectGroup(group.name)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Already gone with the page, or the connection is closing: nothing left to release.
                 }
             }
         }
@@ -596,8 +601,9 @@ open class DefaultTab(
             )
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Result.failure(e)
+        } catch (expected: Exception) {
+            // Not swallowed: handed back as the failure, so that every reply is read before one is thrown.
+            Result.failure(expected)
         }
 
     private fun describeParameter(objectId: String): JsonElement =
@@ -1105,6 +1111,9 @@ private val GONE = listOf(
 
 /** How long the release of the objects of an in-page lookup may hold the lookup, at most, in milliseconds. */
 private const val LOOKUP_RELEASE_WAIT = 2_000L
+
+// The base of the random suffix of a lookup group's name (hexadecimal).
+private const val LOOKUP_GROUP_RADIX = 16
 
 /** The code and message Chrome answers `DOM.querySelector(All)` with for a selector it cannot parse. */
 private const val INVALID_SELECTOR_CODE = -32000
