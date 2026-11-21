@@ -4,11 +4,51 @@ import kotlinx.cinterop.*
 import kotlinx.io.files.Path
 import platform.windows.*
 
+/**
+ * Every path goes through [extendedLengthPath]: a profile nests deep enough (extension and cache
+ * directories) to pass the 260 characters a plain path is limited to, and such entries would be left.
+ */
 @OptIn(ExperimentalForeignApi::class)
 internal actual fun deleteRecursively(path: Path): Boolean {
-    val target = path.toString()
+    val target = extendedLengthPath(path.toString())
     deleteEntry(target)
-    return GetFileAttributesW(target) == INVALID_FILE_ATTRIBUTES
+    return isGone(target)
+}
+
+/** Only when the system says the entry does not exist: an invalid path or a denied access is not gone. */
+@OptIn(ExperimentalForeignApi::class)
+private fun isGone(path: String): Boolean {
+    if (GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES) return false
+    val error = GetLastError()
+    return error == ERROR_FILE_NOT_FOUND.toUInt() || error == ERROR_PATH_NOT_FOUND.toUInt()
+}
+
+/**
+ * [path] in the `\\?\` form, which the wide Windows file functions accept beyond `MAX_PATH` (260
+ * characters) without any system setting. That form is taken literally, with no normalisation, so
+ * separators are made single backslashes first. A relative path cannot take it and is returned as is
+ * (a temporary profile is always absolute).
+ */
+internal fun extendedLengthPath(path: String): String {
+    val slashes = path.replace('/', '\\')
+    // A leading pair is the start of a UNC, extended or device path: kept, the rest collapsed.
+    val lead = if (slashes.startsWith("\\\\")) "\\\\" else ""
+    val windowsPath = lead + collapseSeparators(slashes.substring(lead.length))
+    return when {
+        windowsPath.startsWith(EXTENDED_PREFIX) || windowsPath.startsWith(DEVICE_PREFIX) -> windowsPath
+        // \\server\share\... becomes \\?\UNC\server\share\...
+        windowsPath.startsWith("\\\\") -> EXTENDED_PREFIX + "UNC\\" + windowsPath.removePrefix("\\\\")
+        windowsPath.length >= 3 && windowsPath[0].isLetter() && windowsPath[1] == ':' && windowsPath[2] == '\\' ->
+            EXTENDED_PREFIX + windowsPath
+        else -> windowsPath
+    }
+}
+
+private const val EXTENDED_PREFIX = "\\\\?\\"
+private const val DEVICE_PREFIX = "\\\\.\\"
+
+private fun collapseSeparators(path: String): String = buildString(path.length) {
+    path.forEach { c -> if (c != '\\' || lastOrNull() != '\\') append(c) }
 }
 
 /**
