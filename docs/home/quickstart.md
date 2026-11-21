@@ -12,7 +12,7 @@ To install, add the dependency to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("dev.kdriver:core:0.6.3")
+    implementation("dev.kdriver:core:0.7.0")
 }
 ```
 
@@ -197,18 +197,18 @@ then asks the browser to describe only the matching elements, each with its subt
 document is never transferred, which matters most when the browser is far away (`browserUrl`) and
 the page is large or keeps changing.
 
-| What | How |
-| --- | --- |
-| Commands for `select` / `querySelector` | `Runtime.evaluate`, then `DOM.describeNode` of the match with the release of the object the lookup created (one round trip when nothing matches) |
-| Commands for `selectAll` / `querySelectorAll` | one `Runtime.evaluate` when nothing matches; otherwise also `Runtime.getProperties`, then every `DOM.describeNode` sent together, with the release of the objects the lookup created |
-| Data received | the matches and their subtrees; when they would hold more elements than the whole document (nested matches, a selector matching most of the page), the document is read instead, as before |
-| First call on a found element (`click`, `apply`, …) | resolves the node first (`DOM.resolveNode`), as before: a lookup leaves no object behind in the page |
-| Text, attributes, children, `backendNodeId` | read from the match and its subtree, as before |
+| What                                                                        | How                                                                                                                                                                                                                                                                                                                                              |
+|-----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Commands for `select` / `querySelector`                                     | `Runtime.evaluate`, then `DOM.describeNode` of the match with the release of the object the lookup created (one round trip when nothing matches)                                                                                                                                                                                                 |
+| Commands for `selectAll` / `querySelectorAll`                               | one `Runtime.evaluate` when nothing matches; otherwise also `Runtime.getProperties`, then every `DOM.describeNode` sent together, with the release of the objects the lookup created                                                                                                                                                             |
+| Data received                                                               | the matches and their subtrees; when they would hold more elements than the whole document (nested matches, a selector matching most of the page), the document is read instead, as before                                                                                                                                                       |
+| First call on a found element (`click`, `apply`, …)                         | resolves the node first (`DOM.resolveNode`), as before: a lookup leaves no object behind in the page                                                                                                                                                                                                                                             |
+| Text, attributes, children, `backendNodeId`                                 | read from the match and its subtree, as before                                                                                                                                                                                                                                                                                                   |
 | `element.node.nodeId`, `element.parentId`, `element.tree`, `element.parent` | filled on their first read from the document kept by an earlier read (`find`, `xpath`, a lookup under an element, `update`…) while the page has not changed since; otherwise `nodeId` may be 0, `parentId` and `tree` are `null` and `parent` throws, until `element.update()` reads the document; a lookup under the element binds it by itself |
-| Shadow roots, iframes | not searched (`selectAll(includeFrames = true)` reads the document to search inside each iframe, as before) |
-| Waiting | `select` / `selectAll` retry every 500 ms until the timeout, as before |
-| A navigation during the lookup | an object or context dropped by the navigation counts as no match: `select` tries again |
-| Invalid selector | the same `CDPException` as before (`DOM.querySelector` or `DOM.querySelectorAll`, code -32000, "DOM Error while querying") |
+| Shadow roots, iframes                                                       | not searched (`selectAll(includeFrames = true)` reads the document to search inside each iframe, as before)                                                                                                                                                                                                                                      |
+| Waiting                                                                     | `select` / `selectAll` retry every 500 ms until the timeout, as before                                                                                                                                                                                                                                                                           |
+| A navigation during the lookup                                              | an object or context dropped by the navigation counts as no match: `select` tries again                                                                                                                                                                                                                                                          |
+| Invalid selector                                                            | the same `CDPException` as before (`DOM.querySelector` or `DOM.querySelectorAll`, code -32000, "DOM Error while querying")                                                                                                                                                                                                                       |
 
 ```kotlin
 val item = tab.select("li.item")
