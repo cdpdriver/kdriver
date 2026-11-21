@@ -5,8 +5,10 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+/** Tab tests on the native POSIX targets (macOS, Linux). */
 class TabTest {
 
+    /** The page's HTML, once it has loaded. */
     @Test
     fun testGetContentGetsHtmlContent() = runBlocking {
         val browser = createBrowser(this, headless = true, sandbox = false)

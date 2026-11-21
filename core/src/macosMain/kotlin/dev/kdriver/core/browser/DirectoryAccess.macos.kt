@@ -1,3 +1,6 @@
+// One actual per POSIX target, named after the expect object it implements.
+@file:Suppress("MatchingDeclarationName")
+
 package dev.kdriver.core.browser
 
 import kotlinx.cinterop.ExperimentalForeignApi

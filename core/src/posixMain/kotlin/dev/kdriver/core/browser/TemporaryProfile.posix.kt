@@ -27,15 +27,14 @@ internal actual fun deleteRecursively(path: Path): Boolean {
 @OptIn(ExperimentalForeignApi::class)
 private fun withCanonicalParent(path: String): String {
     val slash = path.lastIndexOf('/')
-    if (slash < 0) return path
-    val parent = if (slash == 0) "/" else path.substring(0, slash)
+    val parent = if (slash == 0) "/" else path.substring(0, slash.coerceAtLeast(0))
     // A buffer of our own: the realpath Kotlin/Native binds on macOS is the legacy one, which refuses
     // a null buffer.
-    val canonical = memScoped {
+    val canonical = if (slash < 0) null else memScoped {
         val buffer = allocArray<ByteVar>(PATH_MAX + 1)
         realpath(parent, buffer)?.toKString()
-    } ?: return path
-    return "${canonical.trimEnd('/')}/${path.substring(slash + 1)}"
+    }
+    return canonical?.let { "${it.trimEnd('/')}/${path.substring(slash + 1)}" } ?: path
 }
 
 /**
@@ -89,9 +88,11 @@ private fun deleteEntry(entry: Entry) {
 @OptIn(ExperimentalForeignApi::class)
 private fun openDirectory(entry: Entry): Int {
     val fd = DirectoryAccess.openDirectory(entry)
-    if (fd >= 0 || errno != EACCES) return fd
-    if (!DirectoryAccess.grantOwnerAccess(entry)) return -1
-    return DirectoryAccess.openDirectory(entry)
+    return when {
+        fd >= 0 || errno != EACCES -> fd
+        DirectoryAccess.grantOwnerAccess(entry) -> DirectoryAccess.openDirectory(entry)
+        else -> -1
+    }
 }
 
 /**

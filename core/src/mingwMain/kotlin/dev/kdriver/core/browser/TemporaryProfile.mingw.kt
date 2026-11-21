@@ -38,14 +38,17 @@ internal fun extendedLengthPath(path: String): String {
         windowsPath.startsWith(EXTENDED_PREFIX) || windowsPath.startsWith(DEVICE_PREFIX) -> windowsPath
         // \\server\share\... becomes \\?\UNC\server\share\...
         windowsPath.startsWith("\\\\") -> EXTENDED_PREFIX + "UNC\\" + windowsPath.removePrefix("\\\\")
-        windowsPath.length >= 3 && windowsPath[0].isLetter() && windowsPath[1] == ':' && windowsPath[2] == '\\' ->
-            EXTENDED_PREFIX + windowsPath
+        isDriveAbsolute(windowsPath) -> EXTENDED_PREFIX + windowsPath
         else -> windowsPath
     }
 }
 
 private const val EXTENDED_PREFIX = "\\\\?\\"
 private const val DEVICE_PREFIX = "\\\\.\\"
+
+/** `C:\\...`: a drive letter, a colon and a separator. */
+private fun isDriveAbsolute(path: String): Boolean =
+    path.getOrNull(0)?.isLetter() == true && path.getOrNull(1) == ':' && path.getOrNull(2) == '\\'
 
 private fun collapseSeparators(path: String): String = buildString(path.length) {
     path.forEach { c -> if (c != '\\' || lastOrNull() != '\\') append(c) }

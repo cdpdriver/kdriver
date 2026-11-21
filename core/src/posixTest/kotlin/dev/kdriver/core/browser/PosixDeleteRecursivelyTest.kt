@@ -12,6 +12,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalForeignApi::class, UnsafeNumber::class)
 class PosixDeleteRecursivelyTest {
 
+    /** Directories and files at several levels are all deleted. */
     @Test
     fun removesNestedContent() {
         val root = tempDir("kdriver_delete_test_")
@@ -24,6 +25,7 @@ class PosixDeleteRecursivelyTest {
         assertFalse(exists(root))
     }
 
+    /** A directory of the profile without read, or without write and search permission, is made deletable. */
     @Test
     fun removesADirectoryItCannotListAtFirst() {
         // A permission check that root bypasses: nothing to prove there.
@@ -40,6 +42,7 @@ class PosixDeleteRecursivelyTest {
         assertFalse(exists(root))
     }
 
+    /** A link inside the profile is unlinked: its target is neither deleted nor has its mode changed. */
     @Test
     fun neverFollowsNorChangesWhatALinkPointsTo() {
         val outside = tempDir("kdriver_outside_test_")
@@ -61,6 +64,7 @@ class PosixDeleteRecursivelyTest {
         }
     }
 
+    /** A profile path that is itself a link is unlinked, not followed. */
     @Test
     fun removesARootThatIsALinkWithoutFollowingIt() {
         val outside = tempDir("kdriver_outside_test_")
@@ -79,6 +83,7 @@ class PosixDeleteRecursivelyTest {
         }
     }
 
+    /** Nothing to delete counts as deleted. */
     @Test
     fun isTrueForAMissingDirectory() {
         val missing = tempDir("kdriver_missing_test_").also { rmdir(it) }
